@@ -22,7 +22,7 @@ class CpuFreqPolicyModule(ConfigModule):
      ''')),
 
       File("/etc/systemd/system/cpu-freq-after-boot.service", permissions = 0o444, content = cleandoc(f'''
-        # Managed by decman
+        # managed by arch-config
         [Unit]
         Description=Throttle CPU after boot
         

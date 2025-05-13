@@ -47,7 +47,6 @@ class FileManager(ConfigManager[File]):
   def execute_phase(self, items: list[File]) -> list[File]:
     changed_items: list[File] = []
     for item in items:
-      print(f"creating file {item.identifier}")
       directory = os.path.dirname(item.identifier)
       Path(directory).mkdir(parents = True, exist_ok = True)
 
@@ -60,7 +59,7 @@ class FileManager(ConfigManager[File]):
 
       hash_after = virtual_file_hash(uid, gid, mode, content)
       if hash_before != hash_after:
-        confirm(f"Confirm changed file {item.identifier}")
+        confirm(f"confirm changed file {item.identifier}")
         changed_items.append(item)
 
       with open(item.identifier, 'wb+') as fh:
@@ -88,7 +87,7 @@ class FileManager(ConfigManager[File]):
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]
     for file in files_to_delete:
       if os.path.isfile(file):
-        confirm(f"Please confirm to delete file: {file}")
+        confirm(f"confirm to delete file: {file}")
         os.unlink(file)
         print(f"deleted file {file}")
       managed_files_set = set(self.store.get("managed_files", []))

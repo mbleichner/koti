@@ -14,11 +14,14 @@ class BaseModule(ConfigModule):
       Package("base"),
       Package("sudo"),
       Package("terminus-font"),
+      Package("ca-certificates"),
+      Package("ca-certificates-mozilla"),
 
       # Command Line Utilities
       Package("nano"),
       Package("less"),
-      Package("moreutils"),
+      Package("bat"),
+      Package("moreutils"), # enthält sponge
       Package("jq"),
       Package("man-db"),
       Package("man-pages"),
@@ -26,9 +29,9 @@ class BaseModule(ConfigModule):
       Package("unrar"),
       Package("zip"),
       Package("unzip"),
+      Package("7zip"),
       Package("yazi"),
       Package("zoxide"),
-      Package("bat"),
 
       # Monitoring + Analyse
       Package("btop"),
@@ -44,8 +47,6 @@ class BaseModule(ConfigModule):
       Package("tig"),
       Package("python"),
       Package("pyenv"),
-      Package("python-scipy"),
-      Package("python-pulp"),
 
       # Networking
       Package("bind"),
@@ -71,7 +72,7 @@ class BaseModule(ConfigModule):
       SystemdUnit("systemd-timesyncd.service"),
 
       File("/etc/vconsole.conf", permissions = 0o444, content = cleandoc('''
-        # Managed by decman
+        # managed by arch-config
         KEYMAP=de-latin1
         FONT=ter-124b
       ''')),
@@ -81,7 +82,7 @@ class BaseModule(ConfigModule):
         on_file_change = ShellCommand("locale-gen"),
         permissions = 0o444,
         content = cleandoc('''
-        # Managed by decman
+        # managed by arch-config
         LANG=en_US.UTF-8
         LC_ADDRESS=de_DE.UTF-8
         LC_IDENTIFICATION=de_DE.UTF-8
@@ -95,7 +96,7 @@ class BaseModule(ConfigModule):
       ''')),
 
       File("/etc/sudoers", permissions = 0o444, content = cleandoc('''
-        # Managed by decman
+        # managed by arch-config
         ## Defaults specification
         ##
         ## Preserve editor environment variables for visudo.

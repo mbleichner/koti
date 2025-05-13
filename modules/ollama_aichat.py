@@ -15,7 +15,7 @@ class OllamaAichatModule(ConfigModule):
       Package("aichat"),
       Package("ollama-cuda" if self.nvidia else "ollama"),
       File("/home/manuel/.config/aichat/config.yaml", permissions = 0o444, owner = "manuel", content = cleandoc('''
-        # Managed by decman
+        # managed by arch-config
         model: ollama:Godmoded/llama3-lexi-uncensored
         serve_addr: 0.0.0.0:8000
         clients:

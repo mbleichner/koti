@@ -19,7 +19,7 @@ class SystrayModule(ConfigModule):
     ryzen_files = [
       File("/opt/systray/cpu/summary", permissions = 0o555, content = cleandoc(r'''
         #!/bin/bash
-        # Managed by decman
+        # managed by arch-config
         CPU_MAX=$(( $(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq) / 1000 ))
         SMT="$(cat /sys/devices/system/cpu/smt/control)"
         if [[ "$SMT" == "0" || "$SMT" == "off" ]]; then
@@ -46,7 +46,7 @@ class SystrayModule(ConfigModule):
     nvidia_files = [
       File("/opt/systray/gpu/summary", permissions = 0o555, content = cleandoc(r'''
          #!/usr/bin/python3
-         # Managed by decman
+         # managed by arch-config
          from pynvml import *
          nvmlInit()
          myGPU = nvmlDeviceGetHandleByIndex(0)

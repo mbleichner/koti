@@ -5,9 +5,9 @@ import subprocess
 from pathlib import Path
 
 
-def interactive(command: str):
+def interactive(command: str, stderr = None):
   print(f"running shell command: {command}")
-  with subprocess.Popen(command, shell = True) as process:
+  with subprocess.Popen(command, shell = True, stderr = stderr) as process:
     if process.wait() != 0:
       raise AssertionError("command failed")
 

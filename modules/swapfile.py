@@ -7,9 +7,7 @@ class SwapfileModule(ConfigModule):
   def __init__(self, size_gb: int):
     self.size_gb = size_gb
 
-  def provides(self) -> ConfigModuleGroups: return [
-
-  ]
+  # FIXME
 
   def after_version_change(self):
     subprocess.run(["swapoff", "/swapfile"], check = False)

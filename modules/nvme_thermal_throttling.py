@@ -12,7 +12,7 @@ class NvmeThermalThrottlingModule(ConfigModule):
     return ConfigItemGroup(
       Package("nvme-cli"),
       File("/etc/systemd/system/nvme-thermal-throttling.service", permissions = 0o444, content = cleandoc('''
-        # Managed by decman
+        # managed by arch-config
         [Unit]
         Description=NVMe Thermal Throttling
   

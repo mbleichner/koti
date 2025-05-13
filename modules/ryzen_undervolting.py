@@ -19,7 +19,7 @@ class RyzenUndervoltingModule(ConfigModule):
            ),
 
       File("/etc/systemd/system/ryzen-undervolting.service", permissions = 0o444, content = cleandoc('''
-        # Managed by decman
+        # managed by arch-config
         [Unit]
         Description=Ryzen Undervolting
         

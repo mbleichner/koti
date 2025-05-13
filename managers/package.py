@@ -1,3 +1,5 @@
+from subprocess import DEVNULL
+
 from definitions import ConfigItem, ConfigManager
 from utils import get_output, interactive
 
@@ -71,9 +73,9 @@ class PacmanLikeSyntax(PacmanAdapter):
       interactive(f"{self.command} -D --asdeps {" ".join(packages)}")
 
   def prune_unneeded(self):
-    unneeded = self.parse_pkgs(get_output(f"{self.command} -Qdtq", check = False))
-    if unneeded:
-      interactive(f"{self.command} -Rns {" ".join(unneeded)}")
+    # https://wiki.archlinux.org/title/Pacman/Tips_and_tricks
+    # Produziert sonst nen Haufen Warnmeldungen, deshalb wird stderr unterdrückt
+    interactive(f"{self.command} -Qqd | {self.command} -Rsu -", stderr = DEVNULL)
 
   def parse_pkgs(self, output: str) -> list[str]:
     return [pkg for pkg in output.split("\n") if pkg]

@@ -73,7 +73,7 @@ class DesktopModule(ConfigModule):
         Package("pycharm-community-edition"),
 
         File("/etc/greetd/config.toml", permissions = 0o444, owner = "manuel", content = cleandoc(f'''
-          # Managed by decman
+          # managed by arch-config
           [terminal]
           vt = 2
     

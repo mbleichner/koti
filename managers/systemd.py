@@ -31,6 +31,6 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
     previously_managed_units = self.store.get("managed_units", [])
     units_to_deactivate = [file for file in previously_managed_units if file not in currently_managed_units]
     if len(units_to_deactivate) > 0:
-      confirm(f"Please confirm to deactivate units: {", ".join(units_to_deactivate)}")
+      confirm(f"confirm to deactivate units: {", ".join(units_to_deactivate)}")
       interactive(f"systemctl disable --now {" ".join(units_to_deactivate)}")
       self.store.put("managed_units", currently_managed_units)
