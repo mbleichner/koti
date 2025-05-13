@@ -33,7 +33,7 @@ arch_update.modules += [
   DesktopModule(nvidia = nvidia, autologin = True),
   GamingModule(),
   SystrayModule(ryzen = True, nvidia = nvidia),
-  NvidiaUndervoltingModule(),
+  NvidiaUndervoltingModule(enabled = nvidia),
   RyzenUndervoltingModule(),
   NvmeThermalThrottlingModule(),
   CpuFreqPolicyModule(

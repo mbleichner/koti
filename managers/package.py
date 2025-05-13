@@ -74,8 +74,8 @@ class PacmanLikeSyntax(PacmanAdapter):
 
   def prune_unneeded(self):
     # https://wiki.archlinux.org/title/Pacman/Tips_and_tricks
-    # Produziert sonst nen Haufen Warnmeldungen, deshalb wird stderr unterdrückt
-    interactive(f"{self.command} -Qqd | {self.command} -Rsu -", stderr = DEVNULL)
+    pkglist = self.parse_pkgs(get_output(f"{self.command} -Qqd"))
+    interactive(f"{self.command} -Rsu {" ".join(pkglist)}")
 
   def parse_pkgs(self, output: str) -> list[str]:
     return [pkg for pkg in output.split("\n") if pkg]

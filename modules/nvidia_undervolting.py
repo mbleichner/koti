@@ -7,6 +7,10 @@ from managers.systemd import SystemdUnit
 
 
 class NvidiaUndervoltingModule(ConfigModule):
+  enabled: bool
+
+  def __init__(self, enabled: bool):
+    self.enabled = enabled
 
   def provides(self) -> ConfigModuleGroups:
     return ConfigItemGroup(
@@ -45,4 +49,4 @@ class NvidiaUndervoltingModule(ConfigModule):
         WantedBy=multi-user.target
      ''')),
       SystemdUnit("nvidia-undervolting.service")
-    )
+    ) if self.enabled else []
