@@ -12,12 +12,14 @@ class PacmanKey(ConfigItem):
     super().__init__(identifier)
     self.key_server = key_server
     self.key_id = key_id
+
   def __str__(self):
     return f"PacmanKey('{self.identifier}')"
 
 
 class PacmanKeyManager(ConfigManager[PacmanKey]):
   managed_classes = [PacmanKey]
+
   def execute_phase(self, items: list[PacmanKey]):
     for item in items:
       if len(get_output(f"pacman-key --list-keys | grep {item.key_id}")) > 0:

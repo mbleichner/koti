@@ -1,6 +1,6 @@
 import subprocess
 
-from definitions import ConfigModule, ConfigModuleGroups
+from definitions import ConfigModule
 
 
 class SwapfileModule(ConfigModule):

@@ -21,7 +21,7 @@ class BaseModule(ConfigModule):
       Package("nano"),
       Package("less"),
       Package("bat"),
-      Package("moreutils"), # enthält sponge
+      Package("moreutils"),  # enthält sponge
       Package("jq"),
       Package("man-db"),
       Package("man-pages"),

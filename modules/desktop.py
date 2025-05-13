@@ -1,10 +1,9 @@
 from inspect import cleandoc
 from typing import TypedDict
 
-from definitions import ConfigItem, ConfigItemGroup, ConfigModule, ConfigModuleGroups, Requires
+from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups, Requires
 from managers.file import File
 from managers.package import Package
-from managers.pacman_key import PacmanKey
 from managers.systemd import SystemdUnit
 
 

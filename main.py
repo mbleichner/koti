@@ -5,6 +5,7 @@ from collections import defaultdict
 from definitions import ConfigItem, ConfigItemGroup, ConfigManager, ConfigModule, Requires
 from managers.checkpoint import CheckpointManager
 from managers.file import FileManager
+from managers.command import IdempotentCommandManager
 from managers.package import PackageManager, PacmanLikeSyntax
 from managers.pacman_key import PacmanKeyManager
 from managers.symlink import SymlinkManager
@@ -20,6 +21,7 @@ class ArchUpdate:
     SymlinkManager(),
     FileManager(),
     SystemdUnitManager(),
+    IdempotentCommandManager(),
     CheckpointManager(),
   ]
   modules: list[ConfigModule] = []

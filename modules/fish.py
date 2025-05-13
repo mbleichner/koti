@@ -1,6 +1,7 @@
 from inspect import cleandoc
 
 from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups
+from managers.command import IdempotentCommand
 from managers.file import File
 from managers.package import Package
 
@@ -9,12 +10,14 @@ class FishModule(ConfigModule):
 
   def provides(self) -> ConfigModuleGroups:
     return ConfigItemGroup(
-      Package(
-        "fish",
-        # triggers = [BashCommand("sudo chsh -s /usr/bin/fish manuel")]  # FIXME
-      ),
+      Package("fish"),
       Package("pyenv"),
       Package("fastfetch"),
+
+      IdempotentCommand(
+        "fish-as-default-shell",
+        command = "chsh -s /usr/bin/fish manuel"
+      ),
 
       File("/etc/fish/config.fish", permissions = 0o444, content = cleandoc(r'''
         # managed by arch-config
