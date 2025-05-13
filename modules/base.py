@@ -79,10 +79,8 @@ class BaseModule(ConfigModule):
 
       File(
         "/etc/locale.conf",
-        on_file_change = ShellCommand("locale-gen"),
         permissions = 0o444,
         content = cleandoc('''
-        # managed by arch-config
         LANG=en_US.UTF-8
         LC_ADDRESS=de_DE.UTF-8
         LC_IDENTIFICATION=de_DE.UTF-8
@@ -93,6 +91,16 @@ class BaseModule(ConfigModule):
         LC_PAPER=de_DE.UTF-8
         LC_TELEPHONE=de_DE.UTF-8
         LC_TIME=de_DE.UTF-8
+      ''')),
+
+      File(
+        "/etc/locale.gen",
+        on_file_change = ShellCommand("locale-gen"),
+        permissions = 0o444,
+        content = cleandoc('''
+        en_US.UTF-8 UTF-8
+        de_DE.UTF-8 UTF-8
+        # Zeilenumbruch hinter den Locales ist wichtig, sonst werden sie ignoriert
       ''')),
 
       File("/etc/sudoers", permissions = 0o444, content = cleandoc('''
