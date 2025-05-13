@@ -27,7 +27,6 @@ def confirm(message: str):
     answer = input(f'{message}: [Y/n] ').strip().lower()
     if answer in ('y', ''): return True
     if answer == 'n': raise AssertionError("execution cancelled")
-    print("\n invalid option")
 
 
 class JsonStore:

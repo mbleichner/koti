@@ -129,4 +129,9 @@ class BaseModule(ConfigModule):
         manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/paccache *
         manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/checkservices *
       ''')),
+
+      File("/etc/udev/rules.d/50-disable-usb-wakeup.rules", permissions = 0o444, content = cleandoc('''
+        # managed by arch-config
+        ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="usb", ATTR{power/wakeup}="disabled"
+      ''')),
     )
