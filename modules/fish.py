@@ -17,7 +17,7 @@ class FishModule(ConfigModule):
       Hook(
         "set-fish-as-default-shell",
         execute = ShellCommand("chsh -s /usr/bin/fish manuel"),
-        triggered_by = PacmanPackage("fish")
+        triggered_by = PacmanPackage("fish"),
       ),
 
       File("/etc/fish/config.fish", permissions = 0o444, content = cleandoc(r'''

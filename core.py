@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from definitions import ConfigItem, ConfigItemGroup, ConfigManager, ConfigModule, ExecutionState, Requires
+from definitions import ConfigItem, ConfigItemGroup, ConfigManager, ConfigModule, ExecutionPhase, ExecutionState, Requires
 from managers.checkpoint import CheckpointManager
 from managers.file import FileManager
 from managers.hook import HookManager
@@ -10,8 +10,6 @@ from managers.pacman import PacmanAdapter, PacmanPackageManager
 from managers.pacman_key import PacmanKeyManager
 from managers.symlink import SymlinkManager
 from managers.systemd import SystemdUnitManager
-
-type ExecutionPhase = list[tuple[ConfigManager, list[ConfigItem]]]
 
 
 class ArchUpdate:
@@ -48,10 +46,16 @@ class ArchUpdate:
       manager.finalize(all_items_for_manager, state)
 
   def build_execution_order(self) -> list[ExecutionPhase]:
-    result: list[ExecutionPhase] = []
+    order: list[ExecutionPhase] = []
     for groups in self.separate_groups_into_phases():
-      result.append(self.merge_into_phase(groups))
-    return result
+      order.append(self.merge_into_phase(groups))
+
+    # sanity checks
+    flattened_items = [item for phase in order for manager, items in phase for item in items]
+    for item in flattened_items:
+      item.check_configuration(order)
+
+    return order
 
   def separate_groups_into_phases(self):
     groups: list[ConfigItemGroup] = []

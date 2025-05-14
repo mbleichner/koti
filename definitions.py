@@ -4,6 +4,8 @@ from typing import Type, TypedDict
 
 from utils import shell_interactive
 
+type ExecutionPhase = list[tuple[ConfigManager, list[ConfigItem]]]
+
 
 class ExecutionState(TypedDict):
   processed_items: list[ConfigItem]
@@ -24,13 +26,10 @@ class ConfigModule:
 
 
 class ConfigItem:
-  # manager: str
-  # depends: list[ConfigItem | ConfigModule] = []
-  # triggers: list[Triggerable] = []
   def __init__(self, identifier: str):
     self.identifier = identifier
 
-  def check_configuration(self) -> str:
+  def check_configuration(self, order: list[ExecutionPhase]):
     pass
 
 

@@ -1,16 +1,28 @@
-from definitions import ConfigItem, ConfigManager, Executable, ExecutionState
+from definitions import ConfigItem, ConfigManager, Executable, ExecutionPhase, ExecutionState
 
 
 class Hook(ConfigItem):
   identifier: str | None
   execute: None | Executable
-  triggered_by: None | ConfigItem | list[ConfigItem]
+  triggered_by: list[ConfigItem]
 
   def __init__(self, identifier: str | None, execute: Executable = None, triggered_by: ConfigItem | list[ConfigItem] = None):
     super().__init__(identifier)
     self.identifier = identifier
-    self.triggered_by = triggered_by
+    if isinstance(triggered_by, list):
+      self.triggered_by = triggered_by
+    elif triggered_by is not None:
+      self.triggered_by = [triggered_by]
+    else:
+      self.triggered_by = []
     self.execute = execute
+
+  def check_configuration(self, order: list[ExecutionPhase]):
+    if self.triggered_by is not None:
+      flattened = [(item.__class__, item.identifier) for phase in order for manager, items in phase for item in items]
+      for trigger in self.triggered_by:
+        if flattened.index((trigger.__class__, trigger.identifier)) > flattened.index((self.__class__, self.identifier)):
+          raise AssertionError("Hook depends on item that is executed later")
 
   def __str__(self):
     return f"Hook('{self.identifier}')"
@@ -25,8 +37,7 @@ class HookManager(ConfigManager[Hook]):
         print(f"executing hook '{hook.identifier}'")
         hook.execute.execute()
       else:
-        all_triggers = hook.triggered_by if isinstance(hook.triggered_by, list) else [hook.triggered_by]
-        active_triggers = [trigger for trigger in all_triggers if self.is_triggered(trigger, state)]
+        active_triggers = [trigger for trigger in hook.triggered_by if self.is_triggered(trigger, state)]
         if len(active_triggers) > 0:
           print(f"executing hook '{hook.identifier}', caused by update in {", ".join([str(a) for a in active_triggers])}")
           hook.execute.execute()
