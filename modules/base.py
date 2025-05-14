@@ -73,7 +73,7 @@ class BaseModule(ConfigModule):
       SystemdUnit("systemd-timesyncd.service"),
 
       Hook(
-        "regenerate-locales",
+        identifier = "regenerate-locales",
         execute = ShellCommand("locale-gen"),
         triggered_by = [
           File("/etc/locale.gen"),
@@ -88,7 +88,7 @@ class BaseModule(ConfigModule):
       ''')),
 
       File(
-        "/etc/locale.conf",
+        identifier = "/etc/locale.conf",
         permissions = 0o444,
         content = cleandoc('''
         LANG=en_US.UTF-8
@@ -104,7 +104,7 @@ class BaseModule(ConfigModule):
       ''')),
 
       File(
-        "/etc/locale.gen",
+        identifier = "/etc/locale.gen",
         on_file_change = ShellCommand("locale-gen"),
         permissions = 0o444,
         content = cleandoc('''
