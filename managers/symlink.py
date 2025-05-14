@@ -1,4 +1,4 @@
-from definitions import ConfigItem, ConfigManager
+from definitions import ConfigItem, ConfigManager, ExecutionState
 
 
 class Symlink(ConfigItem):
@@ -18,6 +18,6 @@ class SymlinkManager(ConfigManager[Symlink]):
     if item.target is None:
       return "Symlink() needs to define a target"
 
-  def execute_phase(self, items: list[Symlink]):
+  def execute_phase(self, items: list[Symlink], state: ExecutionState):
     for item in items:
       print(f"creating symlink {item.identifier} -> {item.target}")

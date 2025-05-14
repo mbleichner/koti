@@ -1,4 +1,4 @@
-from definitions import ConfigItem, ConfigManager
+from definitions import ConfigItem, ConfigManager, ExecutionState
 from managers.package import interactive
 from utils import JsonStore, confirm
 
@@ -18,16 +18,16 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
   def __init__(self):
     self.store = JsonStore("/var/cache/arch-config/FileManager.json")
 
-  def execute_phase(self, items: list[SystemdUnit]):
+  def execute_phase(self, items: list[SystemdUnit], state: ExecutionState):
     if len(items) > 0:
       interactive(f"systemctl daemon-reload")
       interactive(f"systemctl enable --now {" ".join([item.identifier for item in items])}")
       managed_units_set = set(self.store.get("managed_units", []))
       self.store.put("managed_units", list(managed_units_set.union({item.identifier for item in items})))
 
-  def finalize(self, all_items: list[SystemdUnit]):
+  def finalize(self, items: list[SystemdUnit], state: ExecutionState):
     interactive(f"systemctl daemon-reload")
-    currently_managed_units = [item.identifier for item in all_items]
+    currently_managed_units = [item.identifier for item in items]
     previously_managed_units = self.store.get("managed_units", [])
     units_to_deactivate = [file for file in previously_managed_units if file not in currently_managed_units]
     if len(units_to_deactivate) > 0:

@@ -1,6 +1,4 @@
-from subprocess import DEVNULL
-
-from definitions import ConfigItem, ConfigManager
+from definitions import ConfigItem, ConfigManager, ExecutionState
 from utils import get_output, interactive
 
 
@@ -91,23 +89,26 @@ class PackageManager(ConfigManager[Package]):
   def check_configuration(self, item: Package) -> str | None:
     return ""
 
-  def execute_phase(self, items: list[Package]):
+  def execute_phase(self, items: list[Package], state: ExecutionState) -> list[Package]:
     url_items = [item for item in items if item.url is not None]
     repo_items = [item for item in items if item.url is None]
     installed_packages = self.delegate.list_installed_packages()
 
-    additional_urls = [item.url for item in url_items if item.identifier not in installed_packages]
-    self.delegate.install_from_url(additional_urls)
+    additional_items_from_urls = [item for item in url_items if item.identifier not in installed_packages]
+    self.delegate.install_from_url([item.url for item in additional_items_from_urls])
 
-    additional_repo_packages = [item.identifier for item in repo_items]
-    self.delegate.install([pkg for pkg in additional_repo_packages if pkg not in installed_packages])
+    additional_items_from_repo = [item for item in repo_items if item.identifier not in installed_packages]
+    self.delegate.install([item.identifier for item in additional_items_from_repo])
 
     explicit_packages = self.delegate.list_explicit_packages()
-    desired_packages = [item.identifier for item in items]
-    self.delegate.mark_as_explicit([pkg for pkg in desired_packages if pkg not in explicit_packages])
+    additional_explicit_items = [item for item in items if item.identifier not in explicit_packages]
+    self.delegate.mark_as_explicit([item.identifier for item in additional_explicit_items])
 
-  def finalize(self, all_items: list[Package]):
-    desired = [pkg.identifier for pkg in all_items]
-    explicit = self.delegate.list_explicit_packages()
-    self.delegate.mark_as_dependency([pkg for pkg in explicit if pkg not in desired])
-    self.delegate.prune_unneeded()
+    return list({*additional_items_from_urls, *additional_items_from_repo, *additional_explicit_items})
+
+  def finalize(self, items: list[Package], state: ExecutionState):
+    pass
+    # FIXME desired = [pkg.identifier for pkg in items]
+    # FIXME explicit = self.delegate.list_explicit_packages()
+    # FIXME self.delegate.mark_as_dependency([pkg for pkg in explicit if pkg not in desired])
+    # FIXME self.delegate.prune_unneeded()

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from definitions import ConfigItem, ConfigItemGroup, ConfigManager, ConfigModule, Requires
+from definitions import ConfigItem, ConfigItemGroup, ConfigManager, ConfigModule, ExecutionState, Requires
 from managers.checkpoint import CheckpointManager
 from managers.file import FileManager
-from managers.command import IdempotentCommandManager
+from managers.hook import HookManager
 from managers.package import PackageManager, PacmanLikeSyntax
 from managers.pacman_key import PacmanKeyManager
 from managers.symlink import SymlinkManager
@@ -21,26 +21,25 @@ class ArchUpdate:
     SymlinkManager(),
     FileManager(),
     SystemdUnitManager(),
-    IdempotentCommandManager(),
+    # IdempotentCommandManager(),
+    HookManager(),
     CheckpointManager(),
   ]
   modules: list[ConfigModule] = []
   dry_run = True
 
   def execute(self):
-    all_items_per_manager = [[] for manager in self.managers]
-    for phase in self.build_execution_order():
-      execute_phase_results_per_manager = [[] for manager in self.managers]
+    order = self.build_execution_order()
+    state: ExecutionState = {"processed_items": [], "updated_items": []}
+
+    for phase in order:
       for manager, items in phase:
-        all_items_per_manager[self.managers.index(manager)] += items
-        execute_phase_results = manager.execute_phase(items)
-        execute_phase_results_per_manager[self.managers.index(manager)] = execute_phase_results
-      for manager, _ in phase:
-        execute_phase_results = execute_phase_results_per_manager[self.managers.index(manager)]
-        manager.finalize_phase(execute_phase_results)
+        state["updated_items"] += manager.execute_phase(items, state) or []
+        state["processed_items"] += items
+
     for manager in self.managers:
-      all_items = all_items_per_manager[self.managers.index(manager)]
-      manager.finalize(all_items)
+      all_items_for_manager = [item for phase in order for phase_manager, phase_items in phase for item in phase_items if phase_manager is manager]
+      manager.finalize(all_items_for_manager, state)
 
   def build_execution_order(self) -> list[ExecutionPhase]:
     result: list[ExecutionPhase] = []

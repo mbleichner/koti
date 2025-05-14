@@ -1,4 +1,4 @@
-from definitions import ConfigItem, ConfigManager
+from definitions import ConfigItem, ConfigManager, ExecutionState
 from managers.package import get_output, interactive
 
 
@@ -20,7 +20,7 @@ class PacmanKey(ConfigItem):
 class PacmanKeyManager(ConfigManager[PacmanKey]):
   managed_classes = [PacmanKey]
 
-  def execute_phase(self, items: list[PacmanKey]):
+  def execute_phase(self, items: list[PacmanKey], state: ExecutionState):
     for item in items:
       if len(get_output(f"pacman-key --list-keys | grep {item.key_id}")) > 0:
         print(f"pacman-key {item.key_id} already installed")

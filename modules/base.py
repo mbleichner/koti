@@ -2,6 +2,7 @@ from inspect import cleandoc
 
 from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups, ShellCommand
 from managers.file import File
+from managers.hook import Hook
 from managers.package import Package
 from managers.systemd import SystemdUnit
 
@@ -70,6 +71,15 @@ class BaseModule(ConfigModule):
       SystemdUnit("wpa_supplicant.service"),
       SystemdUnit("sshd.service"),
       SystemdUnit("systemd-timesyncd.service"),
+
+      Hook(
+        "regenerate-locales",
+        execute = ShellCommand("locale-gen"),
+        triggered_by = [
+          File("/etc/locale.gen"),
+          File("/etc/locale.conf"),
+        ],
+      ),
 
       File("/etc/vconsole.conf", permissions = 0o444, content = cleandoc('''
         # managed by arch-config

@@ -1,8 +1,8 @@
 from inspect import cleandoc
 
-from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups
-from managers.command import IdempotentCommand
+from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups, ShellCommand
 from managers.file import File
+from managers.hook import Hook
 from managers.package import Package
 
 
@@ -14,9 +14,10 @@ class FishModule(ConfigModule):
       Package("pyenv"),
       Package("fastfetch"),
 
-      IdempotentCommand(
-        "fish-as-default-shell",
-        command = "chsh -s /usr/bin/fish manuel"
+      Hook(
+        "set-fish-as-default-shell",
+        execute = ShellCommand("chsh -s /usr/bin/fish manuel"),
+        triggered_by = Package("fish")
       ),
 
       File("/etc/fish/config.fish", permissions = 0o444, content = cleandoc(r'''
