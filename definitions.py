@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Type, TypedDict
 
-from utils import interactive
+from utils import shell_interactive
 
 
 class ExecutionState(TypedDict):
@@ -38,7 +38,7 @@ class ConfigItemGroup:
   identifier: str | None
   items: list[ConfigItem]
 
-  def __init__(self, first: str | ConfigItem | Requires | Hook, *items: ConfigItem | Requires | Hook):
+  def __init__(self, first: str | ConfigItem | Requires, *items: ConfigItem | Requires):
     self.identifier = None if not isinstance(first, str) else first
     combined_items = ([] if isinstance(first, str) else [first]) + list(items)
     self.items = [item for item in combined_items if item is not None]
@@ -64,7 +64,7 @@ class ShellCommand(Executable):
     self.command = command
 
   def execute(self):
-    interactive(self.command)
+    shell_interactive(self.command)
 
   def __eq__(self, other):
     return type(other) is type(self) and self.command == other.command

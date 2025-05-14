@@ -1,5 +1,5 @@
 from definitions import ConfigItem, ConfigManager, ExecutionState
-from utils import get_output, interactive
+from utils import shell_output, shell_interactive
 
 
 class PacmanPackage(ConfigItem):
@@ -9,8 +9,12 @@ class PacmanPackage(ConfigItem):
 
   def __str__(self):
     if self.url is not None:
-      return f"Package('{self.identifier}', url = ...)"
-    return f"Package('{self.identifier}')"
+      return f"PacmanPackage('{self.identifier}', url = ...)"
+    return f"PacmanPackage('{self.identifier}')"
+
+
+def PacmanPackages(*identifiers: str) -> list[PacmanPackage]:
+  return [PacmanPackage(identifier) for identifier in identifiers]
 
 
 class PacmanAdapter:
@@ -20,36 +24,36 @@ class PacmanAdapter:
     self.pacman = pacman
 
   def update_system(self):
-    get_output(f"{self.pacman} -Syu")
+    shell_output(f"{self.pacman} -Syu")
 
   def list_explicit_packages(self) -> list[str]:
-    return self.parse_pkgs(get_output(f"{self.pacman} -Qqe", check = False))
+    return self.parse_pkgs(shell_output(f"{self.pacman} -Qqe", check = False))
 
   def list_installed_packages(self) -> list[str]:
-    return self.parse_pkgs(get_output(f"{self.pacman} -Qq", check = False))
+    return self.parse_pkgs(shell_output(f"{self.pacman} -Qq", check = False))
 
   def install(self, packages: list[str]):
     if packages:
-      interactive(f"{self.pacman} -S {" ".join(packages)}")
+      shell_interactive(f"{self.pacman} -S {" ".join(packages)}")
 
   def install_from_url(self, urls: list[str]):
     if urls:
-      interactive(f"{self.pacman} -U {" ".join(urls)}")
+      shell_interactive(f"{self.pacman} -U {" ".join(urls)}")
 
   def mark_as_explicit(self, packages: list[str]):
     if packages:
-      interactive(f"{self.pacman} -D --asexplicit {" ".join(packages)}")
+      shell_interactive(f"{self.pacman} -D --asexplicit {" ".join(packages)}")
 
   def mark_as_dependency(self, packages: list[str]):
     if packages:
-      interactive(f"{self.pacman} -D --asdeps {" ".join(packages)}")
+      shell_interactive(f"{self.pacman} -D --asdeps {" ".join(packages)}")
 
   def prune_unneeded(self):
     # https://wiki.archlinux.org/title/Pacman/Tips_and_tricks
     find_unneeded_packages_cmd = f"{self.pacman} -Qqd | {self.pacman} -Rsu --print --print-format '%e' -"
-    unneeded_packages = self.parse_pkgs(get_output(find_unneeded_packages_cmd, check = False))
+    unneeded_packages = self.parse_pkgs(shell_output(find_unneeded_packages_cmd, check = False))
     if len(unneeded_packages) > 0:
-      interactive(f"{self.pacman} -Rn {" ".join(unneeded_packages)}")
+      shell_interactive(f"{self.pacman} -Rn {" ".join(unneeded_packages)}")
 
   def parse_pkgs(self, output: str) -> list[str]:
     if "there is nothing to do" in output: return []

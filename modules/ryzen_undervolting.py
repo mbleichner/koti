@@ -13,10 +13,11 @@ class RyzenUndervoltingModule(ConfigModule):
 
       PacmanPackage("ryzen_smu-dkms-git"),
 
-      File("/opt/undervolting/ryzen-undervolting.py",
-           permissions = 0o444, path = "files/ryzen-undervolting.py"
-           # Quelle: https://github.com/svenlange2/Ryzen-5800x3d-linux-undervolting
-           ),
+      File(
+        "/opt/undervolting/ryzen-undervolting.py",
+        permissions = 0o444, path = "files/ryzen-undervolting.py"
+        # Quelle: https://github.com/svenlange2/Ryzen-5800x3d-linux-undervolting
+      ),
 
       File("/etc/systemd/system/ryzen-undervolting.service", permissions = 0o444, content = cleandoc('''
         # managed by arch-config

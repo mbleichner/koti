@@ -13,8 +13,7 @@ class Hook(ConfigItem):
     self.execute = execute
 
   def __str__(self):
-    triggers = self.triggered_by if isinstance(self.triggered_by, list) else [self.triggered_by]
-    return f"Hook(triggered_by = {", ".join([str(item) for item in triggers])})"
+    return f"Hook('{self.identifier}')"
 
 
 class HookManager(ConfigManager[Hook]):

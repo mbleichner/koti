@@ -1,10 +1,11 @@
+import hashlib
 import os
 import pwd
 from pathlib import Path
 
+from core import ExecutionState
 from definitions import ConfigItem, ConfigManager, Executable
-from main import ExecutionState
-from utils import JsonStore, confirm, file_hash, virtual_file_hash
+from utils import JsonStore, confirm
 
 
 class File(ConfigItem):
@@ -93,3 +94,26 @@ class FileManager(ConfigManager[File]):
         print(f"deleted file {file}")
       managed_files_set = set(self.store.get("managed_files", []))
       self.store.put("managed_files", list(managed_files_set.difference({file})))
+
+
+def file_hash(filename):
+  if not os.path.isfile(filename):
+    return "-"
+  stat = os.stat(filename)
+  sha256_hash = hashlib.sha256()
+  sha256_hash.update(str(stat.st_uid).encode())
+  sha256_hash.update(str(stat.st_gid).encode())
+  sha256_hash.update(str(stat.st_mode & 0o777).encode())
+  with open(filename, "rb") as f:
+    for byte_block in iter(lambda: f.read(4096), b""):
+      sha256_hash.update(byte_block)
+  return sha256_hash.hexdigest()
+
+
+def virtual_file_hash(uid, gid, mode, content):
+  sha256_hash = hashlib.sha256()
+  sha256_hash.update(str(uid).encode())
+  sha256_hash.update(str(gid).encode())
+  sha256_hash.update(str(mode & 0o777).encode())
+  sha256_hash.update(content)
+  return sha256_hash.hexdigest()

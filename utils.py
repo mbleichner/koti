@@ -1,17 +1,16 @@
-import hashlib
 import json
 import os
 import subprocess
 from pathlib import Path
 
 
-def interactive(command: str):
+def shell_interactive(command: str):
   with subprocess.Popen(command, shell = True) as process:
     if process.wait() != 0:
       raise AssertionError("command failed")
 
 
-def get_output(command: str, check: bool = True) -> str:
+def shell_output(command: str, check: bool = True) -> str:
   return subprocess.run(
     command,
     check = check,
@@ -48,26 +47,3 @@ class JsonStore:
     Path(os.path.dirname(self.store_file)).mkdir(parents = True, exist_ok = True)
     with open(self.store_file, 'w+', encoding = 'utf-8') as fh:
       json.dump(self.store, fh)
-
-
-def file_hash(filename):
-  if not os.path.isfile(filename):
-    return "-"
-  stat = os.stat(filename)
-  sha256_hash = hashlib.sha256()
-  sha256_hash.update(str(stat.st_uid).encode())
-  sha256_hash.update(str(stat.st_gid).encode())
-  sha256_hash.update(str(stat.st_mode & 0o777).encode())
-  with open(filename, "rb") as f:
-    for byte_block in iter(lambda: f.read(4096), b""):
-      sha256_hash.update(byte_block)
-  return sha256_hash.hexdigest()
-
-
-def virtual_file_hash(uid, gid, mode, content):
-  sha256_hash = hashlib.sha256()
-  sha256_hash.update(str(uid).encode())
-  sha256_hash.update(str(gid).encode())
-  sha256_hash.update(str(mode & 0o777).encode())
-  sha256_hash.update(content)
-  return sha256_hash.hexdigest()
