@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 # Bytecode-Compilation deaktivieren, das macht mit sudo sonst immer Probleme
 import sys
 sys.dont_write_bytecode = True
@@ -21,11 +22,38 @@ from modules.ryzen_undervolting import RyzenUndervoltingModule
 from modules.systray import SystrayModule
 from utils import get_output
 
+parser = argparse.ArgumentParser(
+  prog = 'ArchConfig',
+)
+
+parser.add_argument(
+  'action', default = "plan", choices = ["plan", "apply"],
+  help = "plan (show all steps that will be executed, in order)\napply (run all system updates)"
+)
+parser.add_argument(
+  '--cautious', default = False, action = "store_true",
+  help = "confirm every possibly destructive operation"
+)
+parser.add_argument(
+  '--paranoid', default = False, action = "store_true",
+  help = "confirm every single operation, even non-destructive ones"
+)
+
+try:
+  args = parser.parse_args()
+except:
+  parser.print_help()
+  sys.exit(1)
+
 host = socket.gethostname()
 nvidia = host == "dan"
 root_uuid = get_output("findmnt -n -o UUID $(stat -c '%m' /)")
 
 arch_update = ArchUpdate()
+
+arch_update.action = args.action
+arch_update.cautious = args.cautious
+arch_update.paranoid = args.paranoid
 
 arch_update.modules += [
   KernelModule(root_uuid = root_uuid, cachyos = True),
@@ -47,11 +75,7 @@ arch_update.modules += [
   OllamaAichatModule(nvidia = nvidia),
 ]
 
-for phase_idx, phase_managers in enumerate(arch_update.build_execution_order()):
-  print(f"Phase {phase_idx + 1}")
-  for manager, items in phase_managers:
-    print(f"- {manager}:")
-    for item in items:
-      print(f"  - {item}")
-
-arch_update.execute()
+if args.action == "plan":
+  arch_update.plan()
+if args.action == "apply":
+  arch_update.apply()

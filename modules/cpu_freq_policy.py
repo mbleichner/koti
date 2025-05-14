@@ -2,7 +2,7 @@ from inspect import cleandoc
 
 from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups
 from managers.file import File
-from managers.package import Package
+from managers.pacman import PacmanPackage
 from managers.systemd import SystemdUnit
 
 
@@ -14,7 +14,7 @@ class CpuFreqPolicyModule(ConfigModule):
 
   def provides(self) -> ConfigModuleGroups:
     return ConfigItemGroup(
-      Package("cpupower"),
+      PacmanPackage("cpupower"),
       File("/etc/default/cpupower", permissions = 0o444, content = cleandoc(f'''
         governor="{self.governor}"
         min_freq="{self.min_freq}MHz"

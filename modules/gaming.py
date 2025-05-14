@@ -1,18 +1,18 @@
 from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups
-from managers.package import Package
+from managers.pacman import PacmanPackage
 
 
 class GamingModule(ConfigModule):
   def provides(self) -> ConfigModuleGroups:
     return ConfigItemGroup(
-      Package("discord"),
-      Package("gamescope"),
-      Package("gpu-screen-recorder-ui"),
-      Package("proton-ge-custom-bin"),
-      Package("protontricks"),
-      Package("ryujinx"),
-      Package("steam"),
-      Package("nexusmods-app-bin"),
-      Package("r2modman-bin"),
-      Package("mangohud"),
+      PacmanPackage("discord"),
+      PacmanPackage("gamescope"),
+      PacmanPackage("gpu-screen-recorder-ui"),
+      PacmanPackage("proton-ge-custom-bin"),
+      PacmanPackage("protontricks"),
+      PacmanPackage("ryujinx"),
+      PacmanPackage("steam"),
+      PacmanPackage("nexusmods-app-bin"),
+      PacmanPackage("r2modman-bin"),
+      PacmanPackage("mangohud"),
     )

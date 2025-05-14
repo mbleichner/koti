@@ -2,7 +2,7 @@ from inspect import cleandoc
 
 from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups, Requires
 from managers.file import File
-from managers.package import Package
+from managers.pacman import PacmanPackage
 from managers.pacman_key import PacmanKey
 
 
@@ -14,15 +14,16 @@ class KernelModule(ConfigModule):
   def provides(self) -> ConfigModuleGroups: return [
     ConfigItemGroup(
       PacmanKey("cachyos", key_id = "F3B607488DB35A47"),
-      Package(
+
+      PacmanPackage(
         "cachyos-keyring",
         url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst"
       ),
-      Package(
+      PacmanPackage(
         "cachyos-mirrorlist",
         url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst"
       ),
-      Package(
+      PacmanPackage(
         "cachyos-v3-mirrorlist",
         url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst"
       ),
@@ -30,17 +31,17 @@ class KernelModule(ConfigModule):
 
     ConfigItemGroup(
       Requires(
-        Package("cachyos-keyring"),
-        Package("cachyos-mirrorlist"),
-        Package("cachyos-v3-mirrorlist")
+        PacmanPackage("cachyos-keyring"),
+        PacmanPackage("cachyos-mirrorlist"),
+        PacmanPackage("cachyos-v3-mirrorlist")
       ),
 
-      Package("linux"),
-      Package("linux-firmware"),
-      Package("linux-headers"),
-      Package("efibootmgr"),
-      Package("linux-cachyos") if self.cachyos else None,
-      Package("linux-cachyos-headers") if self.cachyos else None,
+      PacmanPackage("linux"),
+      PacmanPackage("linux-firmware"),
+      PacmanPackage("linux-headers"),
+      PacmanPackage("efibootmgr"),
+      PacmanPackage("linux-cachyos") if self.cachyos else None,
+      PacmanPackage("linux-cachyos-headers") if self.cachyos else None,
 
       File("/boot/loader/entries/arch-cachyos.conf", permissions = 0o555, content = cleandoc(f'''
         # managed by arch-config

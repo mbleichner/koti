@@ -1,5 +1,5 @@
 from definitions import ConfigItem, ConfigManager, ExecutionState
-from managers.package import interactive
+from managers.pacman import interactive
 from utils import JsonStore, confirm
 
 

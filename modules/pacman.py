@@ -2,7 +2,7 @@ from inspect import cleandoc
 
 from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups, Requires
 from managers.file import File
-from managers.package import Package
+from managers.pacman import PacmanPackage
 
 
 class PacmanModule(ConfigModule):
@@ -13,9 +13,9 @@ class PacmanModule(ConfigModule):
     return ConfigItemGroup(
 
       Requires(
-        Package("cachyos-keyring"),
-        Package("cachyos-mirrorlist"),
-        Package("cachyos-v3-mirrorlist")
+        PacmanPackage("cachyos-keyring"),
+        PacmanPackage("cachyos-mirrorlist"),
+        PacmanPackage("cachyos-v3-mirrorlist")
       ),
 
       File("/etc/pacman.conf", permissions = 0o444, content = cleandoc('''
@@ -93,12 +93,12 @@ class PacmanModule(ConfigModule):
         --sort delay
      ''')),
 
-      Package("pacman-contrib"),
-      Package("pacutils"),
-      Package("paru"),
-      Package("decman"),
-      Package("arch-update"),
-      Package("base-devel"),
-      Package("reflector"),
-      Package("lostfiles"),
+      PacmanPackage("pacman-contrib"),
+      PacmanPackage("pacutils"),
+      PacmanPackage("paru"),
+      PacmanPackage("decman"),
+      PacmanPackage("arch-update"),
+      PacmanPackage("base-devel"),
+      PacmanPackage("reflector"),
+      PacmanPackage("lostfiles"),
     )

@@ -3,7 +3,7 @@ from inspect import cleandoc
 from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups, ShellCommand
 from managers.file import File
 from managers.hook import Hook
-from managers.package import Package
+from managers.pacman import PacmanPackage
 from managers.systemd import SystemdUnit
 
 
@@ -12,60 +12,60 @@ class BaseModule(ConfigModule):
   def provides(self) -> ConfigModuleGroups:
     return ConfigItemGroup(
 
-      Package("base"),
-      Package("sudo"),
-      Package("terminus-font"),
-      Package("ca-certificates"),
-      Package("ca-certificates-mozilla"),
+      PacmanPackage("base"),
+      PacmanPackage("sudo"),
+      PacmanPackage("terminus-font"),
+      PacmanPackage("ca-certificates"),
+      PacmanPackage("ca-certificates-mozilla"),
 
       # Command Line Utilities
-      Package("nano"),
-      Package("less"),
-      Package("bat"),
-      Package("moreutils"),  # enthält sponge
-      Package("jq"),
-      Package("man-db"),
-      Package("man-pages"),
-      Package("tealdeer"),
-      Package("unrar"),
-      Package("zip"),
-      Package("unzip"),
-      Package("7zip"),
-      Package("yazi"),
-      Package("zoxide"),
+      PacmanPackage("nano"),
+      PacmanPackage("less"),
+      PacmanPackage("bat"),
+      PacmanPackage("moreutils"),  # enthält sponge
+      PacmanPackage("jq"),
+      PacmanPackage("man-db"),
+      PacmanPackage("man-pages"),
+      PacmanPackage("tealdeer"),
+      PacmanPackage("unrar"),
+      PacmanPackage("zip"),
+      PacmanPackage("unzip"),
+      PacmanPackage("7zip"),
+      PacmanPackage("yazi"),
+      PacmanPackage("zoxide"),
 
       # Monitoring + Analyse
-      Package("btop"),
-      Package("htop"),
-      Package("iotop"),
-      Package("ncdu"),
-      Package("ryzen_monitor-git"),
-      Package("bandwhich"),
+      PacmanPackage("btop"),
+      PacmanPackage("htop"),
+      PacmanPackage("iotop"),
+      PacmanPackage("ncdu"),
+      PacmanPackage("ryzen_monitor-git"),
+      PacmanPackage("bandwhich"),
 
       # Development und Libraries
-      Package("git"),
-      Package("git-lfs"),
-      Package("tig"),
-      Package("python"),
-      Package("pyenv"),
+      PacmanPackage("git"),
+      PacmanPackage("git-lfs"),
+      PacmanPackage("tig"),
+      PacmanPackage("python"),
+      PacmanPackage("pyenv"),
 
       # Networking
-      Package("bind"),
-      Package("networkmanager"),
-      Package("openbsd-netcat"),
-      Package("traceroute"),
-      Package("wireguard-tools"),
-      Package("wget"),
-      Package("openssh"),
+      PacmanPackage("bind"),
+      PacmanPackage("networkmanager"),
+      PacmanPackage("openbsd-netcat"),
+      PacmanPackage("traceroute"),
+      PacmanPackage("wireguard-tools"),
+      PacmanPackage("wget"),
+      PacmanPackage("openssh"),
 
       # Hardware Utilities
-      Package("cpupower"),
-      Package("bluez-utils"),
+      PacmanPackage("cpupower"),
+      PacmanPackage("bluez-utils"),
 
       # Dateisysteme
-      Package("gparted"),
-      Package("ntfs-3g"),
-      Package("dosfstools"),
+      PacmanPackage("gparted"),
+      PacmanPackage("ntfs-3g"),
+      PacmanPackage("dosfstools"),
 
       SystemdUnit("NetworkManager.service"),
       SystemdUnit("wpa_supplicant.service"),

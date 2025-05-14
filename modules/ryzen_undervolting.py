@@ -2,7 +2,7 @@ from inspect import cleandoc
 
 from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups
 from managers.file import File
-from managers.package import Package
+from managers.pacman import PacmanPackage
 from managers.systemd import SystemdUnit
 
 
@@ -11,7 +11,7 @@ class RyzenUndervoltingModule(ConfigModule):
   def provides(self) -> ConfigModuleGroups:
     return ConfigItemGroup(
 
-      Package("ryzen_smu-dkms-git"),
+      PacmanPackage("ryzen_smu-dkms-git"),
 
       File("/opt/undervolting/ryzen-undervolting.py",
            permissions = 0o444, path = "files/ryzen-undervolting.py"

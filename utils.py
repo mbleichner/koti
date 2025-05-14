@@ -5,21 +5,20 @@ import subprocess
 from pathlib import Path
 
 
-def interactive(command: str, stderr = None):
-  print(f"running shell command: {command}")
-  with subprocess.Popen(command, shell = True, stderr = stderr) as process:
+def interactive(command: str):
+  with subprocess.Popen(command, shell = True) as process:
     if process.wait() != 0:
       raise AssertionError("command failed")
 
 
 def get_output(command: str, check: bool = True) -> str:
-  print(f"running shell command: {command}")
   return subprocess.run(
     command,
     check = check,
     shell = True,
-    capture_output = True
-  ).stdout.decode().strip()
+    capture_output = True,
+    universal_newlines = True,
+  ).stdout.strip()
 
 
 def confirm(message: str):

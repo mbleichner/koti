@@ -2,7 +2,7 @@ from inspect import cleandoc
 
 from definitions import ConfigItem, ConfigItemGroup, ConfigModule, ConfigModuleGroups
 from managers.file import File
-from managers.package import Package
+from managers.pacman import PacmanPackage
 
 
 class SystrayModule(ConfigModule):
@@ -12,8 +12,8 @@ class SystrayModule(ConfigModule):
 
   def provides(self) -> ConfigModuleGroups:
     packages: list[ConfigItem] = [
-      Package("kdialog"),
-      Package("python-pynvml") if self.nvidia else None
+      PacmanPackage("kdialog"),
+      PacmanPackage("python-pynvml") if self.nvidia else None
     ]
 
     ryzen_files = [

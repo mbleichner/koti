@@ -6,7 +6,7 @@ from definitions import ConfigItem, ConfigItemGroup, ConfigManager, ConfigModule
 from managers.checkpoint import CheckpointManager
 from managers.file import FileManager
 from managers.hook import HookManager
-from managers.package import PackageManager, PacmanLikeSyntax
+from managers.pacman import PacmanAdapter, PacmanPackageManager
 from managers.pacman_key import PacmanKeyManager
 from managers.symlink import SymlinkManager
 from managers.systemd import SystemdUnitManager
@@ -17,26 +17,32 @@ type ExecutionPhase = list[tuple[ConfigManager, list[ConfigItem]]]
 class ArchUpdate:
   managers: list[ConfigManager] = [
     PacmanKeyManager(),
-    PackageManager(PacmanLikeSyntax("sudo -u manuel paru")),
+    PacmanPackageManager(PacmanAdapter("sudo -u manuel paru")),
     SymlinkManager(),
     FileManager(),
     SystemdUnitManager(),
-    # IdempotentCommandManager(),
     HookManager(),
     CheckpointManager(),
   ]
   modules: list[ConfigModule] = []
-  dry_run = True
+  cautious: bool = False
+  paranoid: bool = False
 
-  def execute(self):
+  def plan(self):
+    order = self.build_execution_order()
+    for phase_idx, phase_managers in enumerate(order):
+      print(f"Phase {phase_idx + 1}:")
+      for manager, items in phase_managers:
+        for item in items:
+          print(f" - {item}")
+
+  def apply(self):
     order = self.build_execution_order()
     state: ExecutionState = {"processed_items": [], "updated_items": []}
-
     for phase in order:
       for manager, items in phase:
         state["updated_items"] += manager.execute_phase(items, state) or []
         state["processed_items"] += items
-
     for manager in self.managers:
       all_items_for_manager = [item for phase in order for phase_manager, phase_items in phase for item in phase_items if phase_manager is manager]
       manager.finalize(all_items_for_manager, state)

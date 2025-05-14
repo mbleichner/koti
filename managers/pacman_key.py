@@ -1,5 +1,5 @@
 from definitions import ConfigItem, ConfigManager, ExecutionState
-from managers.package import get_output, interactive
+from managers.pacman import get_output, interactive
 
 
 class PacmanKey(ConfigItem):
@@ -22,9 +22,8 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
 
   def execute_phase(self, items: list[PacmanKey], state: ExecutionState):
     for item in items:
-      if len(get_output(f"pacman-key --list-keys | grep {item.key_id}")) > 0:
-        print(f"pacman-key {item.key_id} already installed")
-      else:
+      key_already_installed = len(get_output(f"pacman-key --list-keys | grep {item.key_id}")) > 0
+      if not key_already_installed:
         print(f"installing pacman-key {item.key_id} from {item.key_server}")
         interactive(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
         interactive("sudo pacman-key --lsign-keys {item.key_id}")

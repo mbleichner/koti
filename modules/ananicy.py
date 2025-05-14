@@ -2,19 +2,19 @@ from inspect import cleandoc
 
 from definitions import ConfigItem, ConfigItemGroup, ConfigModule, ConfigModuleGroups, ShellCommand
 from managers.file import File
-from managers.package import Package
+from managers.pacman import PacmanPackage
 from managers.systemd import SystemdUnit
 
 
 class AnanicyModule(ConfigModule):
 
   def depends_on(self) -> list[ConfigItem]: return [
-    Package("cachyos-mirrorlist")
+    PacmanPackage("cachyos-mirrorlist")
   ]
 
   def provides(self) -> ConfigModuleGroups:
     return ConfigItemGroup(
-      Package("ananicy-cpp"),
+      PacmanPackage("ananicy-cpp"),
 
       SystemdUnit("ananicy-cpp.service"),
 

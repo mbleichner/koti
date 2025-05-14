@@ -2,7 +2,7 @@ from inspect import cleandoc
 
 from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups
 from managers.file import File
-from managers.package import Package
+from managers.pacman import PacmanPackage
 from managers.systemd import SystemdUnit
 
 
@@ -14,7 +14,7 @@ class NvidiaUndervoltingModule(ConfigModule):
 
   def provides(self) -> ConfigModuleGroups:
     return ConfigItemGroup(
-      Package("python-pynvml"),
+      PacmanPackage("python-pynvml"),
 
       File("/opt/undervolting/nvidia-undervolting.py", permissions = 0o444, content = cleandoc('''
         # managed by arch-config
