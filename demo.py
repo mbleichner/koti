@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-import socket
+# Bytecode-Compilation deaktivieren, das macht mit sudo sonst immer Probleme
 import sys
+sys.dont_write_bytecode = True
 
+import socket
 from main import ArchUpdate
 from modules.ananicy import AnanicyModule
 from modules.base import BaseModule
@@ -18,9 +20,6 @@ from modules.pacman import PacmanModule
 from modules.ryzen_undervolting import RyzenUndervoltingModule
 from modules.systray import SystrayModule
 from utils import get_output
-
-# Bytecode-Compilation deaktivieren, das macht mit sudo sonst immer Probleme
-sys.dont_write_bytecode = True
 
 host = socket.gethostname()
 nvidia = host == "dan"
