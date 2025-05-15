@@ -1,8 +1,7 @@
 from typing import TypedDict
 
-from definitions import ConfigItem, ConfigManager, ConfirmMode, ExecutionState
+from lib import ConfigItem, ConfigManager, ConfirmMode, ExecutionState, JsonMapping, JsonStore, confirm
 from managers.pacman import shell_interactive
-from utils import JsonMapping, JsonStore, confirm
 
 
 class SystemdUnit(ConfigItem):
@@ -51,7 +50,6 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
           self.managed_units_store.get(unit, {}).get("confirm_mode", state.default_confirm_mode) for unit in units_to_deactivate
         ]),
       )
-      confirm(f"confirm to deactivate units: {", ".join(units_to_deactivate)}")
       shell_interactive(f"systemctl disable --now {" ".join(units_to_deactivate)}")
       for identifier in units_to_deactivate:
         self.managed_units_store.remove(identifier)

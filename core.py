@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from definitions import ConfigItem, ConfigItemGroup, ConfigManager, ConfigModule, ExecutionPhase, ExecutionState, Requires
+from lib import ConfigItem, ConfigItemGroup, ConfigManager, ConfigModule, ExecutionPhase, ExecutionState, Requires
 from managers.checkpoint import CheckpointManager
 from managers.file import FileManager
 from managers.hook import PostHookManager, PreHookManager
@@ -10,6 +10,8 @@ from managers.pacman import PacmanAdapter, PacmanPackageManager
 from managers.pacman_key import PacmanKeyManager
 from managers.swapfile import SwapfileManager
 from managers.systemd import SystemdUnitManager
+
+
 
 
 class ArchUpdate:

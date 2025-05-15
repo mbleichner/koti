@@ -1,8 +1,7 @@
 import os.path
 from typing import TypedDict
 
-from definitions import ConfigItem, ConfigManager, ConfirmMode, ExecutionState
-from utils import JsonMapping, JsonStore, confirm, shell_interactive, shell_success
+from lib import ConfigItem, ConfigManager, ConfirmMode, ExecutionState, JsonMapping, JsonStore, confirm, shell_interactive, shell_success
 
 
 class Swapfile(ConfigItem):

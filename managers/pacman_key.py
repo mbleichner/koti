@@ -1,6 +1,5 @@
-from definitions import ConfigItem, ConfigManager, ExecutionState
+from lib import ConfigItem, ConfigManager, ExecutionState, shell_success
 from managers.pacman import shell_interactive
-from utils import shell_success
 
 
 class PacmanKey(ConfigItem):

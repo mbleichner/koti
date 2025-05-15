@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 # Bytecode-Compilation deaktivieren, das macht mit sudo sonst immer Probleme
 import sys
+
+from lib import shell_output
 sys.dont_write_bytecode = True
 
 import socket
@@ -20,7 +22,6 @@ from modules.ollama_aichat import OllamaAichatModule
 from modules.pacman import PacmanModule
 from modules.ryzen_undervolting import RyzenUndervoltingModule
 from modules.systray import SystrayModule
-from utils import shell_output
 
 parser = argparse.ArgumentParser(
   prog = 'ArchConfig',

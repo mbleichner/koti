@@ -1,6 +1,6 @@
 from inspect import cleandoc
 
-from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups
+from lib import ConfigItemGroup, ConfigModule, ConfigModuleGroups
 from managers.file import File
 from managers.pacman import PacmanPackage
 from managers.systemd import SystemdUnit

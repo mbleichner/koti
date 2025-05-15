@@ -1,19 +1,18 @@
 from inspect import cleandoc
 
-from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups, Options
+from lib import ConfigItemGroup, ConfigModule, ConfigModuleGroups, Options, ShellCommand
 from managers.file import File
 from managers.hook import PostHook
 from managers.pacman import PacmanPackage
 from managers.swapfile import Swapfile
 from managers.systemd import SystemdUnit
-from utils import ShellCommand
 
 
 class BaseModule(ConfigModule):
 
   def provides(self) -> ConfigModuleGroups: return [
     ConfigItemGroup(
-      Options(confirm_mode = "all_changes"),
+      Options(confirm_mode = "paranoid"),
 
       PacmanPackage("base"),
       PacmanPackage("sudo"),

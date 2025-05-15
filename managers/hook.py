@@ -1,6 +1,6 @@
 from typing import Literal
 
-from definitions import ConfigItem, ConfigItemGroup, ConfigManager, Executable, ExecutionState
+from lib import ConfigItem, ConfigItemGroup, ConfigManager, Executable, ExecutionState
 
 
 class PreHook(ConfigItem):

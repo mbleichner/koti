@@ -5,8 +5,7 @@ from pathlib import Path
 from typing import TypedDict
 
 from core import ExecutionState
-from definitions import ConfigItem, ConfigManager, ConfirmMode, Executable
-from utils import JsonMapping, JsonStore, confirm
+from lib import ConfigItem, ConfigManager, ConfirmMode, Executable, JsonMapping, JsonStore, confirm
 
 
 class File(ConfigItem):

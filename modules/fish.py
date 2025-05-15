@@ -1,10 +1,9 @@
 from inspect import cleandoc
 
-from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups
+from lib import ConfigItemGroup, ConfigModule, ConfigModuleGroups, ShellCommand
 from managers.file import File
 from managers.hook import PostHook, PreHook
 from managers.pacman import PacmanPackage
-from utils import ShellCommand
 
 
 class FishModule(ConfigModule):
