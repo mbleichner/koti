@@ -1,6 +1,6 @@
 from inspect import cleandoc
 
-from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups, Options
+from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups, ConfirmMode
 from managers.file import File
 from managers.pacman import PacmanPackage
 
@@ -11,8 +11,8 @@ class SystrayModule(ConfigModule):
     self.ryzen = ryzen
 
   def provides(self) -> ConfigModuleGroups: return ConfigItemGroup(
+    ConfirmMode("yolo"),
 
-    Options(confirm_mode = "yolo"),
     PacmanPackage("kdialog"),
 
     *[  # NVIDIA Skripte

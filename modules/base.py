@@ -1,6 +1,6 @@
 from inspect import cleandoc
 
-from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups, Options
+from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups, ConfirmMode
 from shell import shell_interactive
 from managers.file import File
 from managers.hook import PostHook
@@ -13,7 +13,7 @@ class BaseModule(ConfigModule):
 
   def provides(self) -> ConfigModuleGroups: return [
     ConfigItemGroup(
-      Options(confirm_mode = "paranoid"),
+      ConfirmMode("paranoid"),
 
       PacmanPackage("base"),
       PacmanPackage("sudo"),

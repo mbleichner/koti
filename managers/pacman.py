@@ -1,5 +1,5 @@
 from shell import shell_interactive, shell_output
-from core import ConfigItem, ConfigManager, ExecutionState
+from core import ArchUpdate, ConfigItem, ConfigManager, ExecutionState
 
 
 class PacmanPackage(ConfigItem):
@@ -67,10 +67,7 @@ class PacmanPackageManager(ConfigManager[PacmanPackage]):
     super().__init__()
     self.delegate = delegate
 
-  def check_configuration(self, item: PacmanPackage) -> str | None:
-    return ""
-
-  def execute_phase(self, items: list[PacmanPackage], state: ExecutionState) -> list[PacmanPackage]:
+  def execute_phase(self, items: list[PacmanPackage], core: ArchUpdate, state: ExecutionState) -> list[PacmanPackage]:
     url_items = [item for item in items if item.url is not None]
     repo_items = [item for item in items if item.url is None]
     installed_packages = self.delegate.list_installed_packages()
@@ -87,7 +84,7 @@ class PacmanPackageManager(ConfigManager[PacmanPackage]):
 
     return list({*additional_items_from_urls, *additional_items_from_repo, *additional_explicit_items})
 
-  def finalize(self, items: list[PacmanPackage], state: ExecutionState):
+  def finalize(self, items: list[PacmanPackage], core: ArchUpdate, state: ExecutionState):
     desired = [pkg.identifier for pkg in items]
     explicit = self.delegate.list_explicit_packages()
     self.delegate.mark_as_dependency([pkg for pkg in explicit if pkg not in desired])

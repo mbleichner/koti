@@ -4,9 +4,9 @@ import pwd
 from pathlib import Path
 from typing import TypedDict
 
-from core import ConfigItem, ConfigManager, ConfirmMode, ExecutionState
+from confirm import confirm, get_confirm_mode
+from core import ArchUpdate, ConfigItem, ConfigManager, ConfirmModeValues, ExecutionState
 from json_store import JsonMapping, JsonStore
-from confirm import confirm
 
 
 class File(ConfigItem):
@@ -33,7 +33,7 @@ class File(ConfigItem):
 
 
 class FileStoreEntry(TypedDict):
-  confirm_mode: ConfirmMode
+  confirm_mode: ConfirmModeValues
 
 
 class FileManager(ConfigManager[File]):
@@ -45,11 +45,11 @@ class FileManager(ConfigManager[File]):
     store = JsonStore("/var/cache/arch-config/FileManager.json")
     self.managed_files_store = store.mapping("managed_files")
 
-  def check_configuration(self, item: File) -> str | None:
+  def check_configuration(self, item: File, core: ArchUpdate) -> str | None:
     if item.content is None:
       return "File() needs to define either content or content_from_file"
 
-  def execute_phase(self, items: list[File], state: ExecutionState) -> list[File]:
+  def execute_phase(self, items: list[File], core: ArchUpdate, state: ExecutionState) -> list[File]:
     changed_items: list[File] = []
     for item in items:
       directory = os.path.dirname(item.identifier)
@@ -67,7 +67,7 @@ class FileManager(ConfigManager[File]):
         confirm(
           message = f"confirm {"changed" if hash_before is not None else "new"} file {item.identifier}",
           destructive = hash_before is not None,
-          mode = state.get_confirm_mode(item),
+          mode = get_confirm_mode(item, core),
         )
         changed_items.append(item)
 
@@ -80,11 +80,11 @@ class FileManager(ConfigManager[File]):
       if mode != new_mode:
         raise AssertionError("cannot apply file permissions (incompatible file system?)")
 
-      self.managed_files_store.put(item.identifier, {"confirm_mode": state.get_confirm_mode(item)})
+      self.managed_files_store.put(item.identifier, {"confirm_mode": get_confirm_mode(item, core)})
 
     return changed_items
 
-  def finalize(self, items: list[File], state: ExecutionState):
+  def finalize(self, items: list[File], core: ArchUpdate, state: ExecutionState):
     currently_managed_files = [item.identifier for item in items]
     previously_managed_files = self.managed_files_store.keys()
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]
@@ -93,7 +93,7 @@ class FileManager(ConfigManager[File]):
         confirm(
           message = f"confirm to delete file: {file}",
           destructive = True,
-          mode = self.managed_files_store.get(file, {}).get("confirm_mode", state.default_confirm_mode),
+          mode = self.managed_files_store.get(file, {}).get("confirm_mode", core.default_confirm_mode),
         )
         os.unlink(file)
       self.managed_files_store.remove(file)

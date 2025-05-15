@@ -1,10 +1,10 @@
 import os.path
 from typing import TypedDict
 
-from shell import shell_interactive, shell_success
-from confirm import confirm
+from confirm import confirm, get_confirm_mode
+from core import ArchUpdate, ConfigItem, ConfigManager, ConfirmModeValues, ExecutionState
 from json_store import JsonMapping, JsonStore
-from core import ConfigItem, ConfigManager, ConfirmMode, ExecutionState
+from shell import shell_interactive, shell_success
 
 
 class Swapfile(ConfigItem):
@@ -19,7 +19,7 @@ class Swapfile(ConfigItem):
 
 
 class SwapfileStoreEntry(TypedDict):
-  confirm_mode: ConfirmMode
+  confirm_mode: ConfirmModeValues
 
 
 class SwapfileManager(ConfigManager[Swapfile]):
@@ -31,7 +31,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
     store = JsonStore("/var/cache/arch-config/SwapfileManager.json")
     self.managed_files_store = store.mapping("managed_files")
 
-  def execute_phase(self, items: list[Swapfile], state: ExecutionState):
+  def execute_phase(self, items: list[Swapfile], core: ArchUpdate, state: ExecutionState):
     for item in items:
       exists = os.path.isfile(item.identifier)
       current_size = os.stat(item.identifier).st_size if exists else 0
@@ -39,7 +39,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
         confirm(
           message = f"confirm to create swapfile {item.identifier}",
           destructive = False,
-          mode = state.get_confirm_mode(item),
+          mode = get_confirm_mode(item, core),
         )
         self.create_swapfile(item)
       elif current_size != item.size_bytes:
@@ -47,7 +47,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
           confirm(
             message = f"confirm resize of mounted swapfile {item.identifier}",
             destructive = True,
-            mode = state.get_confirm_mode(item),
+            mode = get_confirm_mode(item, core),
           )
           shell_interactive(f"swapoff {item.identifier}")
           os.unlink(item.identifier)
@@ -57,13 +57,13 @@ class SwapfileManager(ConfigManager[Swapfile]):
           confirm(
             message = f"confirm resize of swapfile {item.identifier}",
             destructive = True,
-            mode = state.get_confirm_mode(item),
+            mode = get_confirm_mode(item, core),
           )
           shell_interactive(f"rm -f {item.identifier}")
           self.create_swapfile(item)
-      self.managed_files_store.put(item.identifier, {"confirm_mode": state.get_confirm_mode(item)})
+      self.managed_files_store.put(item.identifier, {"confirm_mode": get_confirm_mode(item, core)})
 
-  def finalize(self, items: list[Swapfile], state: ExecutionState):
+  def finalize(self, items: list[Swapfile], core: ArchUpdate, state: ExecutionState):
     currently_managed_files = [item.identifier for item in items]
     previously_managed_files = self.managed_files_store.keys()
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]
@@ -72,7 +72,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
         confirm(
           message = f"confirm to delete swapfile {swapfile}",
           destructive = True,
-          mode = self.managed_files_store.get(swapfile, {}).get("confirm_mode", state.default_confirm_mode),
+          mode = self.managed_files_store.get(swapfile, {}).get("confirm_mode", core.default_confirm_mode),
         )
         if self.is_mounted(swapfile):
           shell_interactive(f"swapoff {swapfile}")

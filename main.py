@@ -2,10 +2,11 @@ from __future__ import annotations
 
 # Bytecode-Compilation deaktivieren, das macht mit sudo sonst immer Probleme
 import sys
+
+from confirm import confirm
 sys.dont_write_bytecode = True
 
 import socket
-import argparse
 from shell import shell_output
 from core import ArchUpdate
 from managers.checkpoint import CheckpointManager
@@ -17,7 +18,7 @@ from managers.swapfile import SwapfileManager
 from managers.systemd import SystemdUnitManager
 from modules.ananicy import AnanicyModule
 from modules.base import BaseModule
-from modules.cpu_freq_policy import CpuFreqPolicyModule
+from modules.cpufreq import CpuFreqPolicyModule
 from modules.desktop import DesktopModule
 from modules.fish import FishModule
 from modules.gaming import GamingModule
@@ -29,72 +30,45 @@ from modules.pacman import PacmanModule
 from modules.ryzen_undervolting import RyzenUndervoltingModule
 from modules.systray import SystrayModule
 
-parser = argparse.ArgumentParser(
-  prog = 'ArchConfig',
-)
-
-parser.add_argument(
-  'action', default = "plan", choices = ["plan", "apply"],
-  help = "plan (show all steps that will be executed, in order)\napply (run all system updates)"
-)
-parser.add_argument(
-  '--cautious', default = False, action = "store_true",
-  help = "confirm every possibly destructive operation"
-)
-parser.add_argument(
-  '--paranoid', default = False, action = "store_true",
-  help = "confirm every single operation, even non-destructive ones"
-)
-
-try:
-  args = parser.parse_args()
-except:
-  parser.print_help()
-  sys.exit(1)
-
 host = socket.gethostname()
 nvidia = host == "dan"
 root_uuid = shell_output("findmnt -n -o UUID $(stat -c '%m' /)")
 
-arch_update = ArchUpdate()
-arch_update.managers = [
-  PreHookManager(),
-  SwapfileManager(),
-  PacmanKeyManager(),
-  PacmanPackageManager(PacmanAdapter("sudo -u manuel paru")),
-  FileManager(),
-  SystemdUnitManager(),
-  PostHookManager(),
-  CheckpointManager(),
-]
+archupdate = ArchUpdate(
+  default_confirm_mode = "cautious",
+  managers = [
+    PreHookManager(),
+    SwapfileManager(),
+    PacmanKeyManager(),
+    PacmanPackageManager(PacmanAdapter("sudo -u manuel paru")),
+    FileManager(),
+    SystemdUnitManager(),
+    PostHookManager(),
+    CheckpointManager(),
+  ],
+  modules = [
+    KernelModule(root_uuid = root_uuid, cachyos = True),
+    PacmanModule(cachyos = True),
+    FishModule(),
+    BaseModule(),
+    AnanicyModule(),
+    DesktopModule(nvidia = nvidia, autologin = True),
+    GamingModule(),
+    SystrayModule(ryzen = True, nvidia = nvidia),
+    NvidiaUndervoltingModule(enabled = nvidia),
+    RyzenUndervoltingModule(),
+    NvmeThermalThrottlingModule(),
+    CpuFreqPolicyModule(
+      min_freq = 2000 if host == "dan" else 1500,
+      max_freq = 4500,
+      governor = "performance" if host == "dan" else "powersave",
+    ),
+    OllamaAichatModule(nvidia = nvidia),
+  ],
+)
 
-arch_update.action = args.action
-arch_update.cautious = args.cautious
-arch_update.paranoid = args.paranoid
-
-arch_update.modules += [
-  KernelModule(root_uuid = root_uuid, cachyos = True),
-  PacmanModule(cachyos = True),
-  FishModule(),
-  BaseModule(),
-  AnanicyModule(),
-  DesktopModule(nvidia = nvidia, autologin = True),
-  GamingModule(),
-  SystrayModule(ryzen = True, nvidia = nvidia),
-  NvidiaUndervoltingModule(enabled = nvidia),
-  RyzenUndervoltingModule(),
-  NvmeThermalThrottlingModule(),
-  CpuFreqPolicyModule(
-    min_freq = 2000 if host == "dan" else 1500,
-    max_freq = 4500,
-    governor = "performance" if host == "dan" else "powersave",
-  ),
-  OllamaAichatModule(nvidia = nvidia),
-]
-
-if args.action == "plan":
-  arch_update.plan()
-if args.action == "apply":
-  arch_update.apply()
+archupdate.plan()
+confirm("execute now?", destructive = True, mode = "paranoid")
+archupdate.apply()
 
 print("execution finished successfully")

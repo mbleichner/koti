@@ -5,42 +5,60 @@ from typing import Literal, Type
 
 
 class ArchUpdate:
-  managers: list[ConfigManager] = []
-  modules: list[ConfigModule] = []
-  cautious: bool = False
-  paranoid: bool = False
+  managers: list[ConfigManager]
+  modules: list[ConfigModule]
+  execution_phases: list[ExecutionPhase]
+  default_confirm_mode: ConfirmModeValues
+
+  def __init__(
+    self,
+    managers: list[ConfigManager],
+    modules: list[ConfigModule],
+    default_confirm_mode: ConfirmModeValues,
+  ):
+    super().__init__()
+    self.default_confirm_mode = default_confirm_mode
+    self.modules = modules
+    self.managers = managers
+    self.execution_phases = self.prepare_execution_phases()
 
   def plan(self):
-    state = self.init_state()
-    for phase_idx, phase in enumerate(state.execution_phases):
+    for phase_idx, phase in enumerate(self.execution_phases):
       print(f"Phase {phase_idx + 1}:")
       for manager, items in phase.execution_order:
         for item in items:
           print(f" - {item}")
 
   def apply(self):
-    state = self.init_state()
-    for phase in state.execution_phases:
+    state = ExecutionState()
+    for phase in self.execution_phases:
       for manager, items in phase.execution_order:
-        state.updated_items += manager.execute_phase(items, state) or []
+        state.updated_items += manager.execute_phase(items, self, state) or []
         state.processed_items += items
     for manager in self.managers:
       all_items_for_manager = [
-        item for phase in state.execution_phases
+        item for phase in self.execution_phases
         for phase_manager, phase_items in phase.execution_order
         for item in phase_items
         if phase_manager is manager
       ]
-      manager.finalize(all_items_for_manager, state)
+      manager.finalize(all_items_for_manager, self, state)
 
-  def init_state(self):
+  def get_group_for_item(self, item: ConfigItem) -> ConfigItemGroup:
+    for phase in self.execution_phases:
+      for group in phase.merged_groups:
+        if item in group.items:
+          return group
+    raise AssertionError(f"group not found for {item}")
+
+  def prepare_execution_phases(self) -> list[ExecutionPhase]:
     original_groups: list[ConfigItemGroup] = self.get_all_provided_groups()
     merged_groups = self.merge_groups(original_groups)
     merged_groups_ordered_into_phases = self.reorder_into_phases(merged_groups)
     execution_phases: list[ExecutionPhase] = [
       self.create_execution_phase(groups_in_phase) for groups_in_phase in merged_groups_ordered_into_phases
     ]
-    return ExecutionState(execution_phases)
+    return execution_phases
 
   def reorder_into_phases(self, merged_groups: list[ConfigItemGroup]):
     result: list[list[ConfigItemGroup]] = [merged_groups]
@@ -137,19 +155,18 @@ class ConfigItemGroup:
 
 
 type ConfigModuleGroups = ConfigItemGroup | list[ConfigItemGroup]
-ConfirmMode = Literal["paranoid", "careful", "yolo"]
 
 
 class ConfigManager[T: ConfigItem]:
   managed_classes: list[Type] = []
 
-  def check_configuration(self, item: T) -> bool:
+  def check_configuration(self, item: T, core: ArchUpdate) -> bool:
     raise "method not implemented: check_configuration"
 
-  def execute_phase(self, items: list[T], state: ExecutionState) -> list[T] | None:  # returns updated items
+  def execute_phase(self, items: list[T], core: ArchUpdate, state: ExecutionState) -> list[T] | None:  # returns updated items
     raise "method not implemented: execute_phase"
 
-  def finalize(self, items: list[T], state: ExecutionState) -> list[T]:  # returns updated items
+  def finalize(self, items: list[T], core: ArchUpdate, state: ExecutionState) -> list[T]:  # returns updated items
     pass
 
 
@@ -167,14 +184,14 @@ class Requires(ConfigMetadata):
     return f"Require({", ".join([str(item) for item in self.items])})"
 
 
-class Options(ConfigMetadata):
-  confirm_mode: ConfirmMode
+class ConfirmMode(ConfigMetadata):
+  mode: ConfirmModeValues
 
-  def __init__(self, confirm_mode: ConfirmMode):
-    self.confirm_mode = confirm_mode
+  def __init__(self, mode: ConfirmModeValues):
+    self.mode = mode
 
   def __str__(self):
-    return f"Protection({self.confirm_mode})"
+    return f"ConfirmMode({self.mode})"
 
 
 class ExecutionPhase:
@@ -188,29 +205,8 @@ class ExecutionPhase:
 
 
 class ExecutionState:
-  execution_phases: list[ExecutionPhase]
-  default_confirm_mode: ConfirmMode = "destructive_changes"
   processed_items: list[ConfigItem] = []
   updated_items: list[ConfigItem] = []
 
-  def __init__(self, execution_phases: list[ExecutionPhase]):
-    super().__init__()
-    self.execution_phases = execution_phases
 
-  def find_merged_group(self, item: ConfigItem) -> ConfigItemGroup:
-    for phase in self.execution_phases:
-      for group in phase.merged_groups:
-        if item in group.items:
-          return group
-    raise AssertionError(f"group not found for hook {item}")
-
-  def get_confirm_mode(self, item: ConfigItem) -> ConfirmMode:
-    group = self.find_merged_group(item)
-    confirm_modes = [item.confirm_mode for item in group.items if isinstance(item, Options)]
-    return self.effective_confirm_mode(confirm_modes)
-
-  def effective_confirm_mode(self, modes: list[ConfirmMode]) -> ConfirmMode:
-    modes_in_order: list[ConfirmMode] = ["paranoid", "careful", "yolo"]
-    for mode in modes_in_order:
-      if mode in modes: return mode
-    return self.default_confirm_mode
+ConfirmModeValues = Literal["paranoid", "cautious", "yolo"]

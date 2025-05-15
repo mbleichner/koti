@@ -1,6 +1,6 @@
 from inspect import cleandoc
 
-from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups, Options, Requires
+from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups, ConfirmMode, Requires
 from managers.file import File
 from managers.pacman import PacmanPackage
 from managers.pacman_key import PacmanKey
@@ -13,7 +13,7 @@ class KernelModule(ConfigModule):
 
   def provides(self) -> ConfigModuleGroups: return [
     ConfigItemGroup(
-      Options(confirm_mode = "paranoid"),
+      ConfirmMode("paranoid"),
 
       PacmanKey("cachyos", key_id = "F3B607488DB35A47"),
       PacmanPackage(
@@ -31,7 +31,7 @@ class KernelModule(ConfigModule):
     ),
 
     ConfigItemGroup(
-      Options(confirm_mode = "paranoid"),
+      ConfirmMode("paranoid"),
       Requires(
         PacmanPackage("cachyos-keyring"),
         PacmanPackage("cachyos-mirrorlist"),

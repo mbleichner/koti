@@ -1,5 +1,5 @@
 from shell import shell_success
-from core import ConfigItem, ConfigManager, ExecutionState
+from core import ArchUpdate, ConfigItem, ConfigManager, ExecutionState
 from managers.pacman import shell_interactive
 
 
@@ -21,7 +21,7 @@ class PacmanKey(ConfigItem):
 class PacmanKeyManager(ConfigManager[PacmanKey]):
   managed_classes = [PacmanKey]
 
-  def execute_phase(self, items: list[PacmanKey], state: ExecutionState):
+  def execute_phase(self, items: list[PacmanKey], core: ArchUpdate, state: ExecutionState):
     for item in items:
       key_already_installed = shell_success(f"pacman-key --list-keys | grep {item.key_id}")
       if not key_already_installed:
