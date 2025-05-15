@@ -18,17 +18,17 @@ class SystrayModule(ConfigModule):
     *[  # NVIDIA Skripte
       PacmanPackage("python-pynvml"),
       File("/opt/systray/cpu/summary", permissions = 0o555, content = cleandoc(r'''
-          #!/bin/bash
-          # managed by arch-config
-          CPU_MAX=$(( $(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq) / 1000 ))
-          SMT="$(cat /sys/devices/system/cpu/smt/control)"
-          if [[ "$SMT" == "0" || "$SMT" == "off" ]]; then
-            CPU_HT=" (HT:off)"
-          fi
-          echo "CPU: ${CPU_MAX}MHz${CPU_HT}"
-          CPU_GOV="$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_governor)"
-          echo "gov:${CPU_GOV}"
-        ''')),
+        #!/bin/bash
+        # managed by arch-config
+        CPU_MAX=$(( $(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq) / 1000 ))
+        SMT="$(cat /sys/devices/system/cpu/smt/control)"
+        if [[ "$SMT" == "0" || "$SMT" == "off" ]]; then
+          CPU_HT=" (HT:off)"
+        fi
+        echo "CPU: ${CPU_MAX}MHz${CPU_HT}"
+        CPU_GOV="$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_governor)"
+        echo "gov:${CPU_GOV}"
+      ''')),
       systray_dialog("/opt/systray/cpu/dialog", "/opt/systray/cpu/actions"),
       systray_cpu_governor("/opt/systray/cpu/actions/governor-performance", "performance"),
       systray_cpu_governor("/opt/systray/cpu/actions/governor-powersave", "powersave"),
@@ -45,13 +45,13 @@ class SystrayModule(ConfigModule):
 
     *[  # Ryzen CPU Skripte
       File("/opt/systray/gpu/summary", permissions = 0o555, content = cleandoc(r'''
-         #!/usr/bin/python3
-         # managed by arch-config
-         from pynvml import *
-         nvmlInit()
-         myGPU = nvmlDeviceGetHandleByIndex(0)
-         print("GPU: %iW" % (nvmlDeviceGetPowerManagementLimit(myGPU) / 1000))
-         print("+%i/+%i" % (nvmlDeviceGetGpcClkVfOffset(myGPU), nvmlDeviceGetMemClkVfOffset(myGPU)))
+        #!/usr/bin/python3
+        # managed by arch-config
+        from pynvml import *
+        nvmlInit()
+        myGPU = nvmlDeviceGetHandleByIndex(0)
+        print("GPU: %iW" % (nvmlDeviceGetPowerManagementLimit(myGPU) / 1000))
+        print("+%i/+%i" % (nvmlDeviceGetGpcClkVfOffset(myGPU), nvmlDeviceGetMemClkVfOffset(myGPU)))
       ''')),
       systray_dialog("/opt/systray/gpu/dialog", "/opt/systray/gpu/actions"),
       systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-160w", 160),
