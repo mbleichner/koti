@@ -76,8 +76,9 @@ class ArchUpdate:
   def get_all_provided_groups(self):
     result: list[ConfigItemGroup] = []
     for module in self.modules:
-      provides = module.provides()
-      result += provides if isinstance(provides, list) else [provides]
+      provides_raw = module.provides()
+      provides_list = provides_raw if isinstance(provides_raw, list) else [provides_raw]
+      result += [group for group in provides_list if group is not None]
     return result
 
   def create_execution_phase(self, merged_groups_in_phase: list[ConfigItemGroup]) -> ExecutionPhase:

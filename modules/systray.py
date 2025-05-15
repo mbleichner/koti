@@ -10,13 +10,11 @@ class SystrayModule(ConfigModule):
     self.nvidia = nvidia
     self.ryzen = ryzen
 
-  def provides(self) -> ConfigModuleGroups: return ConfigItemGroup(
-    ConfirmMode("yolo"),
+  def provides(self) -> ConfigModuleGroups: return [
 
-    PacmanPackage("kdialog"),
-
-    *[  # NVIDIA Skripte
-      PacmanPackage("python-pynvml"),
+    ConfigItemGroup(
+      ConfirmMode("yolo"),
+      PacmanPackage("kdialog"),
       File("/opt/systray/cpu/summary", permissions = 0o555, content = cleandoc(r'''
         #!/bin/bash
         # managed by arch-config
@@ -41,9 +39,12 @@ class SystrayModule(ConfigModule):
       systray_cpu_freq("/opt/systray/cpu/actions/max-freq-4500mhz", "4500MHz"),
       systray_hyperthreading("/opt/systray/cpu/actions/hyperthreading-on", "on"),
       systray_hyperthreading("/opt/systray/cpu/actions/hyperthreading-off", "off"),
-    ] if self.ryzen else None,
+    ) if self.ryzen else None,
 
-    *[  # Ryzen CPU Skripte
+    ConfigItemGroup(  # nvidia Skripte
+      ConfirmMode("yolo"),
+      PacmanPackage("kdialog"),
+      PacmanPackage("python-pynvml"),
       File("/opt/systray/gpu/summary", permissions = 0o555, content = cleandoc(r'''
         #!/usr/bin/python3
         # managed by arch-config
@@ -58,8 +59,8 @@ class SystrayModule(ConfigModule):
       systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-180w", 180),
       systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-200w", 200),
       systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-220w", 220),
-    ] if self.nvidia else None
-  )
+    ) if self.nvidia else None
+  ]
 
 
 # ACHTUNG: Beim Aufruf des Skripts per Command Output Widget muss man aufgrund eines

@@ -122,6 +122,18 @@ class BaseModule(ConfigModule):
         # managed by arch-config
         ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="usb", ATTR{power/wakeup}="disabled"
       ''')),
+
+      File(
+        identifier = "/home/manuel/.gitconfig",
+        owner = "manuel",
+        permissions = 0o444,
+        content = cleandoc('''
+        [user]
+        email = mbleichner@gmail.com
+        name = Manuel Bleichner
+        [pull]
+        rebase = true
+      ''')),
     ),
 
     ConfigItemGroup(
