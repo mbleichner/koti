@@ -1,7 +1,7 @@
 from inspect import cleandoc
 from typing import TypedDict
 
-from lib import ConfigItemGroup, ConfigModule, ConfigModuleGroups, Requires
+from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups, Requires
 from managers.file import File
 from managers.pacman import PacmanPackage
 from managers.systemd import SystemdUnit

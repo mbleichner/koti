@@ -1,4 +1,4 @@
-from lib import ConfigItemGroup, ConfigModule, ConfigModuleGroups
+from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups
 from managers.pacman import PacmanPackage
 
 

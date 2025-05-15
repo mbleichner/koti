@@ -1,6 +1,8 @@
 from typing import TypedDict
 
-from lib import ConfigItem, ConfigManager, ConfirmMode, ExecutionState, JsonMapping, JsonStore, confirm
+from confirm import confirm
+from json_store import JsonMapping, JsonStore
+from core import ConfigItem, ConfigManager, ConfirmMode, ExecutionState
 from managers.pacman import shell_interactive
 
 

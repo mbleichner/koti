@@ -1,6 +1,7 @@
 from inspect import cleandoc
 
-from lib import ConfigItemGroup, ConfigModule, ConfigModuleGroups, Options, ShellCommand
+from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups, Options
+from shell import shell_interactive
 from managers.file import File
 from managers.hook import PostHook
 from managers.pacman import PacmanPackage
@@ -144,7 +145,6 @@ class BaseModule(ConfigModule):
 
       File(
         identifier = "/etc/locale.gen",
-        on_file_change = ShellCommand("locale-gen"),
         permissions = 0o444,
         content = cleandoc('''
         en_US.UTF-8 UTF-8
@@ -154,7 +154,7 @@ class BaseModule(ConfigModule):
 
       PostHook(
         identifier = "regenerate-locales",
-        execute = ShellCommand("locale-gen"),
+        execute = lambda: shell_interactive("locale-gen")
       ),
     )
   ]

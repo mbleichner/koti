@@ -1,4 +1,4 @@
-from lib import ConfigItem, ConfigManager, ExecutionState
+from core import ConfigItem, ConfigManager, ExecutionState
 
 
 class Checkpoint(ConfigItem):

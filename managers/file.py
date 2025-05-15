@@ -4,15 +4,15 @@ import pwd
 from pathlib import Path
 from typing import TypedDict
 
-from core import ExecutionState
-from lib import ConfigItem, ConfigManager, ConfirmMode, Executable, JsonMapping, JsonStore, confirm
+from core import ConfigItem, ConfigManager, ConfirmMode, ExecutionState
+from json_store import JsonMapping, JsonStore
+from confirm import confirm
 
 
 class File(ConfigItem):
   content: bytes | None
   permissions: int = 0o755
   owner: str = "root"
-  on_file_change: Executable | None
 
   def __init__(
     self,
@@ -21,14 +21,12 @@ class File(ConfigItem):
     path = None,
     permissions: int = 0o444,
     owner: str = "root",
-    on_file_change: Executable | None = None
   ):
     super().__init__(identifier)
     if content is not None: self.content = content.encode("utf-8")
     if path is not None: self.content = Path(path).read_bytes()
     self.permissions = permissions
     self.owner = owner
-    self.on_file_change = on_file_change
 
   def __str__(self):
     return f"File('{self.identifier}')"
@@ -85,11 +83,6 @@ class FileManager(ConfigManager[File]):
       self.managed_files_store.put(item.identifier, {"confirm_mode": state.get_confirm_mode(item)})
 
     return changed_items
-
-  def finalize_phase(self, result_from_execute_phase: list[File]):
-    for file in result_from_execute_phase:
-      if file.on_file_change is not None:
-        file.on_file_change.execute()
 
   def finalize(self, items: list[File], state: ExecutionState):
     currently_managed_files = [item.identifier for item in items]

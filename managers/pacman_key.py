@@ -1,4 +1,5 @@
-from lib import ConfigItem, ConfigManager, ExecutionState, shell_success
+from shell import shell_success
+from core import ConfigItem, ConfigManager, ExecutionState
 from managers.pacman import shell_interactive
 
 

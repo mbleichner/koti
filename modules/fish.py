@@ -1,8 +1,9 @@
 from inspect import cleandoc
 
-from lib import ConfigItemGroup, ConfigModule, ConfigModuleGroups, ShellCommand
+from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups
+from shell import shell_interactive
 from managers.file import File
-from managers.hook import PostHook, PreHook
+from managers.hook import PostHook
 from managers.pacman import PacmanPackage
 
 
@@ -16,7 +17,7 @@ class FishModule(ConfigModule):
 
       PostHook(
         "set-fish-as-default-shell",
-        execute = ShellCommand("chsh -s /usr/bin/fish manuel"),
+        execute = lambda: shell_interactive("chsh -s /usr/bin/fish manuel"),
       ),
 
       File("/etc/fish/config.fish", permissions = 0o444, content = cleandoc(r'''

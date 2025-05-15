@@ -1,13 +1,13 @@
-from typing import Literal
+from typing import Callable, Literal
 
-from lib import ConfigItem, ConfigItemGroup, ConfigManager, Executable, ExecutionState
+from core import ConfigItem, ConfigItemGroup, ConfigManager, ExecutionState
 
 
 class PreHook(ConfigItem):
   identifier: str | None
-  execute: None | Executable
+  execute: None | Callable
 
-  def __init__(self, identifier: str | None, execute: Executable = None):
+  def __init__(self, identifier: str | None, execute: Callable = None):
     super().__init__(identifier)
     self.identifier = identifier
     self.execute = execute
@@ -21,10 +21,10 @@ class PreHook(ConfigItem):
 
 class PostHook(ConfigItem):
   identifier: str | None
-  execute: None | Executable
+  execute: None | Callable
   trigger: Literal["always"] | Literal["on_change"]
 
-  def __init__(self, identifier: str | None, execute: Executable = None, trigger: Literal["always"] | Literal["on_change"] = "on_change"):
+  def __init__(self, identifier: str | None, execute: Callable = None, trigger: Literal["always"] | Literal["on_change"] = "on_change"):
     super().__init__(identifier)
     self.trigger = trigger
     self.identifier = identifier
@@ -43,7 +43,7 @@ class PreHookManager(ConfigManager[PreHook]):
   def execute_phase(self, items: list[PreHook], state: ExecutionState):
     for hook in items:
       print(f"executing pre-hook '{hook.identifier}'")
-      hook.execute.execute()
+      hook.execute()
 
 
 class PostHookManager(ConfigManager[PostHook]):
@@ -53,7 +53,7 @@ class PostHookManager(ConfigManager[PostHook]):
     for hook in items:
       if hook.trigger == "always" or self.has_triggered(hook, state):
         print(f"executing post-hook '{hook.identifier}'")
-        hook.execute.execute()
+        hook.execute()
 
   def has_triggered(self, hook: PostHook, state: ExecutionState) -> bool:
     group_containing_hook = state.find_merged_group(hook)

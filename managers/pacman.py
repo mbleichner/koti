@@ -1,4 +1,5 @@
-from lib import ConfigItem, ConfigManager, ExecutionState, shell_interactive, shell_output
+from shell import shell_interactive, shell_output
+from core import ConfigItem, ConfigManager, ExecutionState
 
 
 class PacmanPackage(ConfigItem):

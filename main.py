@@ -1,14 +1,20 @@
 from __future__ import annotations
 
-import argparse
 # Bytecode-Compilation deaktivieren, das macht mit sudo sonst immer Probleme
 import sys
-
-from lib import shell_output
 sys.dont_write_bytecode = True
 
 import socket
+import argparse
+from shell import shell_output
 from core import ArchUpdate
+from managers.checkpoint import CheckpointManager
+from managers.file import FileManager
+from managers.hook import PostHookManager, PreHookManager
+from managers.pacman import PacmanAdapter, PacmanPackageManager
+from managers.pacman_key import PacmanKeyManager
+from managers.swapfile import SwapfileManager
+from managers.systemd import SystemdUnitManager
 from modules.ananicy import AnanicyModule
 from modules.base import BaseModule
 from modules.cpu_freq_policy import CpuFreqPolicyModule
@@ -51,6 +57,16 @@ nvidia = host == "dan"
 root_uuid = shell_output("findmnt -n -o UUID $(stat -c '%m' /)")
 
 arch_update = ArchUpdate()
+arch_update.managers = [
+  PreHookManager(),
+  SwapfileManager(),
+  PacmanKeyManager(),
+  PacmanPackageManager(PacmanAdapter("sudo -u manuel paru")),
+  FileManager(),
+  SystemdUnitManager(),
+  PostHookManager(),
+  CheckpointManager(),
+]
 
 arch_update.action = args.action
 arch_update.cautious = args.cautious
