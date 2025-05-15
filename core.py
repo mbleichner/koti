@@ -5,21 +5,22 @@ from collections import defaultdict
 from definitions import ConfigItem, ConfigItemGroup, ConfigManager, ConfigModule, ExecutionPhase, ExecutionState, Requires
 from managers.checkpoint import CheckpointManager
 from managers.file import FileManager
-from managers.hook import HookManager
+from managers.hook import PostHookManager, PreHookManager
 from managers.pacman import PacmanAdapter, PacmanPackageManager
 from managers.pacman_key import PacmanKeyManager
-from managers.symlink import SymlinkManager
+from managers.swapfile import SwapfileManager
 from managers.systemd import SystemdUnitManager
 
 
 class ArchUpdate:
   managers: list[ConfigManager] = [
+    PreHookManager(),
+    SwapfileManager(),
     PacmanKeyManager(),
     PacmanPackageManager(PacmanAdapter("sudo -u manuel paru")),
-    SymlinkManager(),
     FileManager(),
     SystemdUnitManager(),
-    HookManager(),
+    PostHookManager(),
     CheckpointManager(),
   ]
   modules: list[ConfigModule] = []
@@ -27,63 +28,65 @@ class ArchUpdate:
   paranoid: bool = False
 
   def plan(self):
-    order = self.build_execution_order()
-    for phase_idx, phase_managers in enumerate(order):
+    state = self.init_state()
+    for phase_idx, phase in enumerate(state.execution_phases):
       print(f"Phase {phase_idx + 1}:")
-      for manager, items in phase_managers:
+      for manager, items in phase.execution_order:
         for item in items:
           print(f" - {item}")
 
   def apply(self):
-    order = self.build_execution_order()
-    state: ExecutionState = {"processed_items": [], "updated_items": []}
-    for phase in order:
-      for manager, items in phase:
-        state["updated_items"] += manager.execute_phase(items, state) or []
-        state["processed_items"] += items
+    state = self.init_state()
+    for phase in state.execution_phases:
+      for manager, items in phase.execution_order:
+        state.updated_items += manager.execute_phase(items, state) or []
+        state.processed_items += items
     for manager in self.managers:
-      all_items_for_manager = [item for phase in order for phase_manager, phase_items in phase for item in phase_items if phase_manager is manager]
+      all_items_for_manager = [
+        item for phase in state.execution_phases
+        for phase_manager, phase_items in phase.execution_order
+        for item in phase_items
+        if phase_manager is manager
+      ]
       manager.finalize(all_items_for_manager, state)
 
-  def build_execution_order(self) -> list[ExecutionPhase]:
-    order: list[ExecutionPhase] = []
-    for groups in self.separate_groups_into_phases():
-      order.append(self.merge_into_phase(groups))
+  def init_state(self):
+    original_groups: list[ConfigItemGroup] = self.get_all_provided_groups()
+    merged_groups = self.merge_groups(original_groups)
+    merged_groups_ordered_into_phases = self.reorder_into_phases(merged_groups)
+    execution_phases: list[ExecutionPhase] = [
+      self.create_execution_phase(groups_in_phase) for groups_in_phase in merged_groups_ordered_into_phases
+    ]
+    return ExecutionState(execution_phases)
 
-    # sanity checks
-    flattened_items = [item for phase in order for manager, items in phase for item in items]
-    for item in flattened_items:
-      item.check_configuration(order)
-
-    return order
-
-  def separate_groups_into_phases(self):
-    groups: list[ConfigItemGroup] = []
-    for module in self.modules:
-      provides = module.provides()
-      groups += provides if isinstance(provides, list) else [provides]
-    merged_groups = self.merge_groups(groups)
-
-    phases: list[list[ConfigItemGroup]] = [merged_groups]
+  def reorder_into_phases(self, merged_groups: list[ConfigItemGroup]):
+    result: list[list[ConfigItemGroup]] = [merged_groups]
     while True:
-      violation = self.find_order_violation(phases)
+      violation = self.find_dependency_violation(result)
       if violation is None: break
       idx_phase, group = violation
-      phases[idx_phase].remove(group)
+      result[idx_phase].remove(group)
       if idx_phase > 0:
-        phases[idx_phase - 1].append(group)
+        result[idx_phase - 1].append(group)
       else:
-        phases = [[group]] + phases
-    return phases
+        result = [[group]] + result
+    return result
 
-  def merge_into_phase(self, groups: list[ConfigItemGroup]) -> ExecutionPhase:
-    flattened_items = [item for group in groups for item in group.items if not isinstance(item, Requires)]
-    result: list[(ConfigManager, list[ConfigItem])] = []
+  def get_all_provided_groups(self):
+    result: list[ConfigItemGroup] = []
+    for module in self.modules:
+      provides = module.provides()
+      result += provides if isinstance(provides, list) else [provides]
+    return result
+
+  def create_execution_phase(self, merged_groups_in_phase: list[ConfigItemGroup]) -> ExecutionPhase:
+    flattened_items = [item for group in merged_groups_in_phase for item in group.items if not isinstance(item, Requires)]
+    execution_order: list[(ConfigManager, list[ConfigItem])] = []
     for manager in self.managers:
       managed_items = [item for item in flattened_items if item.__class__ in manager.managed_classes]
       if len(managed_items) > 0:
-        result.append((manager, managed_items))
-    return result
+        execution_order.append((manager, managed_items))
+    return ExecutionPhase(merged_groups_in_phase, execution_order)
 
   def merge_groups(self, groups: list[ConfigItemGroup]) -> list[ConfigItemGroup]:
     grouped_by_identifier: dict[str, list[ConfigItemGroup]] = defaultdict(list)
@@ -100,7 +103,7 @@ class ArchUpdate:
     result += unnamed_groups
     return result
 
-  def find_order_violation(self, phases: list[list[ConfigItemGroup]]):
+  def find_dependency_violation(self, phases: list[list[ConfigItemGroup]]):
     for phase_idx, phase in enumerate(phases):
       for group in phase:
         requires_items = [item for item in group.items if isinstance(item, Requires)]

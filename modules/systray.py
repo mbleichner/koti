@@ -1,6 +1,6 @@
 from inspect import cleandoc
 
-from definitions import ConfigItem, ConfigItemGroup, ConfigModule, ConfigModuleGroups
+from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups, Options
 from managers.file import File
 from managers.pacman import PacmanPackage
 
@@ -10,25 +10,25 @@ class SystrayModule(ConfigModule):
     self.nvidia = nvidia
     self.ryzen = ryzen
 
-  def provides(self) -> ConfigModuleGroups:
-    packages: list[ConfigItem] = [
-      PacmanPackage("kdialog"),
-      PacmanPackage("python-pynvml") if self.nvidia else None
-    ]
+  def provides(self) -> ConfigModuleGroups: return ConfigItemGroup(
 
-    ryzen_files = [
+    Options(confirm_mode = "yolo"),
+    PacmanPackage("kdialog"),
+
+    *[  # NVIDIA Skripte
+      PacmanPackage("python-pynvml"),
       File("/opt/systray/cpu/summary", permissions = 0o555, content = cleandoc(r'''
-        #!/bin/bash
-        # managed by arch-config
-        CPU_MAX=$(( $(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq) / 1000 ))
-        SMT="$(cat /sys/devices/system/cpu/smt/control)"
-        if [[ "$SMT" == "0" || "$SMT" == "off" ]]; then
-          CPU_HT=" (HT:off)"
-        fi
-        echo "CPU: ${CPU_MAX}MHz${CPU_HT}"
-        CPU_GOV="$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_governor)"
-        echo "gov:${CPU_GOV}"
-      ''')),
+          #!/bin/bash
+          # managed by arch-config
+          CPU_MAX=$(( $(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq) / 1000 ))
+          SMT="$(cat /sys/devices/system/cpu/smt/control)"
+          if [[ "$SMT" == "0" || "$SMT" == "off" ]]; then
+            CPU_HT=" (HT:off)"
+          fi
+          echo "CPU: ${CPU_MAX}MHz${CPU_HT}"
+          CPU_GOV="$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_governor)"
+          echo "gov:${CPU_GOV}"
+        ''')),
       systray_dialog("/opt/systray/cpu/dialog", "/opt/systray/cpu/actions"),
       systray_cpu_governor("/opt/systray/cpu/actions/governor-performance", "performance"),
       systray_cpu_governor("/opt/systray/cpu/actions/governor-powersave", "powersave"),
@@ -41,9 +41,9 @@ class SystrayModule(ConfigModule):
       systray_cpu_freq("/opt/systray/cpu/actions/max-freq-4500mhz", "4500MHz"),
       systray_hyperthreading("/opt/systray/cpu/actions/hyperthreading-on", "on"),
       systray_hyperthreading("/opt/systray/cpu/actions/hyperthreading-off", "off"),
-    ] if self.ryzen else []
+    ] if self.ryzen else None,
 
-    nvidia_files = [
+    *[  # Ryzen CPU Skripte
       File("/opt/systray/gpu/summary", permissions = 0o555, content = cleandoc(r'''
          #!/usr/bin/python3
          # managed by arch-config
@@ -58,9 +58,8 @@ class SystrayModule(ConfigModule):
       systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-180w", 180),
       systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-200w", 200),
       systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-220w", 220),
-    ] if self.nvidia else []
-
-    return ConfigItemGroup(*packages, *ryzen_files, *nvidia_files)
+    ] if self.nvidia else None
+  )
 
 
 # ACHTUNG: Beim Aufruf des Skripts per Command Output Widget muss man aufgrund eines

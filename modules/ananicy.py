@@ -1,9 +1,10 @@
 from inspect import cleandoc
 
-from definitions import ConfigItem, ConfigItemGroup, ConfigModule, ConfigModuleGroups, ShellCommand
+from definitions import ConfigItem, ConfigItemGroup, ConfigModule, ConfigModuleGroups
 from managers.file import File
 from managers.pacman import PacmanPackage
 from managers.systemd import SystemdUnit
+from utils import ShellCommand
 
 
 class AnanicyModule(ConfigModule):

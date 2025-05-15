@@ -1,49 +1,61 @@
-from definitions import ConfigItem, ConfigManager, Executable, ExecutionPhase, ExecutionState
+from typing import Literal
+
+from definitions import ConfigItem, ConfigItemGroup, ConfigManager, Executable, ExecutionState
 
 
-class Hook(ConfigItem):
+class PreHook(ConfigItem):
   identifier: str | None
   execute: None | Executable
-  triggered_by: list[ConfigItem]
 
-  def __init__(self, identifier: str | None, execute: Executable = None, triggered_by: ConfigItem | list[ConfigItem] = None):
+  def __init__(self, identifier: str | None, execute: Executable = None):
     super().__init__(identifier)
     self.identifier = identifier
-    if isinstance(triggered_by, list):
-      self.triggered_by = triggered_by
-    elif triggered_by is not None:
-      self.triggered_by = [triggered_by]
-    else:
-      self.triggered_by = []
     self.execute = execute
 
-  def check_configuration(self, order: list[ExecutionPhase]):
-    if self.triggered_by is not None:
-      flattened = [(item.__class__, item.identifier) for phase in order for manager, items in phase for item in items]
-      for trigger in self.triggered_by:
-        if flattened.index((trigger.__class__, trigger.identifier)) > flattened.index((self.__class__, self.identifier)):
-          raise AssertionError("Hook depends on item that is executed later")
+  def check_configuration(self, state: ExecutionState):
+    pass
 
   def __str__(self):
-    return f"Hook('{self.identifier}')"
+    return f"PreHook('{self.identifier}')"
 
 
-class HookManager(ConfigManager[Hook]):
-  managed_classes = [Hook]
+class PostHook(ConfigItem):
+  identifier: str | None
+  execute: None | Executable
+  trigger: Literal["always"] | Literal["on_change"]
 
-  def execute_phase(self, items: list[Hook], state: ExecutionState):
+  def __init__(self, identifier: str | None, execute: Executable = None, trigger: Literal["always"] | Literal["on_change"] = "on_change"):
+    super().__init__(identifier)
+    self.trigger = trigger
+    self.identifier = identifier
+    self.execute = execute
+
+  def check_configuration(self, state: ExecutionState):
+    pass
+
+  def __str__(self):
+    return f"PostHook('{self.identifier}')"
+
+
+class PreHookManager(ConfigManager[PreHook]):
+  managed_classes = [PreHook]
+
+  def execute_phase(self, items: list[PreHook], state: ExecutionState):
     for hook in items:
-      if hook.triggered_by is None:
-        print(f"executing hook '{hook.identifier}'")
-        hook.execute.execute()
-      else:
-        active_triggers = [trigger for trigger in hook.triggered_by if self.is_triggered(trigger, state)]
-        if len(active_triggers) > 0:
-          print(f"executing hook '{hook.identifier}', caused by update in {", ".join([str(a) for a in active_triggers])}")
-          hook.execute.execute()
+      print(f"executing pre-hook '{hook.identifier}'")
+      hook.execute.execute()
 
-  def is_triggered(self, item: ConfigItem, state: ExecutionState) -> bool:
-    for other in state["updated_items"]:
-      if other.__class__ == item.__class__ and other.identifier == item.identifier:
-        return True
-    return False
+
+class PostHookManager(ConfigManager[PostHook]):
+  managed_classes = [PostHook]
+
+  def execute_phase(self, items: list[PostHook], state: ExecutionState):
+    for hook in items:
+      if hook.trigger == "always" or self.has_triggered(hook, state):
+        print(f"executing post-hook '{hook.identifier}'")
+        hook.execute.execute()
+
+  def has_triggered(self, hook: PostHook, state: ExecutionState) -> bool:
+    group_containing_hook = state.find_merged_group(hook)
+    triggered_items_in_group = set(group_containing_hook.items).intersection(state.updated_items)
+    return len(triggered_items_in_group) > 0

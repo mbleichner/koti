@@ -1,16 +1,19 @@
 from inspect import cleandoc
 
-from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups, ShellCommand
+from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups, Options
 from managers.file import File
-from managers.hook import Hook
+from managers.hook import PostHook
 from managers.pacman import PacmanPackage
+from managers.swapfile import Swapfile
 from managers.systemd import SystemdUnit
+from utils import ShellCommand
 
 
 class BaseModule(ConfigModule):
 
-  def provides(self) -> ConfigModuleGroups:
-    return ConfigItemGroup(
+  def provides(self) -> ConfigModuleGroups: return [
+    ConfigItemGroup(
+      Options(confirm_mode = "all_changes"),
 
       PacmanPackage("base"),
       PacmanPackage("sudo"),
@@ -72,45 +75,12 @@ class BaseModule(ConfigModule):
       SystemdUnit("sshd.service"),
       SystemdUnit("systemd-timesyncd.service"),
 
-      Hook(
-        identifier = "regenerate-locales",
-        execute = ShellCommand("locale-gen"),
-        triggered_by = [
-          File("/etc/locale.gen"),
-          File("/etc/locale.conf"),
-        ],
-      ),
+      Swapfile("/swapfile", 4 * 1024 ** 3),  # 4GB
 
       File("/etc/vconsole.conf", permissions = 0o444, content = cleandoc('''
         # managed by arch-config
         KEYMAP=de-latin1
         FONT=ter-124b
-      ''')),
-
-      File(
-        identifier = "/etc/locale.conf",
-        permissions = 0o444,
-        content = cleandoc('''
-        LANG=en_US.UTF-8
-        LC_ADDRESS=de_DE.UTF-8
-        LC_IDENTIFICATION=de_DE.UTF-8
-        LC_MEASUREMENT=de_DE.UTF-8
-        LC_MONETARY=de_DE.UTF-8
-        LC_NAME=de_DE.UTF-8
-        LC_NUMERIC=de_DE.UTF-8
-        LC_PAPER=de_DE.UTF-8
-        LC_TELEPHONE=de_DE.UTF-8
-        LC_TIME=de_DE.UTF-8
-      ''')),
-
-      File(
-        identifier = "/etc/locale.gen",
-        on_file_change = ShellCommand("locale-gen"),
-        permissions = 0o444,
-        content = cleandoc('''
-        en_US.UTF-8 UTF-8
-        de_DE.UTF-8 UTF-8
-        # Zeilenumbruch hinter den Locales ist wichtig, sonst werden sie ignoriert
       ''')),
 
       File("/etc/sudoers", permissions = 0o444, content = cleandoc('''
@@ -152,4 +122,40 @@ class BaseModule(ConfigModule):
         # managed by arch-config
         ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="usb", ATTR{power/wakeup}="disabled"
       ''')),
+    ),
+
+    ConfigItemGroup(
+      "locale-setup",
+
+      File(
+        identifier = "/etc/locale.conf",
+        permissions = 0o444,
+        content = cleandoc('''
+        LANG=en_US.UTF-8
+        LC_ADDRESS=de_DE.UTF-8
+        LC_IDENTIFICATION=de_DE.UTF-8
+        LC_MEASUREMENT=de_DE.UTF-8
+        LC_MONETARY=de_DE.UTF-8
+        LC_NAME=de_DE.UTF-8
+        LC_NUMERIC=de_DE.UTF-8
+        LC_PAPER=de_DE.UTF-8
+        LC_TELEPHONE=de_DE.UTF-8
+        LC_TIME=de_DE.UTF-8
+      ''')),
+
+      File(
+        identifier = "/etc/locale.gen",
+        on_file_change = ShellCommand("locale-gen"),
+        permissions = 0o444,
+        content = cleandoc('''
+        en_US.UTF-8 UTF-8
+        de_DE.UTF-8 UTF-8
+        # Zeilenumbruch hinter den Locales ist wichtig, sonst werden sie ignoriert
+      ''')),
+
+      PostHook(
+        identifier = "regenerate-locales",
+        execute = ShellCommand("locale-gen"),
+      ),
     )
+  ]

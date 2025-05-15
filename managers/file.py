@@ -2,10 +2,11 @@ import hashlib
 import os
 import pwd
 from pathlib import Path
+from typing import TypedDict
 
 from core import ExecutionState
-from definitions import ConfigItem, ConfigManager, Executable
-from utils import JsonStore, confirm
+from definitions import ConfigItem, ConfigManager, ConfirmMode, Executable
+from utils import JsonMapping, JsonStore, confirm
 
 
 class File(ConfigItem):
@@ -34,13 +35,18 @@ class File(ConfigItem):
     return f"File('{self.identifier}')"
 
 
+class FileStoreEntry(TypedDict):
+  confirm_mode: ConfirmMode
+
+
 class FileManager(ConfigManager[File]):
   managed_classes = [File]
-  store: JsonStore
+  managed_files_store: JsonMapping[str, FileStoreEntry]
 
   def __init__(self):
     super().__init__()
-    self.store = JsonStore("/var/cache/arch-config/FileManager.json")
+    store = JsonStore("/var/cache/arch-config/FileManager.json")
+    self.managed_files_store = store.mapping("managed_files")
 
   def check_configuration(self, item: File) -> str | None:
     if item.content is None:
@@ -61,7 +67,11 @@ class FileManager(ConfigManager[File]):
 
       hash_after = virtual_file_hash(uid, gid, mode, content)
       if hash_before != hash_after:
-        confirm(f"confirm changed file {item.identifier}")
+        confirm(
+          message = f"confirm {"changed" if hash_before is not None else "new"} file {item.identifier}",
+          destructive = hash_before is not None,
+          mode = state.get_confirm_mode(item),
+        )
         changed_items.append(item)
 
       with open(item.identifier, 'wb+') as fh:
@@ -73,8 +83,7 @@ class FileManager(ConfigManager[File]):
       if mode != new_mode:
         raise AssertionError("cannot apply file permissions (incompatible file system?)")
 
-      managed_files_set = set(self.store.get("managed_files", []))
-      self.store.put("managed_files", list(managed_files_set.union({item.identifier})))
+      self.managed_files_store.put(item.identifier, {"confirm_mode": state.get_confirm_mode(item)})
 
     return changed_items
 
@@ -85,20 +94,22 @@ class FileManager(ConfigManager[File]):
 
   def finalize(self, items: list[File], state: ExecutionState):
     currently_managed_files = [item.identifier for item in items]
-    previously_managed_files = self.store.get("managed_files", [])
+    previously_managed_files = self.managed_files_store.keys()
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]
     for file in files_to_delete:
       if os.path.isfile(file):
-        confirm(f"confirm to delete file: {file}")
+        confirm(
+          message = f"confirm to delete file: {file}",
+          destructive = True,
+          mode = self.managed_files_store.get(file, {}).get("confirm_mode", state.default_confirm_mode),
+        )
         os.unlink(file)
-        print(f"deleted file {file}")
-      managed_files_set = set(self.store.get("managed_files", []))
-      self.store.put("managed_files", list(managed_files_set.difference({file})))
+      self.managed_files_store.remove(file)
 
 
-def file_hash(filename):
+def file_hash(filename) -> str | None:
   if not os.path.isfile(filename):
-    return "-"
+    return None
   stat = os.stat(filename)
   sha256_hash = hashlib.sha256()
   sha256_hash.update(str(stat.st_uid).encode())

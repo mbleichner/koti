@@ -1,5 +1,6 @@
 from definitions import ConfigItem, ConfigManager, ExecutionState
-from managers.pacman import shell_output, shell_interactive
+from managers.pacman import shell_interactive
+from utils import shell_success
 
 
 class PacmanKey(ConfigItem):
@@ -22,7 +23,7 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
 
   def execute_phase(self, items: list[PacmanKey], state: ExecutionState):
     for item in items:
-      key_already_installed = len(shell_output(f"pacman-key --list-keys | grep {item.key_id}")) > 0
+      key_already_installed = shell_success(f"pacman-key --list-keys | grep {item.key_id}")
       if not key_already_installed:
         print(f"installing pacman-key {item.key_id} from {item.key_server}")
         shell_interactive(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")

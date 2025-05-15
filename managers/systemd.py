@@ -1,6 +1,8 @@
-from definitions import ConfigItem, ConfigManager, ExecutionState
+from typing import TypedDict
+
+from definitions import ConfigItem, ConfigManager, ConfirmMode, ExecutionState
 from managers.pacman import shell_interactive
-from utils import JsonStore, confirm
+from utils import JsonMapping, JsonStore, confirm
 
 
 class SystemdUnit(ConfigItem):
@@ -15,26 +17,41 @@ def SystemdUnits(*identifiers: str) -> list[SystemdUnit]:
   return [SystemdUnit(identifier) for identifier in identifiers]
 
 
+class SystemdUnitStoreEntry(TypedDict):
+  confirm_mode: ConfirmMode
+
+
 class SystemdUnitManager(ConfigManager[SystemdUnit]):
   managed_classes = [SystemdUnit]
-  store: JsonStore
+  managed_units_store: JsonMapping[str, SystemdUnitStoreEntry]
 
   def __init__(self):
-    self.store = JsonStore("/var/cache/arch-config/FileManager.json")
+    super().__init__()
+    store = JsonStore("/var/cache/arch-config/SystemdUnitManager.json")
+    self.managed_units_store = store.mapping("managed_units")
 
   def execute_phase(self, items: list[SystemdUnit], state: ExecutionState):
     if len(items) > 0:
       shell_interactive(f"systemctl daemon-reload")
       shell_interactive(f"systemctl enable --now {" ".join([item.identifier for item in items])}")
-      managed_units_set = set(self.store.get("managed_units", []))
-      self.store.put("managed_units", list(managed_units_set.union({item.identifier for item in items})))
+      for item in items:
+        mode = state.get_confirm_mode(item)
+        self.managed_units_store.put(item.identifier, {"confirm_mode": mode})
 
   def finalize(self, items: list[SystemdUnit], state: ExecutionState):
     shell_interactive(f"systemctl daemon-reload")
     currently_managed_units = [item.identifier for item in items]
-    previously_managed_units = self.store.get("managed_units", [])
+    previously_managed_units = self.managed_units_store.keys()
     units_to_deactivate = [file for file in previously_managed_units if file not in currently_managed_units]
     if len(units_to_deactivate) > 0:
+      confirm(
+        message = f"confirm to deactivate units: {", ".join(units_to_deactivate)}",
+        destructive = True,
+        mode = state.effective_confirm_mode([
+          self.managed_units_store.get(unit, {}).get("confirm_mode", state.default_confirm_mode) for unit in units_to_deactivate
+        ]),
+      )
       confirm(f"confirm to deactivate units: {", ".join(units_to_deactivate)}")
       shell_interactive(f"systemctl disable --now {" ".join(units_to_deactivate)}")
-      self.store.put("managed_units", currently_managed_units)
+      for identifier in units_to_deactivate:
+        self.managed_units_store.remove(identifier)

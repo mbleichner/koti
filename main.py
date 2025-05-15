@@ -79,3 +79,5 @@ if args.action == "plan":
   arch_update.plan()
 if args.action == "apply":
   arch_update.apply()
+
+print("execution finished successfully")

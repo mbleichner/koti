@@ -1,9 +1,10 @@
 from inspect import cleandoc
 
-from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups, ShellCommand
+from definitions import ConfigItemGroup, ConfigModule, ConfigModuleGroups
 from managers.file import File
-from managers.hook import Hook
+from managers.hook import PostHook, PreHook
 from managers.pacman import PacmanPackage
+from utils import ShellCommand
 
 
 class FishModule(ConfigModule):
@@ -14,10 +15,9 @@ class FishModule(ConfigModule):
       PacmanPackage("pyenv"),
       PacmanPackage("fastfetch"),
 
-      Hook(
+      PostHook(
         "set-fish-as-default-shell",
         execute = ShellCommand("chsh -s /usr/bin/fish manuel"),
-        triggered_by = PacmanPackage("fish"),
       ),
 
       File("/etc/fish/config.fish", permissions = 0o444, content = cleandoc(r'''
