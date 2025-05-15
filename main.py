@@ -2,11 +2,11 @@ from __future__ import annotations
 
 # Bytecode-Compilation deaktivieren, das macht mit sudo sonst immer Probleme
 import sys
-
-from confirm import confirm
 sys.dont_write_bytecode = True
 
-import socket
+from socket import gethostname
+from confirm import confirm
+from modules.fstab import FstabModule
 from shell import shell_output
 from core import ArchUpdate
 from managers.checkpoint import CheckpointManager
@@ -30,7 +30,7 @@ from modules.pacman import PacmanModule
 from modules.ryzen_undervolting import RyzenUndervoltingModule
 from modules.systray import SystrayModule
 
-host = socket.gethostname()
+host = gethostname()
 nvidia = host == "dan"
 root_uuid = shell_output("findmnt -n -o UUID $(stat -c '%m' /)")
 
@@ -51,6 +51,7 @@ archupdate = ArchUpdate(
     PacmanModule(cachyos = True),
     FishModule(),
     BaseModule(),
+    FstabModule(host = host),
     AnanicyModule(),
     DesktopModule(nvidia = nvidia, autologin = True),
     GamingModule(),
