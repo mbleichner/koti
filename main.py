@@ -51,7 +51,7 @@ archupdate = ArchUpdate(
     PacmanModule(cachyos = True),
     FishModule(),
     BaseModule(),
-    FstabModule(host = host),
+    FstabModule(),
     AnanicyModule(),
     DesktopModule(nvidia = nvidia, autologin = True),
     GamingModule(),

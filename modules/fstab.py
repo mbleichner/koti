@@ -1,4 +1,5 @@
 from inspect import cleandoc
+from socket import gethostname
 
 from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups, ConfirmMode, Requires
 from managers.file import File
@@ -8,11 +9,12 @@ from managers.swapfile import Swapfile
 class FstabModule(ConfigModule):
   host: str
 
-  def __init__(self, host: str):
-    self.host = host
+  def __init__(self):
+    self.host = gethostname()
 
-  def provides(self) -> ConfigModuleGroups: return [
-    ConfigItemGroup(
+  def provides(self) -> ConfigModuleGroups:
+    return ConfigItemGroup(
+
       ConfirmMode("paranoid"),
       Requires(Swapfile("/swapfile")),
 
@@ -26,4 +28,3 @@ class FstabModule(ConfigModule):
         /swapfile                                  swap          swap  defaults 0 0
       ''')) if self.host == "dan" else None,
     )
-  ]
