@@ -123,11 +123,7 @@ class BaseModule(ConfigModule):
         ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="usb", ATTR{power/wakeup}="disabled"
       ''')),
 
-      File(
-        identifier = "/home/manuel/.gitconfig",
-        owner = "manuel",
-        permissions = 0o444,
-        content = cleandoc('''
+      File("/home/manuel/.gitconfig", owner = "manuel", permissions = 0o444, content = cleandoc('''
         [user]
         email = mbleichner@gmail.com
         name = Manuel Bleichner
@@ -139,10 +135,7 @@ class BaseModule(ConfigModule):
     ConfigItemGroup(
       "locale-setup",
 
-      File(
-        identifier = "/etc/locale.conf",
-        permissions = 0o444,
-        content = cleandoc('''
+      File("/etc/locale.conf", permissions = 0o444, content = cleandoc('''
         LANG=en_US.UTF-8
         LC_ADDRESS=de_DE.UTF-8
         LC_IDENTIFICATION=de_DE.UTF-8
@@ -155,10 +148,7 @@ class BaseModule(ConfigModule):
         LC_TIME=de_DE.UTF-8
       ''')),
 
-      File(
-        identifier = "/etc/locale.gen",
-        permissions = 0o444,
-        content = cleandoc('''
+      File("/etc/locale.gen", permissions = 0o444, content = cleandoc('''
         en_US.UTF-8 UTF-8
         de_DE.UTF-8 UTF-8
         # Zeilenumbruch hinter den Locales ist wichtig, sonst werden sie ignoriert
