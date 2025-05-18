@@ -78,9 +78,9 @@ class JsonCollection[T]:
   def add(self, value: T):
     collection = self.store.get(self.name, [])
     new_collection = set(collection).union({value})
-    self.store.put(self.name, new_collection)
+    self.store.put(self.name, list(new_collection))
 
   def remove(self, value: T):
     collection = self.store.get(self.name, [])
     new_collection = set(collection).difference({value})
-    self.store.put(self.name, new_collection)
+    self.store.put(self.name, list(new_collection))

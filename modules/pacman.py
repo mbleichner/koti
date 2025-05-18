@@ -2,15 +2,17 @@ from inspect import cleandoc
 
 from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups, Requires
 from managers.file import File
+from managers.hook import PostHook
 from managers.pacman import PacmanPackage
+from managers.systemd import SystemdUnit
 
 
 class PacmanModule(ConfigModule):
   def __init__(self, cachyos: bool):
     self.cachyos = cachyos
 
-  def provides(self) -> ConfigModuleGroups:
-    return ConfigItemGroup(
+  def provides(self) -> ConfigModuleGroups: return [
+    ConfigItemGroup(
 
       Requires(
         PacmanPackage("cachyos-keyring"),
@@ -93,6 +95,20 @@ class PacmanModule(ConfigModule):
         --sort delay
      ''')),
 
+      PacmanPackage("pacman-contrib"),
+      PacmanPackage("pacutils"),
+      PacmanPackage("paru"),
+      PacmanPackage("decman"),
+      PacmanPackage("base-devel"),
+      PacmanPackage("reflector"),
+      PacmanPackage("lostfiles"),
+    ),
+
+    ConfigItemGroup(
+      "arch-update",
+
+      PacmanPackage("arch-update"),
+
       File("/home/manuel/.config/arch-update/arch-update.conf", owner = "manuel", permissions = 0o444, content = cleandoc('''
         # managed by arch-config
         NoNotification
@@ -102,12 +118,11 @@ class PacmanModule(ConfigModule):
         TrayIconStyle=light
       ''')),
 
-      PacmanPackage("pacman-contrib"),
-      PacmanPackage("pacutils"),
-      PacmanPackage("paru"),
-      PacmanPackage("decman"),
-      PacmanPackage("arch-update"),
-      PacmanPackage("base-devel"),
-      PacmanPackage("reflector"),
-      PacmanPackage("lostfiles"),
-    )
+      SystemdUnit("arch-update-tray.service", user = "manuel"),
+
+      PostHook(
+        "restart arch-update-tray",
+        execute = lambda: "systemctl --user -M manuel@ restart arch-update-tray.service"
+      ),
+    ),
+  ]
