@@ -93,6 +93,15 @@ class PacmanModule(ConfigModule):
         --sort delay
      ''')),
 
+      File("/home/manuel/.config/arch-update/arch-update.conf", owner = "manuel", permissions = 0o444, content = cleandoc('''
+        # managed by arch-config
+        NoNotification
+        KeepOldPackages=2
+        KeepUninstalledPackages=0
+        DiffProg=diff
+        TrayIconStyle=light
+      ''')),
+
       PacmanPackage("pacman-contrib"),
       PacmanPackage("pacutils"),
       PacmanPackage("paru"),
