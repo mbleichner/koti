@@ -119,6 +119,7 @@ class PacmanModule(ConfigModule):
       ''')),
 
       SystemdUnit("arch-update-tray.service", user = "manuel"),
+      SystemdUnit("arch-update.timer", user = "manuel"),
 
       PostHook(
         "restart arch-update-tray",
