@@ -23,15 +23,15 @@ class PacmanModule(ConfigModule):
       File("/etc/pacman.conf", permissions = 0o444, content = cleandoc('''
         # managed by arch-config
         [options]
-        HoldPkg     = pacman glibc
+        HoldPkg = pacman glibc
         Architecture = auto x86_64_v3
-        NoExtract   = etc/xdg/autostart/org.kde.discover.notifier.desktop
+        NoExtract = etc/xdg/autostart/org.kde.discover.notifier.desktop
         Color
         CheckSpace
         VerbosePkgLists
         ParallelDownloads = 5
         DownloadUser = alpm
-        SigLevel    = Required DatabaseOptional
+        SigLevel = Required DatabaseOptional
         LocalFileSigLevel = Optional
         
         [core]
