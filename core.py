@@ -31,10 +31,11 @@ class ArchUpdate:
 
   def apply(self):
     state = ExecutionState()
-    for phase in self.execution_phases:
+    for phase_idx, phase in enumerate(self.execution_phases):
       for manager, items in phase.execution_order:
         state.updated_items += manager.execute_phase(items, self, state) or []
         state.processed_items += items
+      print(f"phase {phase_idx + 1} finished")
     for manager in self.managers:
       all_items_for_manager = [
         item for phase in self.execution_phases

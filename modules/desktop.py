@@ -36,7 +36,10 @@ class DesktopModule(ConfigModule):
       ),
 
       ConfigItemGroup(
-        Requires(ConfigItemGroup("plasma-optional-dependencies")),
+        Requires(
+          ConfigItemGroup("plasma-optional-dependencies"),
+          File("/etc/pacman.conf"), # wg. NoExtract = etc/xdg/autostart/org.kde.discover.notifier.desktop
+        ),
         PacmanPackage("archlinux-wallpaper"),
         PacmanPackage("ark"),
         PacmanPackage("code"),
