@@ -87,5 +87,34 @@ class DesktopModule(ConfigModule):
         SystemdUnit("greetd.service"),
         SystemdUnit("coolercontrold.service"),
         SystemdUnit("bluetooth.service"),
-      )
+
+        File("/home/manuel/.config/wireplumber/wireplumber.conf.d/priorities.conf", permissions = 0o444, owner = "manuel", content = cleandoc('''
+          # managed by arch-config
+          monitor.alsa.rules = [
+          
+            # Alle Bluetooth Devices bekommen immer Prio 1010 zugewiesen und diese kann hier
+            # aus bislang unerfindlichen Gründen nicht geändert werden
+          
+            { # Steelseries Game Channel
+              matches = [{node.name = "alsa_output.usb-SteelSeries_SteelSeries_Arctis_7-00.stereo-game"}]
+              actions = {
+                update-props = {
+                  priority.driver = 1000
+                  priority.session = 1000
+                }
+              }
+            }
+          
+            { # Steelseries Chat Channel
+              matches = [{node.name = "alsa_output.usb-SteelSeries_SteelSeries_Arctis_7-00.mono-chat"}]
+              actions = {
+                update-props = {
+                  priority.driver = 900
+                  priority.session = 900
+                }
+              }
+            }
+          ]
+        ''')),
+      ),
     ]
