@@ -33,9 +33,9 @@ class ArchUpdate:
     state = ExecutionState()
     for phase_idx, phase in enumerate(self.execution_phases):
       for manager, items in phase.execution_order:
+        print(f"[phase {phase_idx + 1}] processing {len(items)} items in {manager.__class__.__name__}...")
         state.updated_items += manager.execute_phase(items, self, state) or []
         state.processed_items += items
-      print(f"phase {phase_idx + 1} finished")
     for manager in self.managers:
       all_items_for_manager = [
         item for phase in self.execution_phases
@@ -43,7 +43,9 @@ class ArchUpdate:
         for item in phase_items
         if phase_manager is manager
       ]
-      manager.finalize(all_items_for_manager, self, state)
+      if len(all_items_for_manager):
+        print(f"running finalization phase for {manager.__class__.__name__}...")
+        manager.finalize(all_items_for_manager, self, state)
 
   def get_group_for_item(self, item: ConfigItem) -> ConfigItemGroup:
     for phase in self.execution_phases:

@@ -1,20 +1,20 @@
 from inspect import cleandoc
 
 from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups
-from shell import shell_interactive
-from managers.file import File
-from managers.hook import PostHook
-from managers.pacman import PacmanPackage
+from utils.shell import shell_interactive
+from items.file import File
+from items.hooks import PostHook
+from items.package import Package
 
 
 class FishModule(ConfigModule):
 
   def provides(self) -> ConfigModuleGroups:
     return ConfigItemGroup(
-      PacmanPackage("fish"),
-      PacmanPackage("pyenv"),
-      PacmanPackage("fastfetch"),
-      PacmanPackage("imagemagick"), # notwendig für png-Anzeige in fastfetch
+      Package("fish"),
+      Package("pyenv"),
+      Package("fastfetch"),
+      Package("imagemagick"), # notwendig für png-Anzeige in fastfetch
 
       PostHook(
         "set-fish-as-default-shell",

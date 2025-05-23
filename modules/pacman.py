@@ -1,10 +1,10 @@
 from inspect import cleandoc
 
 from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups, Requires
-from managers.file import File
-from managers.hook import PostHook
-from managers.pacman import PacmanPackage
-from managers.systemd import SystemdUnit
+from items.file import File
+from items.hooks import PostHook
+from items.package import Package
+from items.systemd import SystemdUnit
 
 
 class PacmanModule(ConfigModule):
@@ -15,9 +15,9 @@ class PacmanModule(ConfigModule):
     ConfigItemGroup(
 
       Requires(
-        PacmanPackage("cachyos-keyring"),
-        PacmanPackage("cachyos-mirrorlist"),
-        PacmanPackage("cachyos-v3-mirrorlist")
+        Package("cachyos-keyring"),
+        Package("cachyos-mirrorlist"),
+        Package("cachyos-v3-mirrorlist")
       ),
 
       File("/etc/pacman.conf", permissions = 0o444, content = cleandoc('''
@@ -95,19 +95,19 @@ class PacmanModule(ConfigModule):
         --sort delay
      ''')),
 
-      PacmanPackage("pacman-contrib"),
-      PacmanPackage("pacutils"),
-      PacmanPackage("paru"),
-      PacmanPackage("decman"),
-      PacmanPackage("base-devel"),
-      PacmanPackage("reflector"),
-      PacmanPackage("lostfiles"),
+      Package("pacman-contrib"),
+      Package("pacutils"),
+      Package("paru"),
+      Package("decman"),
+      Package("base-devel"),
+      Package("reflector"),
+      Package("lostfiles"),
     ),
 
     ConfigItemGroup(
       "arch-update",
 
-      PacmanPackage("arch-update"),
+      Package("arch-update"),
 
       File("/home/manuel/.config/arch-update/arch-update.conf", owner = "manuel", permissions = 0o444, content = cleandoc('''
         # managed by arch-config

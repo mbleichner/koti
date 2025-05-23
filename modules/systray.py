@@ -1,8 +1,8 @@
 from inspect import cleandoc
 
 from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups, ConfirmMode
-from managers.file import File
-from managers.pacman import PacmanPackage
+from items.file import File
+from items.package import Package
 
 
 class SystrayModule(ConfigModule):
@@ -14,7 +14,7 @@ class SystrayModule(ConfigModule):
 
     ConfigItemGroup(
       ConfirmMode("yolo"),
-      PacmanPackage("kdialog"),
+      Package("kdialog"),
       File("/opt/systray/cpu/summary", permissions = 0o555, content = cleandoc(r'''
         #!/bin/bash
         # managed by arch-config
@@ -43,8 +43,8 @@ class SystrayModule(ConfigModule):
 
     ConfigItemGroup(  # nvidia Skripte
       ConfirmMode("yolo"),
-      PacmanPackage("kdialog"),
-      PacmanPackage("python-pynvml"),
+      Package("kdialog"),
+      Package("python-pynvml"),
       File("/opt/systray/gpu/summary", permissions = 0o555, content = cleandoc(r'''
         #!/usr/bin/python3
         # managed by arch-config

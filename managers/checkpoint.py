@@ -1,12 +1,5 @@
-from core import ArchUpdate, ConfigItem, ConfigManager, ExecutionState
-
-
-class Checkpoint(ConfigItem):
-  def __init__(self, identifier: str):
-    super().__init__(identifier)
-
-  def __str__(self):
-    return f"Checkpoint('{self.identifier}')"
+from core import ArchUpdate, ConfigManager, ExecutionState
+from items.checkpoint import Checkpoint
 
 
 class CheckpointManager(ConfigManager[Checkpoint]):

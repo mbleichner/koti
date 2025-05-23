@@ -2,8 +2,8 @@ from inspect import cleandoc
 from socket import gethostname
 
 from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups, ConfirmMode, Requires
-from managers.file import File
-from managers.swapfile import Swapfile
+from items.file import File
+from items.swapfile import Swapfile
 
 
 class FstabModule(ConfigModule):

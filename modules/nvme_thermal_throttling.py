@@ -1,16 +1,16 @@
 from inspect import cleandoc
 
 from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups
-from managers.file import File
-from managers.pacman import PacmanPackage
-from managers.systemd import SystemdUnit
+from items.file import File
+from items.package import Package
+from items.systemd import SystemdUnit
 
 
 class NvmeThermalThrottlingModule(ConfigModule):
 
   def provides(self) -> ConfigModuleGroups:
     return ConfigItemGroup(
-      PacmanPackage("nvme-cli"),
+      Package("nvme-cli"),
       File("/etc/systemd/system/nvme-thermal-throttling.service", permissions = 0o444, content = cleandoc('''
         # managed by arch-config
         [Unit]

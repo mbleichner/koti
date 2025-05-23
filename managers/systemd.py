@@ -1,24 +1,10 @@
 from typing import TypedDict
 
-from confirm import confirm, effective_confirm_mode, get_confirm_mode
-from core import ArchUpdate, ConfigItem, ConfigManager, ConfirmModeValues, ExecutionState
-from json_store import JsonCollection, JsonStore
+from items.systemd import SystemdUnit
+from utils.confirm import confirm, effective_confirm_mode, get_confirm_mode
+from core import ArchUpdate, ConfigManager, ConfirmModeValues, ExecutionState
+from utils.json_store import JsonCollection, JsonStore
 from managers.pacman import shell_interactive
-
-
-class SystemdUnit(ConfigItem):
-  user: str = None
-
-  def __init__(self, identifier: str, user: str = None):
-    super().__init__(identifier)
-    self.user = user
-
-  def __str__(self):
-    return f"SystemdUnit('{self.identifier}')"
-
-
-def SystemdUnits(*identifiers: str) -> list[SystemdUnit]:
-  return [SystemdUnit(identifier) for identifier in identifiers]
 
 
 class SystemdUnitStoreEntry(TypedDict):

@@ -1,9 +1,9 @@
 from inspect import cleandoc
 
 from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups
-from managers.file import File
-from managers.pacman import PacmanPackage
-from managers.systemd import SystemdUnit
+from items.file import File
+from items.package import Package
+from items.systemd import SystemdUnit
 
 
 class OllamaAichatModule(ConfigModule):
@@ -12,8 +12,8 @@ class OllamaAichatModule(ConfigModule):
 
   def provides(self) -> ConfigModuleGroups:
     return ConfigItemGroup(
-      PacmanPackage("aichat"),
-      PacmanPackage("ollama-cuda" if self.nvidia else "ollama"),
+      Package("aichat"),
+      Package("ollama-cuda" if self.nvidia else "ollama"),
       File("/home/manuel/.config/aichat/config.yaml", permissions = 0o444, owner = "manuel", content = cleandoc('''
         # managed by arch-config
         model: ollama:Godmoded/llama3-lexi-uncensored

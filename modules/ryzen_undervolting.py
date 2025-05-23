@@ -1,9 +1,9 @@
 from inspect import cleandoc
 
 from core import ConfigItemGroup, ConfigModule, ConfigModuleGroups
-from managers.file import File
-from managers.pacman import PacmanPackage
-from managers.systemd import SystemdUnit
+from items.file import File
+from items.package import Package
+from items.systemd import SystemdUnit
 
 
 class RyzenUndervoltingModule(ConfigModule):
@@ -11,7 +11,7 @@ class RyzenUndervoltingModule(ConfigModule):
   def provides(self) -> ConfigModuleGroups:
     return ConfigItemGroup(
 
-      PacmanPackage("ryzen_smu-dkms-git"),
+      Package("ryzen_smu-dkms-git"),
 
       File(
         "/opt/undervolting/ryzen-undervolting.py",

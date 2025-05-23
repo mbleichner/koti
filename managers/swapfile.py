@@ -1,21 +1,11 @@
 import os.path
 from typing import TypedDict
 
-from confirm import confirm, get_confirm_mode
-from core import ArchUpdate, ConfigItem, ConfigManager, ConfirmModeValues, ExecutionState
-from json_store import JsonMapping, JsonStore
-from shell import shell_interactive, shell_success
-
-
-class Swapfile(ConfigItem):
-  size_bytes: int | None
-
-  def __init__(self, identifier: str, size_bytes: int | None = None):
-    super().__init__(identifier)
-    self.size_bytes = size_bytes
-
-  def __str__(self):
-    return f"Swapfile('{self.identifier}')"
+from items.swapfile import Swapfile
+from utils.confirm import confirm, get_confirm_mode
+from core import ArchUpdate, ConfigManager, ConfirmModeValues, ExecutionState
+from utils.json_store import JsonMapping, JsonStore
+from utils.shell import shell_interactive, shell_success
 
 
 class SwapfileStoreEntry(TypedDict):

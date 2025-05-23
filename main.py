@@ -5,15 +5,14 @@ import sys
 sys.dont_write_bytecode = True
 
 from socket import gethostname
-from confirm import confirm
+from utils.confirm import confirm
 from modules.fstab import FstabModule
-from shell import shell_output
+from utils.shell import shell_output
 from core import ArchUpdate
 from managers.checkpoint import CheckpointManager
 from managers.file import FileManager
-from managers.hook import PostHookManager, PreHookManager
-from managers.pacman import PacmanAdapter, PacmanPackageManager
-from managers.pacman_key import PacmanKeyManager
+from managers.hooks import PostHookManager, PreHookManager
+from managers.pacman import PacmanAdapter, PacmanKeyManager, PacmanPackageManager
 from managers.swapfile import SwapfileManager
 from managers.systemd import SystemdUnitManager
 from modules.ananicy import AnanicyModule
@@ -71,5 +70,4 @@ archupdate = ArchUpdate(
 archupdate.plan()
 confirm("execute now?", destructive = True, mode = "paranoid")
 archupdate.apply()
-
-print("execution finished successfully")
+print("all done.")

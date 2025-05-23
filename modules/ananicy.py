@@ -1,22 +1,22 @@
 from inspect import cleandoc
 
 from core import ConfigItem, ConfigItemGroup, ConfigModule, ConfigModuleGroups
-from shell import shell_interactive
-from managers.file import File
-from managers.hook import PostHook
-from managers.pacman import PacmanPackage
-from managers.systemd import SystemdUnit
+from utils.shell import shell_interactive
+from items.file import File
+from items.hooks import PostHook
+from items.package import Package
+from items.systemd import SystemdUnit
 
 
 class AnanicyModule(ConfigModule):
 
   def depends_on(self) -> list[ConfigItem]: return [
-    PacmanPackage("cachyos-mirrorlist")
+    Package("cachyos-mirrorlist")
   ]
 
   def provides(self) -> ConfigModuleGroups:
     return ConfigItemGroup(
-      PacmanPackage("ananicy-cpp"),
+      Package("ananicy-cpp"),
 
       SystemdUnit("ananicy-cpp.service"),
 

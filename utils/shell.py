@@ -6,7 +6,7 @@ import subprocess
 def shell_interactive(command: str, check: bool = True):
   with subprocess.Popen(command, shell = True) as process:
     if process.wait() != 0 and check:
-      raise AssertionError("command failed")
+      raise AssertionError(f"command failed: {command}")
 
 
 def shell_output(command: str, check: bool = True) -> str:
