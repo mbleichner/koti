@@ -14,6 +14,7 @@ class FishModule(ConfigModule):
       PacmanPackage("fish"),
       PacmanPackage("pyenv"),
       PacmanPackage("fastfetch"),
+      PacmanPackage("imagemagick"), # notwendig für png-Anzeige in fastfetch
 
       PostHook(
         "set-fish-as-default-shell",
