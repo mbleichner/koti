@@ -37,9 +37,9 @@ archupdate = ArchUpdate(
   default_confirm_mode = "cautious",
   managers = [
     PreHookManager(),
-    SwapfileManager(),
     PacmanKeyManager(),
     PacmanPackageManager(PacmanAdapter("sudo -u manuel paru")),
+    SwapfileManager(),
     FileManager(),
     SystemdUnitManager(),
     PostHookManager(),
