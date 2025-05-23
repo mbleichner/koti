@@ -33,7 +33,7 @@ class ArchUpdate:
     state = ExecutionState()
     for phase_idx, phase in enumerate(self.execution_phases):
       for manager, items in phase.execution_order:
-        print(f"[phase {phase_idx + 1}] processing {len(items)} items in {manager.__class__.__name__}...")
+        self.print_phase_log(phase_idx, manager, items)
         state.updated_items += manager.execute_phase(items, self, state) or []
         state.processed_items += items
     for manager in self.managers:
@@ -44,8 +44,17 @@ class ArchUpdate:
         if phase_manager is manager
       ]
       if len(all_items_for_manager):
-        print(f"running finalization phase for {manager.__class__.__name__}...")
+        self.print_phase_log(None, manager, all_items_for_manager)
         manager.finalize(all_items_for_manager, self, state)
+
+  def print_phase_log(self, phase_idx: int | None, manager: ConfigManager, items: list[ConfigItem]):
+    count_by_class = defaultdict(lambda: 0)
+    for item in items:
+      count_by_class[item.__class__.__name__] += 1
+    phase = f"phase {phase_idx + 1}" if phase_idx is not None else "finalize"
+    items_string = ", ".join([f"{count} {"items" if count > 1 else "item"} of type {cls}" for cls, count in count_by_class.items()])
+    max_manager_name_len = max([len(m.__class__.__name__) for m in self.managers])
+    print(f"{phase.ljust(8)}  {manager.__class__.__name__.ljust(max_manager_name_len)}  processing {items_string}")
 
   def get_group_for_item(self, item: ConfigItem) -> ConfigItemGroup:
     for phase in self.execution_phases:

@@ -8,8 +8,8 @@ class Package(ConfigItem):
 
   def __str__(self):
     if self.url is not None:
-      return f"PacmanPackage('{self.identifier}', url = ...)"
-    return f"PacmanPackage('{self.identifier}')"
+      return f"Package('{self.identifier}', url = ...)"
+    return f"Package('{self.identifier}')"
 
 
 def Packages(*identifiers: str) -> list[Package]:
