@@ -1,10 +1,10 @@
 from typing import TypedDict
 
+from core import Core, ConfigManager, ConfirmModeValues, ExecutionState
 from items.systemd import SystemdUnit
-from utils.confirm import confirm, effective_confirm_mode, get_confirm_mode
-from core import ArchUpdate, ConfigManager, ConfirmModeValues, ExecutionState
-from utils.json_store import JsonCollection, JsonStore
 from managers.pacman import shell_interactive
+from utils.confirm import confirm
+from utils.json_store import JsonCollection, JsonStore
 
 
 class SystemdUnitStoreEntry(TypedDict):
@@ -21,7 +21,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
     self.store = JsonStore("/var/cache/arch-config/SystemdUnitManager.json")
     self.user_list_store = self.store.collection("users")
 
-  def execute_phase(self, items: list[SystemdUnit], core: ArchUpdate, state: ExecutionState):
+  def execute_phase(self, items: list[SystemdUnit], core: Core, state: ExecutionState):
     if len(items) > 0:
       shell_interactive(f"systemctl daemon-reload")
 
@@ -31,11 +31,11 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
       units_store = self.store.mapping(store_key_for_user(user))
       shell_interactive(f"{systemctl_for_user(user)} enable --now {" ".join([item.identifier for item in items_for_user])}")
       for item in items_for_user:
-        mode = get_confirm_mode(item, core)
+        mode = core.get_confirm_mode(item)
         units_store.put(item.identifier, {"confirm_mode": mode})
         if user is not None: self.user_list_store.add(user)
 
-  def finalize(self, items: list[SystemdUnit], core: ArchUpdate, state: ExecutionState):
+  def finalize(self, items: list[SystemdUnit], core: Core, state: ExecutionState):
     shell_interactive(f"systemctl daemon-reload")
 
     previously_seen_users = self.user_list_store.elements()
@@ -51,9 +51,9 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
           message = f"confirm to deactivate units: {", ".join(units_to_deactivate)}" if user is None
           else f"confirm to deactivate user units for {user}: {", ".join(units_to_deactivate)}",
           destructive = True,
-          mode = effective_confirm_mode([
+          mode = core.effective_confirm_mode([
             units_store.get(unit, {}).get("confirm_mode", core.default_confirm_mode) for unit in units_to_deactivate
-          ], core),
+          ]),
         )
         shell_interactive(f"{systemctl_for_user(user)} disable --now {" ".join(units_to_deactivate)}")
         for identifier in units_to_deactivate:

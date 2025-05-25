@@ -3,8 +3,10 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Literal, Type
 
+ConfirmModeValues = Literal["paranoid", "cautious", "yolo"]
 
-class ArchUpdate:
+
+class Core:
   managers: list[ConfigManager]
   modules: list[ConfigModule]
   execution_phases: list[ExecutionPhase]
@@ -17,10 +19,11 @@ class ArchUpdate:
     default_confirm_mode: ConfirmModeValues,
   ):
     super().__init__()
+    Core.check_manager_consistency(managers, modules)
     self.default_confirm_mode = default_confirm_mode
     self.modules = modules
     self.managers = managers
-    self.execution_phases = self.prepare_execution_phases()
+    self.execution_phases = Core.build_execution_phases(managers, modules)
 
   def plan(self):
     for phase_idx, phase in enumerate(self.execution_phases):
@@ -63,19 +66,44 @@ class ArchUpdate:
           return group
     raise AssertionError(f"group not found for {item}")
 
-  def prepare_execution_phases(self) -> list[ExecutionPhase]:
-    original_groups: list[ConfigItemGroup] = self.get_all_provided_groups()
-    merged_groups = self.merge_groups(original_groups)
-    merged_groups_ordered_into_phases = self.reorder_into_phases(merged_groups)
+  def get_confirm_mode(self, items: ConfigItem | list[ConfigItem]) -> ConfirmModeValues:
+    item_list = items if isinstance(items, list) else [items]
+    groups = [self.get_group_for_item(item) for item in item_list]
+    confirm_modes = [item.mode for group in groups for item in group.items if isinstance(item, ConfirmMode)]
+    return self.effective_confirm_mode(confirm_modes)
+
+  def effective_confirm_mode(self, modes: list[ConfirmModeValues]) -> ConfirmModeValues:
+    modes_in_order: list[ConfirmModeValues] = ["paranoid", "cautious", "yolo"]
+    for mode in modes_in_order:
+      if mode in modes: return mode
+    return self.default_confirm_mode
+
+  @staticmethod
+  def build_execution_phases(managers: list[ConfigManager], modules: list[ConfigModule]) -> list[ExecutionPhase]:
+    original_groups = Core.get_all_provided_groups(modules)
+    merged_groups = Core.merge_groups(original_groups)
+    merged_groups_ordered_into_phases = Core.reorder_into_phases(merged_groups)
     execution_phases: list[ExecutionPhase] = [
-      self.create_execution_phase(groups_in_phase) for groups_in_phase in merged_groups_ordered_into_phases
+      Core.create_execution_phase(managers, groups_in_phase) for groups_in_phase in merged_groups_ordered_into_phases
     ]
     return execution_phases
 
-  def reorder_into_phases(self, merged_groups: list[ConfigItemGroup]):
+  @staticmethod
+  def check_manager_consistency(managers: list[ConfigManager], modules: list[ConfigModule]):
+    for group in Core.get_all_provided_groups(modules):
+      for item in group.items:
+        if isinstance(item, ConfigMetadata): continue
+        matching_managers = [manager for manager in managers if item.__class__ in manager.managed_classes]
+        if len(matching_managers) == 0:
+          raise AssertionError(f"no manager found for class {item.__class__.__name__}")
+        if len(matching_managers) > 1:
+          raise AssertionError(f"multiple managers found for class {item.__class__.__name__}")
+
+  @staticmethod
+  def reorder_into_phases(merged_groups: list[ConfigItemGroup]):
     result: list[list[ConfigItemGroup]] = [merged_groups]
     while True:
-      violation = self.find_dependency_violation(result)
+      violation = Core.find_dependency_violation(result)
       if violation is None: break
       idx_phase, group = violation
       result[idx_phase].remove(group)
@@ -85,24 +113,27 @@ class ArchUpdate:
         result = [[group]] + result
     return result
 
-  def get_all_provided_groups(self):
+  @staticmethod
+  def get_all_provided_groups(modules: list[ConfigModule]) -> list[ConfigItemGroup]:
     result: list[ConfigItemGroup] = []
-    for module in self.modules:
+    for module in modules:
       provides_raw = module.provides()
       provides_list = provides_raw if isinstance(provides_raw, list) else [provides_raw]
       result += [group for group in provides_list if group is not None]
     return result
 
-  def create_execution_phase(self, merged_groups_in_phase: list[ConfigItemGroup]) -> ExecutionPhase:
-    flattened_items = [item for group in merged_groups_in_phase for item in group.items if not isinstance(item, Requires)]
-    execution_order: list[(ConfigManager, list[ConfigItem])] = []
-    for manager in self.managers:
+  @staticmethod
+  def create_execution_phase(managers: list[ConfigManager], merged_groups_in_phase: list[ConfigItemGroup]) -> ExecutionPhase:
+    flattened_items = [item for group in merged_groups_in_phase for item in group.items]
+    execution_order: list[tuple[ConfigManager, list[ConfigItem]]] = []
+    for manager in managers:
       managed_items = [item for item in flattened_items if item.__class__ in manager.managed_classes]
       if len(managed_items) > 0:
         execution_order.append((manager, managed_items))
     return ExecutionPhase(merged_groups_in_phase, execution_order)
 
-  def merge_groups(self, groups: list[ConfigItemGroup]) -> list[ConfigItemGroup]:
+  @staticmethod
+  def merge_groups(groups: list[ConfigItemGroup]) -> list[ConfigItemGroup]:
     grouped_by_identifier: dict[str, list[ConfigItemGroup]] = defaultdict(list)
     unnamed_groups: list[ConfigItemGroup] = []
     for group in groups:
@@ -117,17 +148,20 @@ class ArchUpdate:
     result += unnamed_groups
     return result
 
-  def find_dependency_violation(self, phases: list[list[ConfigItemGroup]]):
+  @staticmethod
+  def find_dependency_violation(phases: list[list[ConfigItemGroup]]) -> tuple[int, ConfigItemGroup] | None:
     for phase_idx, phase in enumerate(phases):
       for group in phase:
         requires_items = [item for item in group.items if isinstance(item, Requires)]
         required_items = [item for req in requires_items for item in req.items]
         for required_item in required_items:
-          required_phase_idx, required_group = self.find_required_group(required_item, phases)
+          required_phase_idx, required_group = Core.find_required_group(required_item, phases)
           if required_phase_idx >= phase_idx:
             return required_phase_idx, required_group
+    return None
 
-  def find_required_group(self, required_item: ConfigItem | ConfigItemGroup, phases: list[list[ConfigItemGroup]]) -> [int, ConfigItemGroup]:
+  @staticmethod
+  def find_required_group(required_item: ConfigItem | ConfigItemGroup, phases: list[list[ConfigItemGroup]]) -> tuple[int, ConfigItemGroup]:
     for idx_phase, phase in enumerate(phases):
       for group in phase:
         if isinstance(required_item, ConfigItemGroup) and required_item.identifier == group.identifier:
@@ -136,12 +170,6 @@ class ArchUpdate:
           if group_item.__class__ == required_item.__class__ and group_item.identifier == required_item.identifier:
             return idx_phase, group
     raise AssertionError("illegal state")
-
-  def get_manager(self, name):
-    for manager in self.managers:
-      if manager.__class__.__name__ == name:
-        return manager
-    raise AssertionError(f"manager not found: '{name}'")
 
 
 class ConfigModule:
@@ -173,13 +201,13 @@ type ConfigModuleGroups = ConfigItemGroup | list[ConfigItemGroup]
 class ConfigManager[T: ConfigItem]:
   managed_classes: list[Type] = []
 
-  def check_configuration(self, item: T, core: ArchUpdate) -> bool:
+  def check_configuration(self, item: T, core: Core) -> bool:
     raise "method not implemented: check_configuration"
 
-  def execute_phase(self, items: list[T], core: ArchUpdate, state: ExecutionState) -> list[T] | None:  # returns updated items
+  def execute_phase(self, items: list[T], core: Core, state: ExecutionState) -> list[T] | None:  # returns updated items
     raise "method not implemented: execute_phase"
 
-  def finalize(self, items: list[T], core: ArchUpdate, state: ExecutionState) -> list[T]:  # returns updated items
+  def finalize(self, items: list[T], core: Core, state: ExecutionState) -> list[T]:  # returns updated items
     pass
 
 
@@ -220,6 +248,3 @@ class ExecutionPhase:
 class ExecutionState:
   processed_items: list[ConfigItem] = []
   updated_items: list[ConfigItem] = []
-
-
-ConfirmModeValues = Literal["paranoid", "cautious", "yolo"]
