@@ -1,4 +1,3 @@
-from koti.items.checkpoint import Checkpoint
 from koti.items.file import File
 from koti.items.hooks import PostHook, PreHook
 from koti.items.package import Package, Packages

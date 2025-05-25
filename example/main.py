@@ -21,7 +21,6 @@ from modules.systray import SystrayModule
 
 from koti import *
 from koti.utils import *
-from koti.managers import *
 
 from socket import gethostname
 host = gethostname()
@@ -39,7 +38,6 @@ archupdate = Koti(
     FileManager(),
     SystemdUnitManager(),
     PostHookManager(),
-    CheckpointManager(),
   ],
   modules = [
     KernelModule(root_uuid = root_uuid, cachyos = True),
@@ -64,6 +62,6 @@ archupdate = Koti(
 )
 
 archupdate.plan()
-confirm("execute now?", destructive = True, mode = "paranoid")
+confirm("confirm execution")
 archupdate.apply()
 print("all done.")

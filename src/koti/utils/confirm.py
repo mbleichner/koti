@@ -3,10 +3,10 @@ from __future__ import annotations
 from koti.core import ConfirmModeValues
 
 
-def confirm(message: str, destructive: bool, mode: ConfirmModeValues):
+def confirm(message: str, destructive: bool = True, mode: ConfirmModeValues = "paranoid"):
   if not needs_confirmation(destructive, mode):
     print(f"{message}: skipping confirmation of {"destructive" if destructive else "non-destructive"} operation due to confirm_mode = {mode}")
-    return
+    return None
   while True:
     answer = input(f'{message}: [Y/n] ').strip().lower()
     if answer in ('y', ''): return True
