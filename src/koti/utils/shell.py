@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-import subprocess
+from subprocess import CalledProcessError, Popen, run
 
 
 def shell_interactive(command: str, check: bool = True):
-  with subprocess.Popen(command, shell = True) as process:
+  with Popen(command, shell = True) as process:
     if process.wait() != 0 and check:
       raise AssertionError(f"command failed: {command}")
 
 
 def shell_output(command: str, check: bool = True) -> str:
-  return subprocess.run(
+  return run(
     command,
     check = check,
     shell = True,
@@ -21,7 +21,7 @@ def shell_output(command: str, check: bool = True) -> str:
 
 def shell_success(command: str) -> bool:
   try:
-    subprocess.run(command, check = True, shell = True, capture_output = True, universal_newlines = True)
+    run(command, check = True, shell = True, capture_output = True, universal_newlines = True)
     return True
-  except:
+  except CalledProcessError:
     return False

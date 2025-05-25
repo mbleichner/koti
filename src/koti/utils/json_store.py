@@ -9,6 +9,7 @@ class JsonStore:
   store_file: str
   store: dict
 
+  # noinspection PyBroadException
   def __init__(self, store_file: str):
     self.store_file = store_file
     try:

@@ -29,7 +29,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
         confirm(
           message = f"confirm to create swapfile {item.identifier}",
           destructive = False,
-          mode = core.get_confirm_mode(item),
+          mode = core.get_confirm_mode_for_item(item),
         )
         self.create_swapfile(item)
       elif current_size != item.size_bytes:
@@ -37,7 +37,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
           confirm(
             message = f"confirm resize of mounted swapfile {item.identifier}",
             destructive = True,
-            mode = core.get_confirm_mode(item),
+            mode = core.get_confirm_mode_for_item(item),
           )
           shell_interactive(f"swapoff {item.identifier}")
           os.unlink(item.identifier)
@@ -47,11 +47,11 @@ class SwapfileManager(ConfigManager[Swapfile]):
           confirm(
             message = f"confirm resize of swapfile {item.identifier}",
             destructive = True,
-            mode = core.get_confirm_mode(item),
+            mode = core.get_confirm_mode_for_item(item),
           )
           shell_interactive(f"rm -f {item.identifier}")
           self.create_swapfile(item)
-      self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode(item)})
+      self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode_for_item(item)})
 
   def finalize(self, items: list[Swapfile], core: Koti, state: ExecutionState):
     currently_managed_files = [item.identifier for item in items]

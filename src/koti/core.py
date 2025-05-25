@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from collections import defaultdict
 from typing import Literal, Type
 
@@ -12,12 +13,7 @@ class Koti:
   execution_phases: list[ExecutionPhase]
   default_confirm_mode: ConfirmModeValues
 
-  def __init__(
-    self,
-    managers: list[ConfigManager],
-    modules: list[ConfigModule],
-    default_confirm_mode: ConfirmModeValues,
-  ):
+  def __init__(self, managers: list[ConfigManager], modules: list[ConfigModule], default_confirm_mode: ConfirmModeValues = "cautious"):
     super().__init__()
     Koti.check_manager_consistency(managers, modules)
     self.default_confirm_mode = default_confirm_mode
@@ -33,6 +29,8 @@ class Koti:
           print(f" - {item}")
 
   def apply(self):
+    if os.getuid() != 0:
+      raise AssertionError("this program must be run as root (or through sudo)")
     state = ExecutionState()
     for phase_idx, phase in enumerate(self.execution_phases):
       for manager, items in phase.execution_order:
@@ -66,13 +64,13 @@ class Koti:
           return group
     raise AssertionError(f"group not found for {item}")
 
-  def get_confirm_mode(self, items: ConfigItem | list[ConfigItem]) -> ConfirmModeValues:
+  def get_confirm_mode_for_item(self, items: ConfigItem | list[ConfigItem]) -> ConfirmModeValues:
     item_list = items if isinstance(items, list) else [items]
     groups = [self.get_group_for_item(item) for item in item_list]
     confirm_modes = [item.mode for group in groups for item in group.items if isinstance(item, ConfirmMode)]
-    return self.effective_confirm_mode(confirm_modes)
+    return self.get_effective_confirm_mode(confirm_modes)
 
-  def effective_confirm_mode(self, modes: list[ConfirmModeValues]) -> ConfirmModeValues:
+  def get_effective_confirm_mode(self, modes: list[ConfirmModeValues]) -> ConfirmModeValues:
     modes_in_order: list[ConfirmModeValues] = ["paranoid", "cautious", "yolo"]
     for mode in modes_in_order:
       if mode in modes: return mode

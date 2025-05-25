@@ -11,7 +11,7 @@ class PreHookManager(ConfigManager[PreHook]):
       confirm(
         message = f"confirm executing {hook}",
         destructive = False,
-        mode = core.get_confirm_mode(hook),
+        mode = core.get_confirm_mode_for_item(hook),
       )
       hook.execute()
 
@@ -25,7 +25,7 @@ class PostHookManager(ConfigManager[PostHook]):
         confirm(
           message = f"confirm executing {hook}",
           destructive = False,
-          mode = core.get_confirm_mode(hook),
+          mode = core.get_confirm_mode_for_item(hook),
         )
         hook.execute()
 

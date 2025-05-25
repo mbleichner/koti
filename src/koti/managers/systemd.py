@@ -31,7 +31,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
       units_store = self.store.mapping(store_key_for_user(user))
       shell_interactive(f"{systemctl_for_user(user)} enable --now {" ".join([item.identifier for item in items_for_user])}")
       for item in items_for_user:
-        mode = core.get_confirm_mode(item)
+        mode = core.get_confirm_mode_for_item(item)
         units_store.put(item.identifier, {"confirm_mode": mode})
         if user is not None: self.user_list_store.add(user)
 
@@ -51,7 +51,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
           message = f"confirm to deactivate units: {", ".join(units_to_deactivate)}" if user is None
           else f"confirm to deactivate user units for {user}: {", ".join(units_to_deactivate)}",
           destructive = True,
-          mode = core.effective_confirm_mode([
+          mode = core.get_effective_confirm_mode([
             units_store.get(unit, {}).get("confirm_mode", core.default_confirm_mode) for unit in units_to_deactivate
           ]),
         )

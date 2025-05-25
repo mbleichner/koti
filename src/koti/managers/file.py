@@ -26,6 +26,7 @@ class FileManager(ConfigManager[File]):
   def check_configuration(self, item: File, core: Koti) -> str | None:
     if item.content is None:
       return "File() needs to define either content or content_from_file"
+    return None
 
   def execute_phase(self, items: list[File], core: Koti, state: ExecutionState) -> list[File]:
     changed_items: list[File] = []
@@ -45,7 +46,7 @@ class FileManager(ConfigManager[File]):
         confirm(
           message = f"confirm {"changed" if hash_before is not None else "new"} file {item.identifier}",
           destructive = hash_before is not None,
-          mode = core.get_confirm_mode(item),
+          mode = core.get_confirm_mode_for_item(item),
         )
         changed_items.append(item)
 
@@ -58,7 +59,7 @@ class FileManager(ConfigManager[File]):
       if mode != new_mode:
         raise AssertionError("cannot apply file permissions (incompatible file system?)")
 
-      self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode(item)})
+      self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode_for_item(item)})
 
     return changed_items
 

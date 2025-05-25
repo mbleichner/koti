@@ -12,5 +12,6 @@ class Package(ConfigItem):
     return f"Package('{self.identifier}')"
 
 
+# noinspection PyPep8Naming
 def Packages(*identifiers: str) -> list[Package]:
   return [Package(identifier) for identifier in identifiers]

@@ -4,6 +4,10 @@ from __future__ import annotations
 import sys
 sys.dont_write_bytecode = True
 
+from koti import *
+from koti.utils import *
+from socket import gethostname
+from koti.presets import KotiManagerPresets
 from modules.ananicy import AnanicyModule
 from modules.base import BaseModule
 from modules.cpufreq import CpuFreqPolicyModule
@@ -19,28 +23,13 @@ from modules.pacman import PacmanModule
 from modules.ryzen_undervolting import RyzenUndervoltingModule
 from modules.systray import SystrayModule
 
-from koti import *
-from koti.utils import *
-
-from socket import gethostname
 host = gethostname()
-
 nvidia = host == "dan"
-root_uuid = shell_output("findmnt -n -o UUID $(stat -c '%m' /)")
 
-archupdate = Koti(
-  default_confirm_mode = "cautious",
-  managers = [
-    PreHookManager(),
-    PacmanKeyManager(),
-    PacmanPackageManager(PacmanAdapter("sudo -u manuel paru")),
-    SwapfileManager(),
-    FileManager(),
-    SystemdUnitManager(),
-    PostHookManager(),
-  ],
+koti = Koti(
+  managers = KotiManagerPresets.arch(PacmanAdapter("sudo -u manuel paru")),
   modules = [
-    KernelModule(root_uuid = root_uuid, cachyos = True),
+    KernelModule(root_uuid = shell_output("findmnt -n -o UUID $(stat -c '%m' /)"), cachyos = True),
     PacmanModule(cachyos = True),
     FishModule(),
     BaseModule(),
@@ -52,16 +41,16 @@ archupdate = Koti(
     NvidiaUndervoltingModule(enabled = nvidia),
     RyzenUndervoltingModule(),
     NvmeThermalThrottlingModule(),
+    OllamaAichatModule(nvidia = nvidia),
     CpuFreqPolicyModule(
       min_freq = 2000 if host == "dan" else 1500,
       max_freq = 4500,
       governor = "performance" if host == "dan" else "powersave",
     ),
-    OllamaAichatModule(nvidia = nvidia),
   ],
 )
 
-archupdate.plan()
+koti.plan()
 confirm("confirm execution")
-archupdate.apply()
-print("all done.")
+koti.apply()
+print("execution finished.")

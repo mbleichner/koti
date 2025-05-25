@@ -12,5 +12,6 @@ class SystemdUnit(ConfigItem):
     return f"SystemdUnit('{self.identifier}')"
 
 
+# noinspection PyPep8Naming
 def SystemdUnits(*identifiers: str) -> list[SystemdUnit]:
   return [SystemdUnit(identifier) for identifier in identifiers]

@@ -1,6 +1,7 @@
 from inspect import cleandoc
 
 from koti import *
+from koti.utils import *
 
 
 class AnanicyModule(ConfigModule):
