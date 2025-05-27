@@ -12,3 +12,4 @@ Declarative configuration manager to help make yourself at home.
 - Prüfung auf fehlende Manager
 - Prüfung auf doppelt vorhandene Manager
 - SystemdUnits auto-restarten?
+- Manager sollten direct den State manipulieren statt items zurückgeben

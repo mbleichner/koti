@@ -6,6 +6,9 @@ from koti.utils import *
 
 class BaseModule(ConfigModule):
 
+  def __init__(self, swapfile_gb: int):
+    self.swapfile_gb = swapfile_gb
+
   def provides(self) -> ConfigModuleGroups: return [
     ConfigItemGroup(
       ConfirmMode("paranoid"),
@@ -70,7 +73,7 @@ class BaseModule(ConfigModule):
       SystemdUnit("sshd.service"),
       SystemdUnit("systemd-timesyncd.service"),
 
-      Swapfile("/swapfile", 4 * 1024 ** 3),  # 4GB
+      Swapfile("/swapfile", self.swapfile_gb * 1024 ** 3),  # 8GB
 
       File("/etc/vconsole.conf", permissions = 0o444, content = cleandoc('''
         # managed by arch-config
