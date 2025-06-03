@@ -65,6 +65,7 @@ class DesktopModule(ConfigModule):
         Package("spectacle"),
         Package("wine"),
         Package("google-chrome"),
+        Package("microsoft-edge-stable-bin"),
         Package("linphone-desktop-appimage"),
         Package("ttf-ms-win10-auto"),  # Das win11 Package war zuletzt broken
         Package("noto-fonts"),
@@ -72,7 +73,7 @@ class DesktopModule(ConfigModule):
         Package("pycharm-community-edition"),
 
         File("/etc/greetd/config.toml", permissions = 0o444, owner = "manuel", content = cleandoc(f'''
-          # managed by arch-config
+          # managed by koti
           [terminal]
           vt = 2
     
@@ -86,7 +87,7 @@ class DesktopModule(ConfigModule):
         SystemdUnit("bluetooth.service"),
 
         File("/home/manuel/.config/wireplumber/wireplumber.conf.d/priorities.conf", permissions = 0o444, owner = "manuel", content = cleandoc('''
-          # managed by arch-config
+          # managed by koti
           monitor.alsa.rules = [
           
             # Alle Bluetooth Devices bekommen immer Prio 1010 zugewiesen und diese kann hier

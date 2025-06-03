@@ -17,7 +17,7 @@ class PacmanModule(ConfigModule):
       ),
 
       File("/etc/pacman.conf", permissions = 0o444, content = cleandoc('''
-        # managed by arch-config
+        # managed by koti
         [options]
         HoldPkg = pacman glibc
         Architecture = auto x86_64_v3
@@ -53,7 +53,7 @@ class PacmanModule(ConfigModule):
       ''' if self.cachyos else "")),
 
       File("/etc/paru.conf", permissions = 0o444, content = cleandoc('''
-        # managed by arch-config
+        # managed by koti
         [options]
         PgpFetch
         Devel
@@ -66,7 +66,7 @@ class PacmanModule(ConfigModule):
      ''')),
 
       File("/etc/pacman.d/hooks/nvidia.hook", permissions = 0o444, content = cleandoc('''
-        # managed by arch-config
+        # managed by koti
         [Trigger]
         Operation=Install
         Operation=Upgrade
@@ -83,7 +83,7 @@ class PacmanModule(ConfigModule):
      ''')),
 
       File("/etc/xdg/reflector/reflector.conf", permissions = 0o444, content = cleandoc('''
-        # managed by arch-config
+        # managed by koti
         --save /etc/pacman.d/mirrorlist
         --protocol https
         --country France,Germany,Switzerland
@@ -106,7 +106,7 @@ class PacmanModule(ConfigModule):
       Package("arch-update"),
 
       File("/home/manuel/.config/arch-update/arch-update.conf", owner = "manuel", permissions = 0o444, content = cleandoc('''
-        # managed by arch-config
+        # managed by koti
         NoNotification
         KeepOldPackages=2
         KeepUninstalledPackages=0

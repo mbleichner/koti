@@ -17,7 +17,7 @@ class FstabModule(ConfigModule):
       Requires(Swapfile("/swapfile")),
 
       File("/etc/fstab", permissions = 0o444, content = cleandoc('''
-        # managed by arch-config
+        # managed by koti
         # <file system> <dir> <type> <options> <dump> <pass>
         UUID=3409a847-0bd6-43e4-96fd-6e8be4e3c58d  /             ext4  rw,noatime 0 1
         UUID=AF4E-18BD                             /boot         vfat  rw,noatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2

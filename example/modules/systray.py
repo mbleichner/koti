@@ -15,7 +15,7 @@ class SystrayModule(ConfigModule):
       Package("kdialog"),
       File("/opt/systray/cpu/summary", permissions = 0o555, content = cleandoc(r'''
         #!/bin/bash
-        # managed by arch-config
+        # managed by koti
         CPU_MAX=$(( $(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq) / 1000 ))
         SMT="$(cat /sys/devices/system/cpu/smt/control)"
         if [[ "$SMT" == "0" || "$SMT" == "off" ]]; then
@@ -45,7 +45,7 @@ class SystrayModule(ConfigModule):
       Package("python-pynvml"),
       File("/opt/systray/gpu/summary", permissions = 0o555, content = cleandoc(r'''
         #!/usr/bin/python3
-        # managed by arch-config
+        # managed by koti
         from pynvml import *
         nvmlInit()
         myGPU = nvmlDeviceGetHandleByIndex(0)

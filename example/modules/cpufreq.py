@@ -19,7 +19,7 @@ class CpuFreqPolicyModule(ConfigModule):
      ''')),
 
       File("/etc/systemd/system/cpu-freq-after-boot.service", permissions = 0o444, content = cleandoc(f'''
-        # managed by arch-config
+        # managed by koti
         [Unit]
         Description=Throttle CPU after boot
         

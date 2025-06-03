@@ -76,13 +76,13 @@ class BaseModule(ConfigModule):
       Swapfile("/swapfile", self.swapfile_gb * 1024 ** 3),  # 8GB
 
       File("/etc/vconsole.conf", permissions = 0o444, content = cleandoc('''
-        # managed by arch-config
+        # managed by koti
         KEYMAP=de-latin1
         FONT=ter-124b
       ''')),
 
       File("/etc/sudoers", permissions = 0o444, content = cleandoc('''
-        # managed by arch-config
+        # managed by koti
         ## Defaults specification
         ##
         ## Preserve editor environment variables for visudo.
@@ -117,16 +117,23 @@ class BaseModule(ConfigModule):
       ''')),
 
       File("/etc/udev/rules.d/50-disable-usb-wakeup.rules", permissions = 0o444, content = cleandoc('''
-        # managed by arch-config
+        # managed by koti
         ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="usb", ATTR{power/wakeup}="disabled"
       ''')),
 
       File("/home/manuel/.gitconfig", owner = "manuel", permissions = 0o444, content = cleandoc('''
+        # managed by koti
         [user]
         email = mbleichner@gmail.com
         name = Manuel Bleichner
         [pull]
         rebase = true
+      ''')),
+
+      File("/home/manuel/.config/tealdeer/config.toml", owner = "manuel", permissions = 0o444, content = cleandoc('''
+        # managed by koti
+        [updates]
+        auto_update = true
       ''')),
     ),
 

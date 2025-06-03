@@ -15,7 +15,7 @@ class PacmanAdapter:
       return "--noconfirm"
     elif confirm_mode == "paranoid":
       return "--confirm"
-    return "--confirm" if destructive else "--noconfirm"
+    return ""
 
   def update_system(self):
     shell_output(f"{self.pacman} -Syu")

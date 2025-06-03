@@ -14,7 +14,7 @@ class NvidiaUndervoltingModule(ConfigModule):
       Package("python-pynvml"),
 
       File("/opt/undervolting/nvidia-undervolting.py", permissions = 0o444, content = cleandoc('''
-        # managed by arch-config
+        # managed by koti
         from pynvml import *
         
         nvmlInit()
@@ -32,7 +32,7 @@ class NvidiaUndervoltingModule(ConfigModule):
       ''')),
 
       File("/etc/systemd/system/nvidia-undervolting.service", permissions = 0o444, content = cleandoc('''
-        # managed by arch-config
+        # managed by koti
         [Unit]
         Description=NVIDIA Undervolting
         

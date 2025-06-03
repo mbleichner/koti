@@ -19,7 +19,7 @@ class FishModule(ConfigModule):
       ),
 
       File("/etc/fish/config.fish", permissions = 0o444, content = cleandoc(r'''
-        # managed by arch-config
+        # managed by koti
         set fish_greeting ""
         pyenv init - fish | source
         if status is-interactive
@@ -40,7 +40,7 @@ class FishModule(ConfigModule):
       ''')),
 
       File("/etc/fish/functions/fish_prompt.fish", permissions = 0o444, content = cleandoc(r'''
-        # managed by arch-config
+        # managed by koti
         function fish_prompt --description 'Moep'
           set -l last_pipestatus $pipestatus
         
@@ -73,7 +73,7 @@ class FishModule(ConfigModule):
       ''')),
 
       File("/home/manuel/.config/fastfetch/config.jsonc", permissions = 0o444, owner = "manuel", content = cleandoc(r'''
-        // managed by arch-config
+        // managed by koti
         {
           "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
           "logo": { "source": "/home/manuel/.config/fastfetch/fastfetch-logo.png", "height": 13 },

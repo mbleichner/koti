@@ -43,7 +43,7 @@ class KernelModule(ConfigModule):
       Package("linux-cachyos-headers") if self.cachyos else None,
 
       File("/boot/loader/entries/arch-cachyos.conf", permissions = 0o555, content = cleandoc(f'''
-        # managed by arch-config
+        # managed by koti
         title    Arch Linux with CachyOS Kernel
         linux    /vmlinuz-linux-cachyos
         initrd   /initramfs-linux-cachyos.img
@@ -52,7 +52,7 @@ class KernelModule(ConfigModule):
       ''')) if self.cachyos else None,
 
       File("/boot/loader/entries/arch-stock.conf", permissions = 0o555, content = cleandoc(f'''
-        # managed by arch-config
+        # managed by koti
         title    Arch Linux with Stock Kernel
         linux    /vmlinuz-linux
         initrd   /initramfs-linux.img
@@ -61,7 +61,7 @@ class KernelModule(ConfigModule):
       ''')),
 
       File("/boot/loader/entries/arch-fallback.conf", permissions = 0o555, content = cleandoc(f'''
-        # managed by arch-config
+        # managed by koti
         title    Arch Linux Fallback Configuration
         linux    /vmlinuz-linux
         initrd   /initramfs-linux-fallback.img
@@ -70,14 +70,14 @@ class KernelModule(ConfigModule):
       ''')),
 
       File("/boot/loader/loader.conf", permissions = 0o555, content = cleandoc(f'''
-        # managed by arch-config
+        # managed by koti
         default {"arch-cachyos.conf" if self.cachyos else "arch-stock.conf"}
         timeout 3
         console-mode 2
       ''')),
 
       File("/etc/modprobe.d/disable-watchdog-modules.conf", permissions = 0o444, content = cleandoc('''
-        # managed by arch-config
+        # managed by koti
         blacklist sp5100_tco
       ''')),
     )
