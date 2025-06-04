@@ -63,7 +63,7 @@ class FileManager(ConfigManager[File]):
 
     return changed_items
 
-  def finalize(self, items: list[File], core: Koti, state: ExecutionState):
+  def cleanup(self, items: list[File], core: Koti, state: ExecutionState):
     currently_managed_files = [item.identifier for item in items]
     previously_managed_files = self.managed_files_store.keys()
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]

@@ -35,7 +35,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
         units_store.put(item.identifier, {"confirm_mode": mode})
         if user is not None: self.user_list_store.add(user)
 
-  def finalize(self, items: list[SystemdUnit], core: Koti, state: ExecutionState):
+  def cleanup(self, items: list[SystemdUnit], core: Koti, state: ExecutionState):
     shell_interactive(f"systemctl daemon-reload")
 
     previously_seen_users = self.user_list_store.elements()

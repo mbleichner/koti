@@ -53,7 +53,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
           self.create_swapfile(item)
       self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode_for_item(item)})
 
-  def finalize(self, items: list[Swapfile], core: Koti, state: ExecutionState):
+  def cleanup(self, items: list[Swapfile], core: Koti, state: ExecutionState):
     currently_managed_files = [item.identifier for item in items]
     previously_managed_files = self.managed_files_store.keys()
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]

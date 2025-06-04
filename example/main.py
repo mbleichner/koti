@@ -35,7 +35,7 @@ koti = Koti(
     BaseModule(swapfile_gb = 12 if host == "dan" else 4),
     FstabModule(),
     AnanicyModule(),
-    DesktopModule(nvidia = nvidia, autologin = True),
+    DesktopModule(nvidia = nvidia, autologin = True, evsieve = host == "dan"),
     GamingModule(),
     SystrayModule(ryzen = True, nvidia = nvidia),
     NvidiaUndervoltingModule(enabled = nvidia),

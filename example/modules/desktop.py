@@ -2,6 +2,7 @@ from inspect import cleandoc
 from typing import TypedDict
 
 from koti import *
+from koti.utils import shell_interactive
 
 
 class TuiGreetSession(TypedDict):
@@ -10,7 +11,8 @@ class TuiGreetSession(TypedDict):
 
 
 class DesktopModule(ConfigModule):
-  def __init__(self, nvidia: bool, autologin: bool):
+  def __init__(self, nvidia: bool, autologin: bool, evsieve: bool):
+    self.evsieve = evsieve
     self.autologin = autologin
     self.nvidia = nvidia
 
@@ -34,7 +36,7 @@ class DesktopModule(ConfigModule):
 
       ConfigItemGroup(
         Requires(
-          ConfigItemGroup("plasma-optional-dependencies"), # avoid pacman asking for possible alternatives
+          ConfigItemGroup("plasma-optional-dependencies"),  # avoid pacman asking for possible alternatives
           File("/etc/pacman.conf"),  # wg. NoExtract = etc/xdg/autostart/org.kde.discover.notifier.desktop
         ),
         Package("archlinux-wallpaper"),
@@ -114,5 +116,48 @@ class DesktopModule(ConfigModule):
             }
           ]
         ''')),
+      ),
+
+      ConfigItemGroup(
+        "evsieve-karousel-scrolling",
+
+        Package("evsieve"),
+        SystemdUnit("evsieve.service"),
+        File("/etc/systemd/system/evsieve.service", permissions = 0o444, content = cleandoc('''
+          # managed by koti
+          [Unit]
+          Description=evsieve mappings
+          
+          [Service]
+          Type=simple
+          ExecStart=/bin/bash -c "evsieve --input /dev/input/event* grab \
+            --map btn:extra key:leftmeta key:right \
+            --map btn:side key:leftmeta key:left \
+            --output"
+          
+          [Install]
+          WantedBy=graphical.target
+        ''')),
+      ) if self.evsieve else None,
+
+      ConfigItemGroup(
+        "apply-karousel-configuration",
+
+        Package("kwin-karousel"),
+        PostHook("configure-karousel", trigger = "always", execute = lambda: shell_interactive("""
+          kwriteconfig6 --file /home/manuel/.config/kwinrc --group Plugins         --key karouselEnabled true;
+          kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key gapsInnerHorizontal 4;
+          kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key gapsInnerVertical 4;
+          kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key gapsOuterBottom 4;
+          kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key gapsOuterLeft 4;
+          kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key gapsOuterRight 4;
+          kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key gapsOuterTop 4;
+          kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key manualScrollStep 853;
+          kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key presetWidths "33.33%, 66.66%, 100%";
+          kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key resizeNeighborColumn true;
+          kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key stackOffsetX 4;
+          kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key untileOnDrag true;
+        """)),
+        File("/home/manuel/.config/kglobalshortcutsrc", permissions = 0o666, owner = "manuel", path = "files/kglobalshortcutsrc"),
       ),
     ]

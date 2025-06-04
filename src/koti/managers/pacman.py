@@ -92,7 +92,7 @@ class PacmanPackageManager(ConfigManager[Package]):
 
     return list({*additional_items_from_urls, *additional_items_from_repo, *additional_explicit_items})
 
-  def finalize(self, items: list[Package], core: Koti, state: ExecutionState):
+  def cleanup(self, items: list[Package], core: Koti, state: ExecutionState):
     desired = [pkg.identifier for pkg in items]
     explicit = self.delegate.list_explicit_packages()
     confirm_mode = core.get_confirm_mode_for_item(items)
