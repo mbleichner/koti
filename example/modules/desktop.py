@@ -121,6 +121,8 @@ class DesktopModule(ConfigModule):
       ConfigItemGroup(
         "evsieve-karousel-scrolling",
 
+        ConfirmMode("yolo"),
+
         Package("evsieve"),
         SystemdUnit("evsieve.service"),
         File("/etc/systemd/system/evsieve.service", permissions = 0o444, content = cleandoc('''
