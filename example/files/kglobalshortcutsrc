@@ -228,7 +228,7 @@ karousel-column-width-decrease=none,none,Karousel: Decrease column width
 karousel-column-width-increase=none,none,Karousel: Increase column width
 karousel-columns-squeeze-left=none,none,Karousel: Squeeze left column onto the screen
 karousel-columns-squeeze-right=none,none,Karousel: Squeeze right column onto the screen
-karousel-columns-width-equalize=none,none,Karousel: Equalize widths of visible columns
+karousel-columns-width-equalize=Meta+Space,none,Karousel: Equalize widths of visible columns
 karousel-cycle-preset-widths=Meta+Shift+Up\tMeta+PgUp,none,Karousel: Cycle through preset column widths
 karousel-cycle-preset-widths-reverse=Meta+PgDown\tMeta+Shift+Down,none,Karousel: Cycle through preset column widths in reverse
 karousel-focus-1=none,none,Karousel: Move focus to column 1
@@ -291,7 +291,7 @@ karousel-window-move-to-column-7=none,none,Karousel: Move window to column 7
 karousel-window-move-to-column-8=none,none,Karousel: Move window to column 8
 karousel-window-move-to-column-9=none,none,Karousel: Move window to column 9
 karousel-window-move-up=Meta+Ctrl+Up,none,Karousel: Move window up
-karousel-window-toggle-floating=Meta+Space\tMeta+Return,Meta+Return,Karousel: Toggle floating
+karousel-window-toggle-floating=Meta+Return,Meta+Return,Karousel: Toggle floating
 view_actual_size=Meta+0,Meta+0,Zoom to Actual Size
 view_zoom_in=Meta+=\tMeta++,Meta++\tMeta+=,Zoom In
 view_zoom_out=Meta+-,Meta+-,Zoom Out

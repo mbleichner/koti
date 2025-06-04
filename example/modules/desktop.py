@@ -158,7 +158,7 @@ class DesktopModule(ConfigModule):
           kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key presetWidths "33.33%, 66.66%, 100%";
           kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key resizeNeighborColumn true;
           kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key stackOffsetX 4;
-          kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key untileOnDrag true;
+          kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key untileOnDrag false;
         """)),
         File("/home/manuel/.config/kglobalshortcutsrc", permissions = 0o666, owner = "manuel", path = "files/kglobalshortcutsrc"),
       ),
