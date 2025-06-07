@@ -2,6 +2,8 @@
 
 Declarative configuration manager
 
+_(koti = "home" in finnish)_
+
 ## Project State
 
 This project is still very new and in an experimental state. Use at your own risk.
