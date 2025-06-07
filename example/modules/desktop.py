@@ -2,7 +2,6 @@ from inspect import cleandoc
 from typing import TypedDict
 
 from koti import *
-from koti.utils import shell_interactive
 
 
 class TuiGreetSession(TypedDict):
@@ -110,50 +109,5 @@ def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
         }
       ]
     ''')),
-  ),
-
-  # ConfigItemGroup(
-  #   "evsieve-karousel-scrolling",
-  #
-  #   ConfirmMode("yolo"),
-  #
-  #   Package("evsieve"),
-  #   SystemdUnit("evsieve.service"),
-  #   File("/etc/systemd/system/evsieve.service", permissions = 0o444, content = cleandoc('''
-  #     # managed by koti
-  #     [Unit]
-  #     Description=evsieve mappings
-  #
-  #     [Service]
-  #     Type=simple
-  #     ExecStart=/bin/bash -c "evsieve --input /dev/input/event* grab \
-  #       --map btn:extra key:leftmeta key:right \
-  #       --map btn:side key:leftmeta key:left \
-  #       --output"
-  #
-  #     [Install]
-  #     WantedBy=graphical.target
-  #   ''')),
-  # ) if self.evsieve else None,
-
-  ConfigGroup(
-    "apply-karousel-configuration",
-
-    Package("kwin-karousel"),
-    PostHook("configure-karousel", trigger = "always", execute = lambda: shell_interactive("""
-      kwriteconfig6 --file /home/manuel/.config/kwinrc --group Plugins         --key karouselEnabled false;
-      kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key gapsInnerHorizontal 4;
-      kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key gapsInnerVertical 4;
-      kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key gapsOuterBottom 4;
-      kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key gapsOuterLeft 4;
-      kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key gapsOuterRight 4;
-      kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key gapsOuterTop 4;
-      kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key manualScrollStep 853;
-      kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key presetWidths "33.33%, 66.66%, 100%";
-      kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key resizeNeighborColumn true;
-      kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key stackOffsetX 4;
-      kwriteconfig6 --file /home/manuel/.config/kwinrc --group Script-karousel --key untileOnDrag false;
-    """)),
-    File("/home/manuel/.config/kglobalshortcutsrc", permissions = 0o666, owner = "manuel", path = "files/kglobalshortcutsrc"),
   ),
 ]
