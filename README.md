@@ -27,10 +27,11 @@ So I thought I'll give it a shot myself and the result is koti.
 
 ## Features
 
-- Allows writing NixOS-like modular configurations using Python in an easy-to-read syntax
-- Influence execution order by declaring dependencies
-- Easily extensible and customizable behaviour
-- Supports AUR helpers with pacman-compatible syntax (e.g. yay + paru)
+- Allows writing a NixOS-inspired modular declarative configuration for your system in Python
+- Very easy to read and flexible syntax
+- Execution order can easily be influenced by declaring dependencies
+- Extensible and customizable behavior
+- Supports AUR helpers with pacman-compatible syntax (e.g. paru, yay)
 
 ## Limitations
 
