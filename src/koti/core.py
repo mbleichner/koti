@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import logging
 import os
 from collections import defaultdict
 from typing import Literal, Type
+logger = logging.getLogger(__name__)
 
 ConfirmModeValues = Literal["paranoid", "cautious", "yolo"]
 
@@ -26,10 +28,10 @@ class Koti:
 
   def plan(self):
     for phase_idx, phase in enumerate(self.execution_phases):
-      print(f"Phase {phase_idx + 1}:")
+      logger.info(f"Phase {phase_idx + 1}:")
       for manager, items in phase.execution_order:
         for item in items:
-          print(f" - {item}")
+          logger.info(f" - {item}")
 
   def apply(self):
     if os.getuid() != 0:
@@ -58,7 +60,7 @@ class Koti:
     phase = f"phase {phase_idx + 1}" if phase_idx is not None else "cleanup"
     items_string = ", ".join([f"{count} {"items" if count > 1 else "item"} of type {cls}" for cls, count in count_by_class.items()])
     max_manager_name_len = max([len(m.__class__.__name__) for m in self.managers])
-    print(f"{phase}  {manager.__class__.__name__.ljust(max_manager_name_len)}  processing {items_string}")
+    logger.info(f"{phase}  {manager.__class__.__name__.ljust(max_manager_name_len)}  processing {items_string}")
 
   def get_group_for_item(self, item: ConfigItem) -> ConfigGroup:
     for phase in self.execution_phases:
