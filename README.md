@@ -51,10 +51,13 @@ See the `examples` folder, specifically `main.py` and all the stuff in the `modu
 ## Key Concepts
 
 - **config items** declare individual things to install, such as `Package("htop")`, or a `File("/etc/fstab", content="...")`
-- a **config group** consists of multiple config items that are related to each other, such as the `Package("cpupower")` and the `File("/etc/default/cpupower")`
 - **config managers** are responsible for applying config items to your system. They are largely part of koti itself and are not meant to be implemented by the user (although it can be done in case
   you need some special behavior)
-- config groups can declare **dependencies** between each other - this can be necessary if you need to control the order of things happening in koti (see the example code)
+- a **config group** consists of multiple config items that are related to each other, such as the `Package("cpupower")` and the `File("/etc/default/cpupower")`
+- **config groups** tell koti which config items belong together (think of them like namespaces) and they serve multiple purposes:
+    - associate config items with post-hook-actions (such as executing `locale-gen` after changing the `/etc/locale.gen`)
+    - declare shared behavior such as `confirm_mode`, which determines if koti should ask the user about certain system changes
+    - declare **dependencies** between each other in order influence the execution order
 
 ## Dependencies and Phases
 
@@ -66,11 +69,9 @@ Normally, koti will throw all config items onto a big heap and apply everything 
 - Run post-hooks
 
 Now, if a config group B declares a dependency on a config group A, koti has to make sure to run this whole installation process for all A-items before installing any B-items. This is achieved by
-running the above operations multiple times, in so-called **phases**.
+running the above operations multiple times, in so-called **phases**. Within each phase, all items of that phase are bunched together and installed in the above order.
 
-Within each phase, all items of that phase are bunched together and installed in the above order. Phases only add to the system, never remove anything.
-
-After all phases are finished, there is a separate cleanup phase, where the above operations run in reverse order and remove everything from your system that is no longer present in the configs:
+Phases only add to the system, never remove anything. After all phases are finished, there is a separate cleanup phase, where the above operations run in reverse order and remove everything from your system that is no longer present in the configs:
 
 - Disable systemd units no longer present in config
 - Delete files no longer present in config
