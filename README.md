@@ -8,7 +8,7 @@ This project is still very new and in an experimental state. Use at your own ris
 
 ## Motivation
 
-After trying NixOS, i was charmed by how nicely I could describe my whole system using config files. Unfortunately I wasn't able to stay with NixOS due to performance/technical issues that were
+After trying NixOS, I was charmed by how nicely I could describe my whole system using config files. Unfortunately I wasn't able to stay with NixOS due to performance/technical issues that were
 unfortunately rooted in the way Nix works.
 
 So I went back to my beloved Arch and looked for similar solutions that would allow me to describe my whole system in a similar manner. There are a few, but none of them managed to get that
