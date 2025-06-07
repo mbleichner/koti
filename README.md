@@ -40,9 +40,8 @@ So I thought I'll give it a shot myself and the result is koti.
 ## Installation (Arch)
 
 ```bash
-mkdir -p /tmp/koti
-cd /tmp/koti
-curl 
+curl https://raw.githubusercontent.com/mbleichner/koti/refs/heads/master/PKGBUILD --create-dirs -o /tmp/koti/PKGBUILD
+makepkg -si -D /tmp/koti
 ```
 
 ## Example Usage
