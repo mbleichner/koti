@@ -12,9 +12,6 @@ class PreHook(ConfigItem):
     self.identifier = identifier
     self.execute = execute
 
-  def check_configuration(self, state: ExecutionState):
-    pass
-
   def __str__(self):
     return f"PreHook('{self.identifier}')"
 
@@ -29,9 +26,6 @@ class PostHook(ConfigItem):
     self.trigger = trigger
     self.identifier = identifier
     self.execute = execute
-
-  def check_configuration(self, state: ExecutionState):
-    pass
 
   def __str__(self):
     return f"PostHook('{self.identifier}')"

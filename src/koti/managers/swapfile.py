@@ -21,6 +21,10 @@ class SwapfileManager(ConfigManager[Swapfile]):
     store = JsonStore("/var/cache/arch-config/SwapfileManager.json")
     self.managed_files_store = store.mapping("managed_files")
 
+  def check_configuration(self, item: Swapfile, core: Koti):
+    if item.size_bytes is None:
+      raise AssertionError("missing size_bytes parameter")
+
   def execute_phase(self, items: list[Swapfile], core: Koti, state: ExecutionState):
     for item in items:
       exists = os.path.isfile(item.identifier)

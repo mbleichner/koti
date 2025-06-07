@@ -23,10 +23,9 @@ class FileManager(ConfigManager[File]):
     store = JsonStore("/var/cache/arch-config/FileManager.json")
     self.managed_files_store = store.mapping("managed_files")
 
-  def check_configuration(self, item: File, core: Koti) -> str | None:
+  def check_configuration(self, item: File, core: Koti):
     if item.content is None:
-      return "File() needs to define either content or content_from_file"
-    return None
+      raise AssertionError("missing either content or content_from_file")
 
   def execute_phase(self, items: list[File], core: Koti, state: ExecutionState):
     for item in items:

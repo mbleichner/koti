@@ -21,6 +21,9 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
     self.store = JsonStore("/var/cache/arch-config/SystemdUnitManager.json")
     self.user_list_store = self.store.collection("users")
 
+  def check_configuration(self, item: SystemdUnit, core: Koti):
+    pass
+
   def execute_phase(self, items: list[SystemdUnit], core: Koti, state: ExecutionState):
     if len(items) > 0:
       shell_interactive(f"systemctl daemon-reload")

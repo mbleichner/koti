@@ -1,4 +1,4 @@
-from koti.core import Koti, ConfigManager, ConfirmModeValues, ExecutionState
+from koti.core import ConfigManager, ConfirmModeValues, ExecutionState, Koti
 from koti.items.package import Package
 from koti.items.pacman_key import PacmanKey
 from koti.utils.shell import shell_interactive, shell_output, shell_success
@@ -66,6 +66,9 @@ class PacmanPackageManager(ConfigManager[Package]):
     super().__init__()
     self.delegate = delegate
 
+  def check_configuration(self, item: Package, core: Koti):
+    pass
+
   def execute_phase(self, items: list[Package], core: Koti, state: ExecutionState):
     url_items = [item for item in items if item.url is not None]
     repo_items = [item for item in items if item.url is None]
@@ -103,6 +106,9 @@ class PacmanPackageManager(ConfigManager[Package]):
 class PacmanKeyManager(ConfigManager[PacmanKey]):
   managed_classes = [PacmanKey]
 
+  def check_configuration(self, item: PacmanKey, core: Koti):
+    pass
+
   def execute_phase(self, items: list[PacmanKey], core: Koti, state: ExecutionState):
     for item in items:
       key_already_installed = shell_success(f"pacman-key --list-keys | grep {item.key_id}")
@@ -111,3 +117,6 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
         shell_interactive(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
         shell_interactive("sudo pacman-key --lsign-keys {item.key_id}")
         state.updated_items += [item]
+
+  def cleanup(self, items: list[PacmanKey], core: Koti, state: ExecutionState):
+    pass

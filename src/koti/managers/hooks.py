@@ -1,10 +1,14 @@
-from koti.core import Koti, ConfigManager, ExecutionState
+from koti.core import ConfigManager, ExecutionState, Koti
 from koti.items.hooks import PostHook, PreHook
 from koti.utils.confirm import confirm
 
 
 class PreHookManager(ConfigManager[PreHook]):
   managed_classes = [PreHook]
+
+  def check_configuration(self, item: PreHook, core: Koti):
+    if item.execute is None:
+      raise AssertionError("missing execute parameter")
 
   def execute_phase(self, items: list[PreHook], core: Koti, state: ExecutionState):
     for hook in items:
@@ -15,9 +19,16 @@ class PreHookManager(ConfigManager[PreHook]):
       )
       hook.execute()
 
+  def cleanup(self, items: list[PreHook], core: Koti, state: ExecutionState):
+    pass
+
 
 class PostHookManager(ConfigManager[PostHook]):
   managed_classes = [PostHook]
+
+  def check_configuration(self, item: PostHook, core: Koti):
+    if item.execute is None:
+      raise AssertionError("missing execute parameter")
 
   def execute_phase(self, items: list[PostHook], core: Koti, state: ExecutionState):
     for hook in items:
@@ -33,3 +44,6 @@ class PostHookManager(ConfigManager[PostHook]):
     group_containing_hook = core.get_group_for_item(hook)
     triggered_items_in_group = set(group_containing_hook.items).intersection(state.updated_items)
     return len(triggered_items_in_group) > 0
+
+  def cleanup(self, items: list[PostHook], core: Koti, state: ExecutionState):
+    pass

@@ -22,6 +22,7 @@ class Koti:
     self.configs = configs
     self.managers = managers
     self.execution_phases = Koti.build_execution_phases(managers, configs)
+    Koti.check_config_item_consistency(managers, configs, self)
 
   def plan(self):
     for phase_idx, phase in enumerate(self.execution_phases):
@@ -100,6 +101,18 @@ class Koti:
           raise AssertionError(f"multiple managers found for class {item.__class__.__name__}")
 
   @staticmethod
+  def check_config_item_consistency(managers: list[ConfigManager], configs: list[ConfigGroup | None], koti: Koti):
+    for group in Koti.get_all_provided_groups(configs):
+      for item in group.items:
+        if isinstance(item, ConfigMetadata): continue
+        matching_managers = [manager for manager in managers if item.__class__ in manager.managed_classes]
+        manager = matching_managers[0]
+        try:
+          manager.check_configuration(item, koti)
+        except Exception as e:
+          raise AssertionError(f"{manager.__class__.__name__}: {e}")
+
+  @staticmethod
   def reorder_into_phases(merged_groups: list[ConfigGroup]):
     result: list[list[ConfigGroup]] = [merged_groups]
     while True:
@@ -107,6 +120,8 @@ class Koti:
       if violation is None: break
       idx_phase, group = violation
       result[idx_phase].remove(group)
+      if len(result[idx_phase]) == 0:
+        raise AssertionError(f"could not order dependencies (check for circular dependencies))")
       if idx_phase > 0:
         result[idx_phase - 1].append(group)
       else:
@@ -156,6 +171,7 @@ class Koti:
         for required_item in required_items:
           required_phase_idx, required_group = Koti.find_required_group(required_item, phases)
           if required_phase_idx >= phase_idx:
+            if group == required_group: raise AssertionError(f"group with dependency to itself: {group.identifier if group.identifier else "<unnamed>"}")
             return required_phase_idx, required_group
     return None
 
@@ -175,7 +191,7 @@ class ConfigItem:
   def __init__(self, identifier: str):
     self.identifier = identifier
 
-  def check_configuration(self, state: ExecutionState):
+  def check_configuration(self):
     pass
 
 
@@ -192,14 +208,14 @@ class ConfigGroup:
 class ConfigManager[T: ConfigItem]:
   managed_classes: list[Type] = []
 
-  def check_configuration(self, item: T, core: Koti) -> bool:
-    raise "method not implemented: check_configuration"
+  def check_configuration(self, item: T, core: Koti):
+    raise AssertionError("method not implemented: check_configuration")
 
   def execute_phase(self, items: list[T], core: Koti, state: ExecutionState):
-    raise "method not implemented: execute_phase"
+    raise AssertionError("method not implemented: execute_phase")
 
   def cleanup(self, items: list[T], core: Koti, state: ExecutionState):
-    pass
+    raise AssertionError("method not implemented: cleanup")
 
 
 class ConfigMetadata:
