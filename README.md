@@ -2,7 +2,9 @@
 
 Declarative configuration manager
 
-koti = home (finnish)
+## Project State
+
+This project is still very new and in an experimental state. Use at your own risk.
 
 ## Motivation
 
@@ -34,6 +36,14 @@ So I thought I'll give it a shot myself and the result is koti.
 
 - Currently, only Arch/pacman is supported. In the future, I plan to add support for apt, yum, flatpak, etc.
 - No versioning - updates to koti might break your configuration. Ideally, future versions will support some kind of backward compatibility.
+
+## Installation (Arch)
+
+```bash
+mkdir -p /tmp/koti
+cd /tmp/koti
+curl 
+```
 
 ## Example Usage
 
@@ -81,11 +91,3 @@ Before deciding to write my own configuration manager, I tried some alternatives
 - **decman** is a really nice tool that I used for a while. Unfortunately, it makes a few assumptions about the order of things to execute that lead to technical problems. For example - usually you
   install packages and then set up the corresponding config files, but in other cases you need to set up some config files before installing packages (think of `pacman.conf`). Decman doesn't allow you
   to control this, which means when you have to setup a system from scratch, it will crash and you need to fix it by hand.
-
-# TODOs
-
-- Circular Dependency Check
-- Logging Framework
-- Dokumentation
-- Prüfung auf fehlende Manager
-- Prüfung auf doppelt vorhandene Manager~~~~
