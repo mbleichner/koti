@@ -4,164 +4,159 @@ from koti import *
 from koti.utils import *
 
 
-class BaseModule(ConfigModule):
+def base(swapfile_gb: int) -> ConfigGroups: return [
+  ConfigGroup(
+    ConfirmMode("paranoid"),
 
-  def __init__(self, swapfile_gb: int):
-    self.swapfile_gb = swapfile_gb
+    Package("base"),
+    Package("sudo"),
+    Package("terminus-font"),
+    Package("ca-certificates"),
+    Package("ca-certificates-mozilla"),
 
-  def provides(self) -> ConfigModuleGroups: return [
-    ConfigItemGroup(
-      ConfirmMode("paranoid"),
+    # Command Line Utilities
+    Package("nano"),
+    Package("less"),
+    Package("bat"),
+    Package("moreutils"),  # enthält sponge
+    Package("jq"),
+    Package("man-db"),
+    Package("man-pages"),
+    Package("tealdeer"),
+    Package("unrar"),
+    Package("zip"),
+    Package("unzip"),
+    Package("7zip"),
+    Package("yazi"),
+    Package("zoxide"),
 
-      Package("base"),
-      Package("sudo"),
-      Package("terminus-font"),
-      Package("ca-certificates"),
-      Package("ca-certificates-mozilla"),
+    # Monitoring + Analyse
+    Package("btop"),
+    Package("htop"),
+    Package("iotop"),
+    Package("ncdu"),
+    Package("ryzen_monitor-git"),
+    Package("bandwhich"),
 
-      # Command Line Utilities
-      Package("nano"),
-      Package("less"),
-      Package("bat"),
-      Package("moreutils"),  # enthält sponge
-      Package("jq"),
-      Package("man-db"),
-      Package("man-pages"),
-      Package("tealdeer"),
-      Package("unrar"),
-      Package("zip"),
-      Package("unzip"),
-      Package("7zip"),
-      Package("yazi"),
-      Package("zoxide"),
+    # Development und Libraries
+    Package("git"),
+    Package("git-lfs"),
+    Package("tig"),
+    Package("python"),
+    Package("pyenv"),
 
-      # Monitoring + Analyse
-      Package("btop"),
-      Package("htop"),
-      Package("iotop"),
-      Package("ncdu"),
-      Package("ryzen_monitor-git"),
-      Package("bandwhich"),
+    # Networking
+    Package("bind"),
+    Package("networkmanager"),
+    Package("openbsd-netcat"),
+    Package("traceroute"),
+    Package("wireguard-tools"),
+    Package("wget"),
+    Package("openssh"),
 
-      # Development und Libraries
-      Package("git"),
-      Package("git-lfs"),
-      Package("tig"),
-      Package("python"),
-      Package("pyenv"),
+    # Hardware Utilities
+    Package("cpupower"),
+    Package("bluez-utils"),
 
-      # Networking
-      Package("bind"),
-      Package("networkmanager"),
-      Package("openbsd-netcat"),
-      Package("traceroute"),
-      Package("wireguard-tools"),
-      Package("wget"),
-      Package("openssh"),
+    # Dateisysteme
+    Package("gparted"),
+    Package("ntfs-3g"),
+    Package("dosfstools"),
 
-      # Hardware Utilities
-      Package("cpupower"),
-      Package("bluez-utils"),
+    SystemdUnit("NetworkManager.service"),
+    SystemdUnit("wpa_supplicant.service"),
+    SystemdUnit("sshd.service"),
+    SystemdUnit("systemd-timesyncd.service"),
 
-      # Dateisysteme
-      Package("gparted"),
-      Package("ntfs-3g"),
-      Package("dosfstools"),
+    Swapfile("/swapfile", swapfile_gb * 1024 ** 3),  # 8GB
 
-      SystemdUnit("NetworkManager.service"),
-      SystemdUnit("wpa_supplicant.service"),
-      SystemdUnit("sshd.service"),
-      SystemdUnit("systemd-timesyncd.service"),
+    File("/etc/vconsole.conf", permissions = 0o444, content = cleandoc('''
+      # managed by koti
+      KEYMAP=de-latin1
+      FONT=ter-124b
+    ''')),
 
-      Swapfile("/swapfile", self.swapfile_gb * 1024 ** 3),  # 8GB
+    File("/etc/sudoers", permissions = 0o444, content = cleandoc('''
+      # managed by koti
+      ## Defaults specification
+      ##
+      ## Preserve editor environment variables for visudo.
+      ## To preserve these for all commands, remove the "!visudo" qualifier.
+      Defaults!/usr/bin/visudo env_keep += "SUDO_EDITOR EDITOR VISUAL"
+      ##
+      ## Use a hard-coded PATH instead of the user's to find commands.
+      ## This also helps prevent poorly written scripts from running
+      ## artbitrary commands under sudo.
+      Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"
+      
+      # https://www.reddit.com/r/archlinux/comments/dnxjbx/annoyance_with_sudo_password_expired/
+      Defaults passwd_tries=3, passwd_timeout=180
+      
+      # Notwendig für paru SudoLoop ohne initiale Passworteingabe  
+      Defaults verifypw = any
+      
+      root ALL=(ALL:ALL) ALL
+      %wheel ALL=(ALL:ALL) ALL
+      
+      @includedir /etc/sudoers.d
+      
+      # Für die Systray Tools
+      manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/cpupower
+      manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/tee /sys/devices/system/cpu/*
+      manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/nvidia-smi *
+      
+      # Erlaubt von arch-update aufgerufene Kommandos ohne Passwort
+      manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/pacman *
+      manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/paccache *
+      manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/checkservices *
+    ''')),
 
-      File("/etc/vconsole.conf", permissions = 0o444, content = cleandoc('''
-        # managed by koti
-        KEYMAP=de-latin1
-        FONT=ter-124b
-      ''')),
+    File("/etc/udev/rules.d/50-disable-usb-wakeup.rules", permissions = 0o444, content = cleandoc('''
+      # managed by koti
+      ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="usb", ATTR{power/wakeup}="disabled"
+    ''')),
 
-      File("/etc/sudoers", permissions = 0o444, content = cleandoc('''
-        # managed by koti
-        ## Defaults specification
-        ##
-        ## Preserve editor environment variables for visudo.
-        ## To preserve these for all commands, remove the "!visudo" qualifier.
-        Defaults!/usr/bin/visudo env_keep += "SUDO_EDITOR EDITOR VISUAL"
-        ##
-        ## Use a hard-coded PATH instead of the user's to find commands.
-        ## This also helps prevent poorly written scripts from running
-        ## artbitrary commands under sudo.
-        Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"
-        
-        # https://www.reddit.com/r/archlinux/comments/dnxjbx/annoyance_with_sudo_password_expired/
-        Defaults passwd_tries=3, passwd_timeout=180
-        
-        # Notwendig für paru SudoLoop ohne initiale Passworteingabe  
-        Defaults verifypw = any
-        
-        root ALL=(ALL:ALL) ALL
-        %wheel ALL=(ALL:ALL) ALL
-        
-        @includedir /etc/sudoers.d
-        
-        # Für die Systray Tools
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/cpupower
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/tee /sys/devices/system/cpu/*
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/nvidia-smi *
-        
-        # Erlaubt von arch-update aufgerufene Kommandos ohne Passwort
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/pacman *
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/paccache *
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/checkservices *
-      ''')),
+    File("/home/manuel/.gitconfig", owner = "manuel", permissions = 0o444, content = cleandoc('''
+      # managed by koti
+      [user]
+      email = mbleichner@gmail.com
+      name = Manuel Bleichner
+      [pull]
+      rebase = true
+    ''')),
 
-      File("/etc/udev/rules.d/50-disable-usb-wakeup.rules", permissions = 0o444, content = cleandoc('''
-        # managed by koti
-        ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="usb", ATTR{power/wakeup}="disabled"
-      ''')),
+    File("/home/manuel/.config/tealdeer/config.toml", owner = "manuel", permissions = 0o444, content = cleandoc('''
+      # managed by koti
+      [updates]
+      auto_update = true
+    ''')),
+  ),
 
-      File("/home/manuel/.gitconfig", owner = "manuel", permissions = 0o444, content = cleandoc('''
-        # managed by koti
-        [user]
-        email = mbleichner@gmail.com
-        name = Manuel Bleichner
-        [pull]
-        rebase = true
-      ''')),
+  ConfigGroup(
+    "locale-setup",
 
-      File("/home/manuel/.config/tealdeer/config.toml", owner = "manuel", permissions = 0o444, content = cleandoc('''
-        # managed by koti
-        [updates]
-        auto_update = true
-      ''')),
+    File("/etc/locale.conf", permissions = 0o444, content = cleandoc('''
+      LANG=en_US.UTF-8
+      LC_ADDRESS=de_DE.UTF-8
+      LC_IDENTIFICATION=de_DE.UTF-8
+      LC_MEASUREMENT=de_DE.UTF-8
+      LC_MONETARY=de_DE.UTF-8
+      LC_NAME=de_DE.UTF-8
+      LC_NUMERIC=de_DE.UTF-8
+      LC_PAPER=de_DE.UTF-8
+      LC_TELEPHONE=de_DE.UTF-8
+      LC_TIME=de_DE.UTF-8
+    ''')),
+
+    File("/etc/locale.gen", permissions = 0o444, content = cleandoc('''
+      en_US.UTF-8 UTF-8
+      de_DE.UTF-8 UTF-8
+      # Zeilenumbruch hinter den Locales ist wichtig, sonst werden sie ignoriert
+    ''')),
+
+    PostHook(
+      identifier = "regenerate-locales",
+      execute = lambda: shell_interactive("locale-gen")
     ),
-
-    ConfigItemGroup(
-      "locale-setup",
-
-      File("/etc/locale.conf", permissions = 0o444, content = cleandoc('''
-        LANG=en_US.UTF-8
-        LC_ADDRESS=de_DE.UTF-8
-        LC_IDENTIFICATION=de_DE.UTF-8
-        LC_MEASUREMENT=de_DE.UTF-8
-        LC_MONETARY=de_DE.UTF-8
-        LC_NAME=de_DE.UTF-8
-        LC_NUMERIC=de_DE.UTF-8
-        LC_PAPER=de_DE.UTF-8
-        LC_TELEPHONE=de_DE.UTF-8
-        LC_TIME=de_DE.UTF-8
-      ''')),
-
-      File("/etc/locale.gen", permissions = 0o444, content = cleandoc('''
-        en_US.UTF-8 UTF-8
-        de_DE.UTF-8 UTF-8
-        # Zeilenumbruch hinter den Locales ist wichtig, sonst werden sie ignoriert
-      ''')),
-
-      PostHook(
-        identifier = "regenerate-locales",
-        execute = lambda: shell_interactive("locale-gen")
-      ),
-    )
-  ]
+  )
+]

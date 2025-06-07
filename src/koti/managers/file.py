@@ -4,9 +4,9 @@ import pwd
 from pathlib import Path
 from typing import TypedDict
 
+from koti.core import ConfigManager, ConfirmModeValues, ExecutionState, Koti
 from koti.items.file import File
 from koti.utils.confirm import confirm
-from koti.core import Koti, ConfigManager, ConfirmModeValues, ExecutionState
 from koti.utils.json_store import JsonMapping, JsonStore
 
 
@@ -28,8 +28,7 @@ class FileManager(ConfigManager[File]):
       return "File() needs to define either content or content_from_file"
     return None
 
-  def execute_phase(self, items: list[File], core: Koti, state: ExecutionState) -> list[File]:
-    changed_items: list[File] = []
+  def execute_phase(self, items: list[File], core: Koti, state: ExecutionState):
     for item in items:
       directory = os.path.dirname(item.identifier)
       Path(directory).mkdir(parents = True, exist_ok = True)
@@ -48,7 +47,7 @@ class FileManager(ConfigManager[File]):
           destructive = hash_before is not None,
           mode = core.get_confirm_mode_for_item(item),
         )
-        changed_items.append(item)
+        state.updated_items += [item]
 
       with open(item.identifier, 'wb+') as fh:
         fh.write(content)
@@ -60,8 +59,6 @@ class FileManager(ConfigManager[File]):
         raise AssertionError("cannot apply file permissions (incompatible file system?)")
 
       self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode_for_item(item)})
-
-    return changed_items
 
   def cleanup(self, items: list[File], core: Koti, state: ExecutionState):
     currently_managed_files = [item.identifier for item in items]

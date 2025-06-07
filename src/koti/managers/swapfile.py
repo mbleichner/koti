@@ -32,6 +32,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
           mode = core.get_confirm_mode_for_item(item),
         )
         self.create_swapfile(item)
+        state.updated_items += [item]
       elif current_size != item.size_bytes:
         if self.is_mounted(item.identifier):
           confirm(
@@ -43,6 +44,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
           os.unlink(item.identifier)
           self.create_swapfile(item)
           shell_interactive(f"swapon {item.identifier}")
+          state.updated_items += [item]
         else:
           confirm(
             message = f"confirm resize of swapfile {item.identifier}",
@@ -51,6 +53,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
           )
           shell_interactive(f"rm -f {item.identifier}")
           self.create_swapfile(item)
+          state.updated_items += [item]
       self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode_for_item(item)})
 
   def cleanup(self, items: list[Swapfile], core: Koti, state: ExecutionState):

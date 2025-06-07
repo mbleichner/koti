@@ -3,62 +3,56 @@ from inspect import cleandoc
 from koti import *
 
 
-class SystrayModule(ConfigModule):
-  def __init__(self, ryzen: bool, nvidia: bool):
-    self.nvidia = nvidia
-    self.ryzen = ryzen
+def systray(ryzen: bool, nvidia: bool) -> ConfigGroups: return [
+  ConfigGroup(
+    ConfirmMode("yolo"),
+    Package("kdialog"),
+    File("/opt/systray/cpu/summary", permissions = 0o555, content = cleandoc(r'''
+      #!/bin/bash
+      # managed by koti
+      CPU_MAX=$(( $(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq) / 1000 ))
+      SMT="$(cat /sys/devices/system/cpu/smt/control)"
+      if [[ "$SMT" == "0" || "$SMT" == "off" ]]; then
+        CPU_HT=" (HT:off)"
+      fi
+      echo "CPU: ${CPU_MAX}MHz${CPU_HT}"
+      CPU_GOV="$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_governor)"
+      echo "gov:${CPU_GOV}"
+    ''')),
+    systray_dialog("/opt/systray/cpu/dialog", "/opt/systray/cpu/actions"),
+    systray_cpu_governor("/opt/systray/cpu/actions/governor-performance", "performance"),
+    systray_cpu_governor("/opt/systray/cpu/actions/governor-powersave", "powersave"),
+    systray_cpu_freq("/opt/systray/cpu/actions/max-freq-1500mhz", "1500MHz"),
+    systray_cpu_freq("/opt/systray/cpu/actions/max-freq-2000mhz", "2000MHz"),
+    systray_cpu_freq("/opt/systray/cpu/actions/max-freq-2500mhz", "2500MHz"),
+    systray_cpu_freq("/opt/systray/cpu/actions/max-freq-3000mhz", "3000MHz"),
+    systray_cpu_freq("/opt/systray/cpu/actions/max-freq-3500mhz", "3500MHz"),
+    systray_cpu_freq("/opt/systray/cpu/actions/max-freq-4000mhz", "4000MHz"),
+    systray_cpu_freq("/opt/systray/cpu/actions/max-freq-4500mhz", "4500MHz"),
+    systray_hyperthreading("/opt/systray/cpu/actions/hyperthreading-on", "on"),
+    systray_hyperthreading("/opt/systray/cpu/actions/hyperthreading-off", "off"),
+  ) if ryzen else None,
 
-  def provides(self) -> ConfigModuleGroups: return [
-
-    ConfigItemGroup(
-      ConfirmMode("yolo"),
-      Package("kdialog"),
-      File("/opt/systray/cpu/summary", permissions = 0o555, content = cleandoc(r'''
-        #!/bin/bash
-        # managed by koti
-        CPU_MAX=$(( $(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq) / 1000 ))
-        SMT="$(cat /sys/devices/system/cpu/smt/control)"
-        if [[ "$SMT" == "0" || "$SMT" == "off" ]]; then
-          CPU_HT=" (HT:off)"
-        fi
-        echo "CPU: ${CPU_MAX}MHz${CPU_HT}"
-        CPU_GOV="$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_governor)"
-        echo "gov:${CPU_GOV}"
-      ''')),
-      systray_dialog("/opt/systray/cpu/dialog", "/opt/systray/cpu/actions"),
-      systray_cpu_governor("/opt/systray/cpu/actions/governor-performance", "performance"),
-      systray_cpu_governor("/opt/systray/cpu/actions/governor-powersave", "powersave"),
-      systray_cpu_freq("/opt/systray/cpu/actions/max-freq-1500mhz", "1500MHz"),
-      systray_cpu_freq("/opt/systray/cpu/actions/max-freq-2000mhz", "2000MHz"),
-      systray_cpu_freq("/opt/systray/cpu/actions/max-freq-2500mhz", "2500MHz"),
-      systray_cpu_freq("/opt/systray/cpu/actions/max-freq-3000mhz", "3000MHz"),
-      systray_cpu_freq("/opt/systray/cpu/actions/max-freq-3500mhz", "3500MHz"),
-      systray_cpu_freq("/opt/systray/cpu/actions/max-freq-4000mhz", "4000MHz"),
-      systray_cpu_freq("/opt/systray/cpu/actions/max-freq-4500mhz", "4500MHz"),
-      systray_hyperthreading("/opt/systray/cpu/actions/hyperthreading-on", "on"),
-      systray_hyperthreading("/opt/systray/cpu/actions/hyperthreading-off", "off"),
-    ) if self.ryzen else None,
-
-    ConfigItemGroup(  # nvidia Skripte
-      ConfirmMode("yolo"),
-      Package("kdialog"),
-      Package("python-pynvml"),
-      File("/opt/systray/gpu/summary", permissions = 0o555, content = cleandoc(r'''
-        #!/usr/bin/python3
-        # managed by koti
-        from pynvml import *
-        nvmlInit()
-        myGPU = nvmlDeviceGetHandleByIndex(0)
-        print("GPU: %iW" % (nvmlDeviceGetPowerManagementLimit(myGPU) / 1000))
-        print("+%i/+%i" % (nvmlDeviceGetGpcClkVfOffset(myGPU), nvmlDeviceGetMemClkVfOffset(myGPU)))
-      ''')),
-      systray_dialog("/opt/systray/gpu/dialog", "/opt/systray/gpu/actions"),
-      systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-160w", 160),
-      systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-180w", 180),
-      systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-200w", 200),
-      systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-220w", 220),
-    ) if self.nvidia else None
-  ]
+  ConfigGroup(  # nvidia Skripte
+    ConfirmMode("yolo"),
+    Package("kdialog"),
+    Package("python-pynvml"),
+    File("/opt/systray/gpu/summary", permissions = 0o555, content = cleandoc(r'''
+      #!/usr/bin/python3
+      # managed by koti
+      from pynvml import *
+      nvmlInit()
+      myGPU = nvmlDeviceGetHandleByIndex(0)
+      print("GPU: %iW" % (nvmlDeviceGetPowerManagementLimit(myGPU) / 1000))
+      print("+%i/+%i" % (nvmlDeviceGetGpcClkVfOffset(myGPU), nvmlDeviceGetMemClkVfOffset(myGPU)))
+    ''')),
+    systray_dialog("/opt/systray/gpu/dialog", "/opt/systray/gpu/actions"),
+    systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-160w", 160),
+    systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-180w", 180),
+    systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-200w", 200),
+    systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-220w", 220),
+  ) if nvidia else None
+]
 
 
 # ACHTUNG: Beim Aufruf des Skripts per Command Output Widget muss man aufgrund eines

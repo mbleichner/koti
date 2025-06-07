@@ -1,48 +1,51 @@
 from __future__ import annotations
 
-# Bytecode-Compilation deaktivieren, das macht mit sudo sonst immer Probleme
+# disable bytecode compilation (can cause issues with root-owned cache-files)
 import sys
 sys.dont_write_bytecode = True
 
+# import koti stuff
 from koti import *
 from koti.utils import *
-from socket import gethostname
 from koti.presets import KotiManagerPresets
-from modules.ananicy import AnanicyModule
-from modules.base import BaseModule
-from modules.cpufreq import CpuFreqPolicyModule
-from modules.desktop import DesktopModule
-from modules.fish import FishModule
-from modules.fstab import FstabModule
-from modules.gaming import GamingModule
-from modules.kernel import KernelModule
-from modules.nvidia_undervolting import NvidiaUndervoltingModule
-from modules.nvme_thermal_throttling import NvmeThermalThrottlingModule
-from modules.ollama_aichat import OllamaAichatModule
-from modules.pacman import PacmanModule
-from modules.ryzen_undervolting import RyzenUndervoltingModule
-from modules.systray import SystrayModule
 
+# import user configs
+from modules.ananicy import ananicy
+from modules.cpufreq import cpufreq
+from modules.fish import fish
+from modules.fstab import fstab
+from modules.gaming import gaming
+from modules.kernel import kernel
+from modules.nvidia_undervolting import nvidia_undervolting
+from modules.nvme_thermal_throttling import nvme_thermal_throttling
+from modules.ollama_aichat import ollama_aichat
+from modules.ryzen_undervolting import ryzen_undervolting
+from modules.systray import systray
+from modules.base import base
+from modules.desktop import desktop
+from modules.pacman import pacman
+
+from socket import gethostname
 host = gethostname()
 nvidia = host == "dan"
 
 koti = Koti(
   managers = KotiManagerPresets.arch(PacmanAdapter("sudo -u manuel paru")),
-  modules = [
-    KernelModule(root_uuid = shell_output("findmnt -n -o UUID $(stat -c '%m' /)"), cachyos = True),
-    PacmanModule(cachyos = True),
-    FishModule(),
-    BaseModule(swapfile_gb = 12 if host == "dan" else 4),
-    FstabModule(),
-    AnanicyModule(),
-    DesktopModule(nvidia = nvidia, autologin = True, evsieve = host == "dan"),
-    GamingModule(),
-    SystrayModule(ryzen = True, nvidia = nvidia),
-    NvidiaUndervoltingModule(enabled = nvidia),
-    RyzenUndervoltingModule(),
-    NvmeThermalThrottlingModule(),
-    OllamaAichatModule(nvidia = nvidia),
-    CpuFreqPolicyModule(
+  configs = [
+    kernel(root_uuid = shell_output("findmnt -n -o UUID $(stat -c '%m' /)"), cachyos = True),
+    pacman(cachyos = True),
+    fish(),
+    base(swapfile_gb = 12 if host == "dan" else 4),
+    fstab(host),
+    ananicy(),
+    desktop(nvidia = nvidia, autologin = True),
+    gaming(),
+    systray(ryzen = True, nvidia = nvidia),
+    nvidia_undervolting(enabled = nvidia),
+    ryzen_undervolting(),
+    nvme_thermal_throttling(),
+    ollama_aichat(nvidia = nvidia),
+    cpufreq(
       min_freq = 2000 if host == "dan" else 1500,
       max_freq = 4500,
       governor = "performance" if host == "dan" else "powersave",

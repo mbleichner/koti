@@ -6,20 +6,22 @@ from typing import Literal, Type
 
 ConfirmModeValues = Literal["paranoid", "cautious", "yolo"]
 
+type ConfigGroups = list[ConfigGroup | None] | ConfigGroup | None
+
 
 class Koti:
   managers: list[ConfigManager]
-  modules: list[ConfigModule]
+  configs: list[ConfigGroup | None]
   execution_phases: list[ExecutionPhase]
   default_confirm_mode: ConfirmModeValues
 
-  def __init__(self, managers: list[ConfigManager], modules: list[ConfigModule], default_confirm_mode: ConfirmModeValues = "cautious"):
+  def __init__(self, managers: list[ConfigManager], configs: list[ConfigGroup | None], default_confirm_mode: ConfirmModeValues = "cautious"):
     super().__init__()
-    Koti.check_manager_consistency(managers, modules)
+    Koti.check_manager_consistency(managers, configs)
     self.default_confirm_mode = default_confirm_mode
-    self.modules = modules
+    self.configs = configs
     self.managers = managers
-    self.execution_phases = Koti.build_execution_phases(managers, modules)
+    self.execution_phases = Koti.build_execution_phases(managers, configs)
 
   def plan(self):
     for phase_idx, phase in enumerate(self.execution_phases):
@@ -57,7 +59,7 @@ class Koti:
     max_manager_name_len = max([len(m.__class__.__name__) for m in self.managers])
     print(f"{phase}  {manager.__class__.__name__.ljust(max_manager_name_len)}  processing {items_string}")
 
-  def get_group_for_item(self, item: ConfigItem) -> ConfigItemGroup:
+  def get_group_for_item(self, item: ConfigItem) -> ConfigGroup:
     for phase in self.execution_phases:
       for group in phase.merged_groups:
         if item in group.items:
@@ -77,8 +79,8 @@ class Koti:
     return self.default_confirm_mode
 
   @staticmethod
-  def build_execution_phases(managers: list[ConfigManager], modules: list[ConfigModule]) -> list[ExecutionPhase]:
-    original_groups = Koti.get_all_provided_groups(modules)
+  def build_execution_phases(managers: list[ConfigManager], configs: list[ConfigGroup | None]) -> list[ExecutionPhase]:
+    original_groups = Koti.get_all_provided_groups(configs)
     merged_groups = Koti.merge_groups(original_groups)
     merged_groups_ordered_into_phases = Koti.reorder_into_phases(merged_groups)
     execution_phases: list[ExecutionPhase] = [
@@ -87,8 +89,8 @@ class Koti:
     return execution_phases
 
   @staticmethod
-  def check_manager_consistency(managers: list[ConfigManager], modules: list[ConfigModule]):
-    for group in Koti.get_all_provided_groups(modules):
+  def check_manager_consistency(managers: list[ConfigManager], configs: list[ConfigGroup | None]):
+    for group in Koti.get_all_provided_groups(configs):
       for item in group.items:
         if isinstance(item, ConfigMetadata): continue
         matching_managers = [manager for manager in managers if item.__class__ in manager.managed_classes]
@@ -98,8 +100,8 @@ class Koti:
           raise AssertionError(f"multiple managers found for class {item.__class__.__name__}")
 
   @staticmethod
-  def reorder_into_phases(merged_groups: list[ConfigItemGroup]):
-    result: list[list[ConfigItemGroup]] = [merged_groups]
+  def reorder_into_phases(merged_groups: list[ConfigGroup]):
+    result: list[list[ConfigGroup]] = [merged_groups]
     while True:
       violation = Koti.find_dependency_violation(result)
       if violation is None: break
@@ -112,16 +114,15 @@ class Koti:
     return result
 
   @staticmethod
-  def get_all_provided_groups(modules: list[ConfigModule]) -> list[ConfigItemGroup]:
-    result: list[ConfigItemGroup] = []
-    for module in modules:
-      provides_raw = module.provides()
-      provides_list = provides_raw if isinstance(provides_raw, list) else [provides_raw]
-      result += [group for group in provides_list if group is not None]
+  def get_all_provided_groups(configs: list[ConfigGroup | None]) -> list[ConfigGroup]:
+    result: list[ConfigGroup] = []
+    for config_group in configs:
+      config_group_list = config_group if isinstance(config_group, list) else [config_group]
+      result += [group for group in config_group_list if group is not None]
     return result
 
   @staticmethod
-  def create_execution_phase(managers: list[ConfigManager], merged_groups_in_phase: list[ConfigItemGroup]) -> ExecutionPhase:
+  def create_execution_phase(managers: list[ConfigManager], merged_groups_in_phase: list[ConfigGroup]) -> ExecutionPhase:
     flattened_items = [item for group in merged_groups_in_phase for item in group.items]
     execution_order: list[tuple[ConfigManager, list[ConfigItem]]] = []
     for manager in managers:
@@ -131,23 +132,23 @@ class Koti:
     return ExecutionPhase(merged_groups_in_phase, execution_order)
 
   @staticmethod
-  def merge_groups(groups: list[ConfigItemGroup]) -> list[ConfigItemGroup]:
-    grouped_by_identifier: dict[str, list[ConfigItemGroup]] = defaultdict(list)
-    unnamed_groups: list[ConfigItemGroup] = []
+  def merge_groups(groups: list[ConfigGroup]) -> list[ConfigGroup]:
+    grouped_by_identifier: dict[str, list[ConfigGroup]] = defaultdict(list)
+    unnamed_groups: list[ConfigGroup] = []
     for group in groups:
       if group.identifier is not None:
         grouped_by_identifier[group.identifier].append(group)
       else:
         unnamed_groups.append(group)
-    result: list[ConfigItemGroup] = []
+    result: list[ConfigGroup] = []
     for identifier, group_group in grouped_by_identifier.items():
       merged_items = [item for group in group_group for item in group.items]
-      result.append(ConfigItemGroup(identifier, *merged_items))
+      result.append(ConfigGroup(identifier, *merged_items))
     result += unnamed_groups
     return result
 
   @staticmethod
-  def find_dependency_violation(phases: list[list[ConfigItemGroup]]) -> tuple[int, ConfigItemGroup] | None:
+  def find_dependency_violation(phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup] | None:
     for phase_idx, phase in enumerate(phases):
       for group in phase:
         requires_items = [item for item in group.items if isinstance(item, Requires)]
@@ -159,20 +160,15 @@ class Koti:
     return None
 
   @staticmethod
-  def find_required_group(required_item: ConfigItem | ConfigItemGroup, phases: list[list[ConfigItemGroup]]) -> tuple[int, ConfigItemGroup]:
+  def find_required_group(required_item: ConfigItem | ConfigGroup, phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup]:
     for idx_phase, phase in enumerate(phases):
       for group in phase:
-        if isinstance(required_item, ConfigItemGroup) and required_item.identifier == group.identifier:
+        if isinstance(required_item, ConfigGroup) and required_item.identifier == group.identifier:
           return idx_phase, group
         for group_item in group.items:
           if group_item.__class__ == required_item.__class__ and group_item.identifier == required_item.identifier:
             return idx_phase, group
     raise AssertionError("illegal state")
-
-
-class ConfigModule:
-  def provides(self) -> ConfigModuleGroups:
-    return []
 
 
 class ConfigItem:
@@ -183,17 +179,14 @@ class ConfigItem:
     pass
 
 
-class ConfigItemGroup:
+class ConfigGroup:
   identifier: str | None
-  items: list[ConfigItem]
+  items: list[ConfigItem | None]
 
-  def __init__(self, first: str | ConfigItem | ConfigMetadata, *items: ConfigItem | ConfigMetadata):
+  def __init__(self, first: str | ConfigItem | ConfigMetadata, *items: ConfigItem | ConfigMetadata | None):
     self.identifier = None if not isinstance(first, str) else first
     combined_items = ([] if isinstance(first, str) else [first]) + list(items)
     self.items = [item for item in combined_items if item is not None]
-
-
-type ConfigModuleGroups = ConfigItemGroup | list[ConfigItemGroup]
 
 
 class ConfigManager[T: ConfigItem]:
@@ -202,10 +195,10 @@ class ConfigManager[T: ConfigItem]:
   def check_configuration(self, item: T, core: Koti) -> bool:
     raise "method not implemented: check_configuration"
 
-  def execute_phase(self, items: list[T], core: Koti, state: ExecutionState) -> list[T] | None:  # returns updated items
+  def execute_phase(self, items: list[T], core: Koti, state: ExecutionState):
     raise "method not implemented: execute_phase"
 
-  def cleanup(self, items: list[T], core: Koti, state: ExecutionState) -> list[T]:  # returns updated items
+  def cleanup(self, items: list[T], core: Koti, state: ExecutionState):
     pass
 
 
@@ -214,9 +207,9 @@ class ConfigMetadata:
 
 
 class Requires(ConfigMetadata):
-  items: list[ConfigItem | ConfigItemGroup]
+  items: list[ConfigItem | ConfigGroup]
 
-  def __init__(self, *items: ConfigItem | ConfigItemGroup):
+  def __init__(self, *items: ConfigItem | ConfigGroup):
     self.items = list(items)
 
   def __str__(self):
@@ -234,10 +227,10 @@ class ConfirmMode(ConfigMetadata):
 
 
 class ExecutionPhase:
-  merged_groups: list[ConfigItemGroup]
+  merged_groups: list[ConfigGroup]
   execution_order: list[tuple[ConfigManager, list[ConfigItem]]]
 
-  def __init__(self, merged_groups: list[ConfigItemGroup], execution_order: list[tuple[ConfigManager, list[ConfigItem]]]):
+  def __init__(self, merged_groups: list[ConfigGroup], execution_order: list[tuple[ConfigManager, list[ConfigItem]]]):
     super().__init__()
     self.execution_order = execution_order
     self.merged_groups = merged_groups
