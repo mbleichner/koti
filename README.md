@@ -6,26 +6,27 @@ koti = home (finnish)
 
 ## Motivation
 
-After trying NixOS, i was charmed by how nicely I could describe my whole system using config files. Unfortunately I wasn't able to stay with NixOS due to performance issues caused by its unique
-design and having heaps of problems with programs that were just incompatible with the "Nix way".
+After trying NixOS, i was charmed by how nicely I could describe my whole system using config files. Unfortunately I wasn't able to stay with NixOS due to performance/technical issues that were
+unfortunately rooted in the way Nix works.
 
-So I went back to my beloved Arch and looked for similar solutions. There are a few, but I wasn't really satisfied with any of them.
-
-In particular, it seemed to boil down to one core problem: in Arch you do stuff in an incremental way instead of rebuilding the system from scratch every time like in NixOS. And this introduces two
-core problems that need to be solved:
+So I went back to my beloved Arch and looked for similar solutions that would allow me to describe my whole system in a similar manner. There are a few, but none of them managed to get that
+declarative approach quite right, imo.
+Because in Arch you do stuff in an incremental way instead of rebuilding the system from scratch every time like in NixOS, writing a declarative management tool faces two hurdles:
 
 - During system setup, things need to happen in a certain order (for example, when installing a package from another repository, you need to set up pacman keys, install the keyring package, edit
-  `pacman.conf` to include the repo and at last install the desired package)
-- During system maintenance, stuff needs to be removed from the system if it is no longer present in the config (in NixOS this is a non-issue. On other distros this can only be achieved with some kind
+  `pacman.conf` to include the repo and finally install the desired package)
+- During system maintenance, stuff needs to be removed from the system if it is no longer present in the config (in NixOS this is a non-issue; on other distros this can only be achieved with some kind
   of tracking mechanism)
 
-Among all the tools I know and tested, I didn't find any that solved both challenges at the same time. At the end of this readme I wrote down some thoughts about other tools and why I didn't stick
-with them.
+Among the tools I know and tested, I couldn't find one that solved both challenges at the same time (at the end of this readme I wrote down some thoughts about other tools and why I didn't stick
+with them).
+
+So I thought I'll give it a shot myself and the result is koti.
 
 ## Features
 
 - Allows writing NixOS-like modular configurations using Python in an easy-to-read syntax
-- Order of execution can be controlled easily by declaring dependencies
+- Influence execution order by declaring dependencies
 - Easily extensible and customizable behaviour
 - Supports AUR helpers with pacman-compatible syntax (e.g. yay + paru)
 
