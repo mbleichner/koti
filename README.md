@@ -78,8 +78,6 @@ After all phases are finished, there is a separate cleanup phase, where the abov
 
 ## How does koti compare to...
 
-Before deciding to write my own configuration manager, I tried some alternatives, but wasn't really satisfied with any of them.
-
 - **Nix/NixOS** is a really nice concept and the most elegant solution to system configuration that I have encountered so far. Unfortunately, it is also very inflexible. You have to do everything the
   Nix way, which is often complicated as hell and once you have to start digging into the nixpkgs source code, it becomes downright frustrating compared to the simplicity of Arch.
 - **aconfmgr** tries to snapshot the whole system on file-level. This approach leads to giant file collections that capture a lot of things that you don't care about or don't want to capture at all. I
