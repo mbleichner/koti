@@ -15,7 +15,7 @@ unfortunately rooted in the way Nix works.
 
 So I went back to my beloved Arch and looked for similar solutions that would allow me to describe my whole system in a similar manner. There are a few, but none of them managed to get that
 declarative approach quite right, imo.
-Because in Arch you do stuff in an incremental way instead of rebuilding the system from scratch every time like in NixOS, writing a declarative management tool faces two hurdles:
+Because in Arch you do stuff in an incremental way instead of rebuilding the system from scratch every time, a declarative management tool will face two hurdles:
 
 - During system setup, things need to happen in a certain order (for example, when installing a package from another repository, you need to set up pacman keys, install the keyring package, edit
   `pacman.conf` to include the repo and finally install the desired package)
@@ -74,7 +74,8 @@ Normally, koti will throw all config items onto a big heap and apply everything 
 Now, if a config group B declares a dependency on a config group A, koti has to make sure to run this whole installation process for all A-items before installing any B-items. This is achieved by
 running the above operations multiple times, in so-called **phases**. Within each phase, all items of that phase are bunched together and installed in the above order.
 
-Phases only add to the system, never remove anything. After all phases are finished, there is a separate cleanup phase, where the above operations run in reverse order and remove everything from your system that is no longer present in the configs:
+Phases only add to the system, never remove anything. After all phases are finished, there is a separate cleanup phase, where the above operations run in reverse order and remove everything from your
+system that is no longer present in the configs:
 
 - Disable systemd units no longer present in config
 - Delete files no longer present in config
