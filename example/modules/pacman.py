@@ -5,6 +5,24 @@ from koti import *
 
 def pacman(cachyos_kernel: bool) -> ConfigGroups: return [
   ConfigGroup(
+    ConfirmMode("paranoid"),
+
+    PacmanKey("cachyos", key_id = "F3B607488DB35A47"),
+    Package(
+      "cachyos-keyring",
+      url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst"
+    ),
+    Package(
+      "cachyos-mirrorlist",
+      url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst"
+    ),
+    Package(
+      "cachyos-v3-mirrorlist",
+      url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst"
+    ),
+  ),
+
+  ConfigGroup(
 
     Requires(
       Package("cachyos-keyring"),
@@ -90,7 +108,6 @@ def pacman(cachyos_kernel: bool) -> ConfigGroups: return [
     Package("pacman-contrib"),
     Package("pacutils"),
     Package("paru"),
-    Package("decman"),
     Package("base-devel"),
     Package("reflector"),
     Package("lostfiles"),

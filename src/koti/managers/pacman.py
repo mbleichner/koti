@@ -115,7 +115,7 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
       if not key_already_installed:
         print(f"installing pacman-key {item.key_id} from {item.key_server}")
         shell_interactive(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
-        shell_interactive("sudo pacman-key --lsign-keys {item.key_id}")
+        shell_interactive(f"sudo pacman-key --lsign-key {item.key_id}")
         state.updated_items += [item]
 
   def cleanup(self, items: list[PacmanKey], core: Koti, state: ExecutionState):

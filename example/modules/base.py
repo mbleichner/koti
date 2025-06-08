@@ -35,7 +35,6 @@ def base(swapfile_gb: int) -> ConfigGroups: return [
     Package("htop"),
     Package("iotop"),
     Package("ncdu"),
-    Package("ryzen_monitor-git"),
     Package("bandwhich"),
 
     # Development und Libraries
@@ -67,6 +66,7 @@ def base(swapfile_gb: int) -> ConfigGroups: return [
     SystemdUnit("wpa_supplicant.service"),
     SystemdUnit("sshd.service"),
     SystemdUnit("systemd-timesyncd.service"),
+    SystemdUnit("systemd-boot-update.service"),
 
     Swapfile("/swapfile", swapfile_gb * 1024 ** 3),  # 8GB
 

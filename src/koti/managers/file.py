@@ -1,7 +1,6 @@
 import hashlib
 import os
 import pwd
-from pathlib import Path
 from typing import TypedDict
 
 from koti.core import ConfigManager, ConfirmModeValues, ExecutionState, Koti
@@ -27,17 +26,25 @@ class FileManager(ConfigManager[File]):
     if item.content is None:
       raise AssertionError("missing either content or content_from_file")
 
+  def create_dir(self, dir: str, item: File):
+    if os.path.exists(dir): return
+    if not os.path.exists(os.path.dirname(dir)):
+      self.create_dir(os.path.dirname(dir), item)
+    os.mkdir(dir)
+    getpwnam = pwd.getpwnam(item.owner)
+    os.chown(dir, uid = getpwnam.pw_uid, gid = getpwnam.pw_gid)
+
   def execute_phase(self, items: list[File], core: Koti, state: ExecutionState):
     for item in items:
-      directory = os.path.dirname(item.identifier)
-      Path(directory).mkdir(parents = True, exist_ok = True)
-
       getpwnam = pwd.getpwnam(item.owner)
       uid = getpwnam.pw_uid
       gid = getpwnam.pw_gid
       hash_before = file_hash(item.identifier)
       mode = item.permissions
       content = item.content
+
+      directory = os.path.dirname(item.identifier)
+      self.create_dir(directory, item)
 
       hash_after = virtual_file_hash(uid, gid, mode, content)
       if hash_before != hash_after:
