@@ -23,7 +23,7 @@ mserver: list[ConfigGroups] = [
 
   ConfigGroup(
     "networking",
-    SystemdUnit("systemd-networkd"),
+    SystemdUnit("systemd-networkd.service"),
     File("/etc/systemd/network/20-wired.network", permissions = 0o444, content = cleandoc('''
       [Match]
       Name=enp0s31f6
