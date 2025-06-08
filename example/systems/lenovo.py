@@ -20,6 +20,7 @@ lenovo: list[ConfigGroups] = [
   ConfigGroup(
     "networking",
     Package("networkmanager"),
+    SystemdUnit("wpa_supplicant.service"),
     SystemdUnit("NetworkManager.service"),
   ),
 

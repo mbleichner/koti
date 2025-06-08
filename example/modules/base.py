@@ -61,7 +61,6 @@ def base(swapfile_gb: int) -> ConfigGroups: return [
     Package("ntfs-3g"),
     Package("dosfstools"),
 
-    SystemdUnit("wpa_supplicant.service"),
     SystemdUnit("sshd.service"),
     SystemdUnit("systemd-timesyncd.service"),
     SystemdUnit("systemd-boot-update.service"),
