@@ -22,6 +22,12 @@ dan: list[ConfigGroups] = [
   ollama_aichat(cuda = True),
 
   ConfigGroup(
+    "networking",
+    Package("networkmanager"),
+    SystemdUnit("NetworkManager.service"),
+  ),
+
+  ConfigGroup(
     ConfirmMode("paranoid"),
     Requires(Swapfile("/swapfile")),
     File("/etc/fstab", permissions = 0o444, content = cleandoc('''

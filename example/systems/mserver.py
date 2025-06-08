@@ -6,7 +6,7 @@ from systems.common import common
 
 # Configuration for my 7700K homelab server
 mserver: list[ConfigGroups] = [
-  *common(cachyos_kernel = False, swapfile_gb = 8, min_freq = 800, max_freq = 4000, governor = "powersave", throttle_after_boot = False),
+  *common(cachyos_kernel = False, swapfile_gb = 8, min_freq = 800, max_freq = 4200, governor = "powersave", throttle_after_boot = False),
   docker(),
 
   ConfigGroup(
@@ -22,6 +22,22 @@ mserver: list[ConfigGroups] = [
   ),
 
   ConfigGroup(
+    "networking",
+    SystemdUnit("systemd-networkd"),
+    File("/etc/systemd/network/20-wired.network", permissions = 0o444, content = cleandoc('''
+      [Match]
+      Name=enp0s31f6
+      
+      [Network]
+      Address=192.168.1.100/24
+      Address=8.8.8.8/24
+      Address=8.8.4.4/24
+      Gateway=192.168.1.1
+      DNS=192.168.1.1
+    ''')),
+  ),
+
+  ConfigGroup(
     File("/root/system-update.sh", permissions = 0o555, content = cleandoc('''
       #!/bin/bash
       arch-update
@@ -30,54 +46,4 @@ mserver: list[ConfigGroups] = [
       done
     ''')),
   ),
-
-  ConfigGroup(
-    "networking",
-
-    File("/etc/network/interfaces", permissions = 0o444, content = cleandoc('''
-      # managed by koti
-      auto lo
-      iface lo inet loopback
-      
-      auto enp0s31f6
-      iface enp0s31f6 inet static
-        address 192.168.1.100/24
-        gateway 192.168.1.1
-  
-      # Chromecast verwendet hardcoded die Google-Server, also hijacken wir die hier die IP-Adressen.
-      # In der Fritzbox ist eingetragen, dass 8.8.8.8 und 8.8.4.4 hierher umgeleitet werden. (Netzwerk -> statische Routen)
-      iface enp0s31f6 inet static
-        address 8.8.8.8/32
-      iface enp0s31f6 inet static
-        address 8.8.4.4/32
-    ''')),
-
-    File("/etc/NetworkManager/system-connections/LAN.nmconnection", permissions = 0o444, content = cleandoc('''
-      # managed by koti
-      [connection]
-      id=LAN
-      uuid=e9c1c826-bc30-355d-86ae-2a3d3ff40aec
-      type=ethernet
-      autoconnect-priority=-999
-      interface-name=enp0s31f6
-      timestamp=1749381574
-      
-      [ethernet]
-      
-      [ipv4]
-      address1=192.168.1.100/24
-      address2=8.8.8.8/32
-      address3=8.8.4.4/32
-      dns=192.168.1.1;
-      dns-search=fritz.box;
-      gateway=192.168.1.1
-      method=manual
-      
-      [ipv6]
-      addr-gen-mode=default
-      method=auto
-      
-      [proxy]
-    ''')),
-  )
 ]

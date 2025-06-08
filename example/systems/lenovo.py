@@ -18,6 +18,12 @@ lenovo: list[ConfigGroups] = [
   ollama_aichat(cuda = False),
 
   ConfigGroup(
+    "networking",
+    Package("networkmanager"),
+    SystemdUnit("NetworkManager.service"),
+  ),
+
+  ConfigGroup(
     ConfirmMode("paranoid"),
     Requires(Swapfile("/swapfile")),
     File("/etc/fstab", permissions = 0o444, content = cleandoc('''
