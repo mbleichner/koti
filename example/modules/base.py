@@ -130,6 +130,14 @@ def base(swapfile_gb: int) -> ConfigGroups: return [
       [updates]
       auto_update = true
     ''')),
+
+    File("/etc/ssh/sshd_config", owner = "root", permissions = 0o444, content = cleandoc('''
+      # managed by koti
+      Include /etc/ssh/sshd_config.d/*.conf
+      PermitRootLogin yes
+      AuthorizedKeysFile .ssh/authorized_keys
+      Subsystem sftp /usr/lib/ssh/sftp-server
+    ''')),
   ),
 
   ConfigGroup(
