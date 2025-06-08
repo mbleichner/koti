@@ -58,13 +58,13 @@ def pacman(cachyos_kernel: bool) -> ConfigGroups: return [
       Include = /etc/pacman.d/mirrorlist
       [multilib-testing]
       Include = /etc/pacman.d/mirrorlist
-    ''' + '''
+    ''' + ('''
       # CachyOS für den Kernel
       [cachyos-v3]
       Include = /etc/pacman.d/cachyos-v3-mirrorlist
       [cachyos]
       Include = /etc/pacman.d/cachyos-mirrorlist
-    ''' if cachyos_kernel else "")),
+    ''' if cachyos_kernel else ""))),
 
     File("/etc/paru.conf", permissions = 0o444, content = cleandoc('''
       # managed by koti

@@ -15,6 +15,7 @@ mserver: list[ConfigGroups] = [
     File("/etc/fstab", permissions = 0o444, content = cleandoc('''
     # managed by koti
     UUID=77abf8d1-814f-4b0f-b3be-0b5f128f2e34  /      ext4  rw,noatime 0 1
+    UUID=b964a65f-8230-4281-8401-d525b48c2a66  /opt   ext4  rw,noatime 0 1
     UUID=41E5-985A                             /boot  vfat  rw,defaults 0 2
     /swapfile                                  swap   swap  defaults 0 0
   ''')),
@@ -41,14 +42,28 @@ mserver: list[ConfigGroups] = [
         address 8.8.4.4/32
     ''')),
 
-    File("/etc/resolv.conf", permissions = 0o444, content = cleandoc('''
+    File("/etc/NetworkManager/system-connections/LAN.nmconnection", permissions = 0o444, content = cleandoc('''
       # managed by koti
-      domain fritz.box
-      search fritz.box
+      [connection]
+      id=LAN
+      uuid=e9c1c826-bc30-355d-86ae-2a3d3ff40aec
+      type=ethernet
+      autoconnect-priority=-999
+      interface-name=enp0s31f6
+      timestamp=1749378485
       
-      # Lokal ist ein DNS-Server installiert, aber den nutzen wir hier lieber nicht, sonst gibts Probleme, wenn PiHole down ist.
-      # Google darf hier auch nicht benutzt werden, weil wir die Adressen 8.8.8.8 und 8.8.4.4 hijacken (siehe /etc/network/interfaces)
-      nameserver 192.168.1.1
+      [ipv4]
+      address1=192.168.1.100/24
+      address2=8.8.8.8/32
+      address3=8.8.4.4/32
+      dns=192.168.1.1;
+      dns-search=fritz.box;
+      gateway=192.168.1.1
+      method=manual
+      
+      [ipv6]
+      addr-gen-mode=default
+      method=auto
     ''')),
   )
 ]
