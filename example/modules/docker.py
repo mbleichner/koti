@@ -6,4 +6,5 @@ def docker() -> ConfigGroups:
     Package("docker"),
     Package("docker-compose"),
     Package("containerd"),
+    SystemdUnit("docker.service"),
   )
