@@ -22,7 +22,7 @@ mserver: list[ConfigGroups] = [
   ),
 
   ConfigGroup(
-    File("/root/system-update.sh", permissions = 0o444, content = cleandoc('''
+    File("/root/system-update.sh", permissions = 0o555, content = cleandoc('''
       #!/bin/bash
       arch-update
       for DIR in homeassistant nextcloud pihole pyanodon-mapshot samba traefik; do
