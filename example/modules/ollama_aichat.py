@@ -3,10 +3,10 @@ from inspect import cleandoc
 from koti import *
 
 
-def ollama_aichat(nvidia: bool) -> ConfigGroups:
+def ollama_aichat(cuda: bool) -> ConfigGroups:
   return ConfigGroup(
     Package("aichat"),
-    Package("ollama-cuda" if nvidia else "ollama"),
+    Package("ollama-cuda" if cuda else "ollama"),
     File("/home/manuel/.config/aichat/config.yaml", permissions = 0o444, owner = "manuel", content = cleandoc('''
       # managed by koti
       model: ollama:Godmoded/llama3-lexi-uncensored

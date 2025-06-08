@@ -4,18 +4,17 @@ import os
 from collections import defaultdict
 from typing import Literal, Type
 
-ConfirmModeValues = Literal["paranoid", "cautious", "yolo"]
-
+type ConfirmModeValues = Literal["paranoid", "cautious", "yolo"]
 type ConfigGroups = list[ConfigGroup | None] | ConfigGroup | None
 
 
 class Koti:
   managers: list[ConfigManager]
-  configs: list[ConfigGroup | None]
+  configs: list[ConfigGroups]
   execution_phases: list[ExecutionPhase]
   default_confirm_mode: ConfirmModeValues
 
-  def __init__(self, managers: list[ConfigManager], configs: list[ConfigGroup | None], default_confirm_mode: ConfirmModeValues = "cautious"):
+  def __init__(self, managers: list[ConfigManager], configs: list[ConfigGroups], default_confirm_mode: ConfirmModeValues = "cautious"):
     super().__init__()
     Koti.check_manager_consistency(managers, configs)
     self.default_confirm_mode = default_confirm_mode
@@ -80,7 +79,7 @@ class Koti:
     return self.default_confirm_mode
 
   @staticmethod
-  def build_execution_phases(managers: list[ConfigManager], configs: list[ConfigGroup | None]) -> list[ExecutionPhase]:
+  def build_execution_phases(managers: list[ConfigManager], configs: list[ConfigGroups]) -> list[ExecutionPhase]:
     original_groups = Koti.get_all_provided_groups(configs)
     merged_groups = Koti.merge_groups(original_groups)
     merged_groups_ordered_into_phases = Koti.reorder_into_phases(merged_groups)
@@ -90,7 +89,7 @@ class Koti:
     return execution_phases
 
   @staticmethod
-  def check_manager_consistency(managers: list[ConfigManager], configs: list[ConfigGroup | None]):
+  def check_manager_consistency(managers: list[ConfigManager], configs: list[ConfigGroups]):
     for group in Koti.get_all_provided_groups(configs):
       for item in group.items:
         if isinstance(item, ConfigMetadata): continue
@@ -101,7 +100,7 @@ class Koti:
           raise AssertionError(f"multiple managers found for class {item.__class__.__name__}")
 
   @staticmethod
-  def check_config_item_consistency(managers: list[ConfigManager], configs: list[ConfigGroup | None], koti: Koti):
+  def check_config_item_consistency(managers: list[ConfigManager], configs: list[ConfigGroups], koti: Koti):
     for group in Koti.get_all_provided_groups(configs):
       for item in group.items:
         if isinstance(item, ConfigMetadata): continue
@@ -129,7 +128,7 @@ class Koti:
     return result
 
   @staticmethod
-  def get_all_provided_groups(configs: list[ConfigGroup | None]) -> list[ConfigGroup]:
+  def get_all_provided_groups(configs: list[ConfigGroups]) -> list[ConfigGroup]:
     result: list[ConfigGroup] = []
     for config_group in configs:
       config_group_list = config_group if isinstance(config_group, list) else [config_group]

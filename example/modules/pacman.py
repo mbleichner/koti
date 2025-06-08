@@ -3,7 +3,7 @@ from inspect import cleandoc
 from koti import *
 
 
-def pacman(cachyos: bool) -> ConfigGroups: return [
+def pacman(cachyos_kernel: bool) -> ConfigGroups: return [
   ConfigGroup(
 
     Requires(
@@ -46,7 +46,7 @@ def pacman(cachyos: bool) -> ConfigGroups: return [
       Include = /etc/pacman.d/cachyos-v3-mirrorlist
       [cachyos]
       Include = /etc/pacman.d/cachyos-mirrorlist
-    ''' if cachyos else "")),
+    ''' if cachyos_kernel else "")),
 
     File("/etc/paru.conf", permissions = 0o444, content = cleandoc('''
       # managed by koti

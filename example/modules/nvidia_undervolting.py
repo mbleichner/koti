@@ -3,7 +3,7 @@ from inspect import cleandoc
 from koti import *
 
 
-def nvidia_undervolting(enabled: bool) -> ConfigGroups:
+def nvidia_undervolting() -> ConfigGroups:
   return ConfigGroup(
     Package("python-pynvml"),
 
@@ -40,4 +40,4 @@ def nvidia_undervolting(enabled: bool) -> ConfigGroups:
       WantedBy=multi-user.target
    ''')),
     SystemdUnit("nvidia-undervolting.service")
-  ) if enabled else []
+  )
