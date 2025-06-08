@@ -51,8 +51,8 @@ koti = Koti(
     "dan": [
       *common(cachyos_kernel = True, swapfile_gb = 12, min_freq = 2000, max_freq = 4500, governor = "performance"),
       desktop(nvidia = True, autologin = True),
-      gaming(),
       systray(ryzen = True, nvidia = True),
+      gaming(),
       nvme_thermal_throttling(),
       nvidia_undervolting(),
       ryzen_undervolting(),
@@ -61,8 +61,8 @@ koti = Koti(
     "lenovo": [
       *common(cachyos_kernel = True, swapfile_gb = 4, min_freq = 1500, max_freq = 4500, governor = "powersave"),
       desktop(nvidia = False, autologin = True),
-      gaming(),
       systray(ryzen = True, nvidia = False),
+      gaming(),
       ryzen_undervolting(),
       ollama_aichat(cuda = False),
     ],
