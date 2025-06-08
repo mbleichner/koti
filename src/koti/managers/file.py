@@ -19,7 +19,7 @@ class FileManager(ConfigManager[File]):
 
   def __init__(self):
     super().__init__()
-    store = JsonStore("/var/cache/arch-config/FileManager.json")
+    store = JsonStore("/var/cache/koti/FileManager.json")
     self.managed_files_store = store.mapping("managed_files")
 
   def check_configuration(self, item: File, core: Koti):

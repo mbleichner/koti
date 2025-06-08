@@ -18,7 +18,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
 
   def __init__(self):
     super().__init__()
-    self.store = JsonStore("/var/cache/arch-config/SystemdUnitManager.json")
+    self.store = JsonStore("/var/cache/koti/SystemdUnitManager.json")
     self.user_list_store = self.store.collection("users")
 
   def check_configuration(self, item: SystemdUnit, core: Koti):

@@ -18,7 +18,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
 
   def __init__(self):
     super().__init__()
-    store = JsonStore("/var/cache/arch-config/SwapfileManager.json")
+    store = JsonStore("/var/cache/koti/SwapfileManager.json")
     self.managed_files_store = store.mapping("managed_files")
 
   def check_configuration(self, item: Swapfile, core: Koti):
