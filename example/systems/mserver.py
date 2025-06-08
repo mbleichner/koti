@@ -22,6 +22,16 @@ mserver: list[ConfigGroups] = [
   ),
 
   ConfigGroup(
+    File("/root/system-update.sh", permissions = 0o444, content = cleandoc('''
+      #!/bin/bash
+      arch-update
+      for DIR in homeassistant nextcloud pihole pyanodon-mapshot samba traefik; do
+        cd /opt/$DIR && docker compose pull && docker compose up -d
+      done
+    ''')),
+  ),
+
+  ConfigGroup(
     "networking",
 
     File("/etc/network/interfaces", permissions = 0o444, content = cleandoc('''
