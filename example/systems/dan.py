@@ -12,7 +12,7 @@ from systems.common import common
 
 # Configuration for my DAN A4-SFX gaming machine (Ryzen 5800X3D, RTX3080)
 dan: list[ConfigGroups] = [
-  *common(cachyos_kernel = True, swapfile_gb = 12, min_freq = 2000, max_freq = 4500, governor = "performance"),
+  *common(cachyos_kernel = True, swapfile_gb = 12, min_freq = 2000, max_freq = 4500, governor = "performance", throttle_after_boot = True),
   desktop(nvidia = True, autologin = True),
   systray(ryzen = True, nvidia = True),
   gaming(),

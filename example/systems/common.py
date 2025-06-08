@@ -8,7 +8,7 @@ from modules.pacman import pacman
 
 
 # Configuration that is shared between all of my systems
-def common(cachyos_kernel: bool, swapfile_gb: int, min_freq: int, max_freq: int, governor: str) -> ConfigGroups: return [
+def common(cachyos_kernel: bool, swapfile_gb: int, min_freq: int, max_freq: int, governor: str, throttle_after_boot: bool) -> ConfigGroups: return [
   kernel(cachyos_kernel = cachyos_kernel),
   pacman(cachyos_kernel = cachyos_kernel),
   base(swapfile_gb = swapfile_gb),
@@ -18,5 +18,6 @@ def common(cachyos_kernel: bool, swapfile_gb: int, min_freq: int, max_freq: int,
     min_freq = min_freq,
     max_freq = max_freq,
     governor = governor,
+    throttle_after_boot = throttle_after_boot,
   ),
 ]

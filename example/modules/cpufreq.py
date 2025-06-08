@@ -3,9 +3,10 @@ from inspect import cleandoc
 from koti import *
 
 
-def cpufreq(min_freq: int, max_freq: int, governor: str) -> ConfigGroups:
+def cpufreq(min_freq: int, max_freq: int, governor: str, throttle_after_boot: bool) -> ConfigGroups:
   return ConfigGroup(
     Package("cpupower"),
+
     File("/etc/default/cpupower", permissions = 0o444, content = cleandoc(f'''
       governor="{governor}"
       min_freq="{min_freq}MHz"
@@ -23,7 +24,7 @@ def cpufreq(min_freq: int, max_freq: int, governor: str) -> ConfigGroups:
       
       [Install]
       WantedBy=graphical.target
-   ''')),
+   ''')) if throttle_after_boot else None,
 
-    SystemdUnit("cpu-freq-after-boot.service")
+    SystemdUnit("cpu-freq-after-boot.service") if throttle_after_boot else None,
   )
