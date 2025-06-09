@@ -1,15 +1,20 @@
 from inspect import cleandoc
 
 from koti import *
+from modules.base import base, swapfile
+from modules.cpufreq import cpufreq
 from modules.docker import docker
+from modules.fish import fish
 from modules.kernel import kernel_lts, kernel_stock
-from systems.common import common
 
 # Configuration for my 7700K homelab server
 mserver: list[ConfigGroups] = [
-  *common(cachyos_repo = False, swapfile_gb = 8, min_freq = 800, max_freq = 4200, governor = "powersave", throttle_after_boot = False),
+  base(cachyos_repo = False),
+  cpufreq(min_freq = 800, max_freq = 4200, governor = "powersave"),
+  swapfile(8),
   kernel_lts(10),
   kernel_stock(20),
+  fish(),
   docker(),
 
   ConfigGroup(

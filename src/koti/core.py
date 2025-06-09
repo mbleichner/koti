@@ -165,17 +165,19 @@ class Koti:
   def find_dependency_violation(phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup] | None:
     for phase_idx, phase in enumerate(phases):
       for group in phase:
-        requires_items = [item for item in group.items if isinstance(item, Requires)]
-        required_items = [item for req in requires_items for item in req.items]
-        for required_item in required_items:
-          required_phase_idx, required_group = Koti.find_required_group(required_item, phases)
-          if required_phase_idx >= phase_idx:
-            if group == required_group: raise AssertionError(f"group with dependency to itself: {group.identifier if group.identifier else "<unnamed>"}")
-            return required_phase_idx, required_group
+        for requires_item in [item for item in group.items if isinstance(item, Requires)]:
+          for required_item in requires_item.items:
+            required_phase_and_group = Koti.find_required_group(required_item, phases)
+            if required_phase_and_group is None:
+              raise AssertionError(f"required item not found: {required_item}")
+            required_phase_idx, required_group = required_phase_and_group
+            if required_phase_idx >= phase_idx:
+              if group == required_group: raise AssertionError(f"group with dependency to itself: {group.identifier if group.identifier else "<unnamed>"}")
+              return required_phase_idx, required_group
     return None
 
   @staticmethod
-  def find_required_group(required_item: ConfigItem | ConfigGroup, phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup]:
+  def find_required_group(required_item: ConfigItem | ConfigGroup, phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup] | None:
     for idx_phase, phase in enumerate(phases):
       for group in phase:
         if isinstance(required_item, ConfigGroup) and required_item.identifier == group.identifier:
@@ -183,7 +185,7 @@ class Koti:
         for group_item in group.items:
           if group_item.__class__ == required_item.__class__ and group_item.identifier == required_item.identifier:
             return idx_phase, group
-    raise AssertionError("illegal state")
+    return None
 
 
 class ConfigItem:
@@ -228,7 +230,17 @@ class Requires(ConfigMetadata):
     self.items = list(items)
 
   def __str__(self):
-    return f"Require({", ".join([str(item) for item in self.items])})"
+    return f"Requires({", ".join([str(item) for item in self.items])})"
+
+
+# class After(ConfigMetadata):
+#   items: list[ConfigItem | ConfigGroup]
+#
+#   def __init__(self, *items: ConfigItem | ConfigGroup):
+#     self.items = list(items)
+#
+#   def __str__(self):
+#     return f"After({", ".join([str(item) for item in self.items])})"
 
 
 class ConfirmMode(ConfigMetadata):

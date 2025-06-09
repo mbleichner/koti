@@ -1,20 +1,26 @@
 from inspect import cleandoc
 
 from koti import *
+from modules.base import base, swapfile
+from modules.cpufreq import cpufreq, throttle_after_boot
 from modules.desktop import desktop
+from modules.fish import fish
 from modules.gaming import gaming
 from modules.kernel import kernel_cachyos, kernel_lts, kernel_stock
 from modules.ollama_aichat import ollama_aichat
 from modules.ryzen_undervolting import ryzen_undervolting
 from modules.systray import systray
-from systems.common import common
 
 # Configuration for my Lenovo X13 laptop
 lenovo: list[ConfigGroups] = [
-  *common(cachyos_repo = True, swapfile_gb = 4, min_freq = 1500, max_freq = 4500, governor = "powersave", throttle_after_boot = True),
+  base(cachyos_repo = True),
+  cpufreq(min_freq = 1000, max_freq = 4500, governor = "powersave"),
+  throttle_after_boot(1500),
+  swapfile(4),
   kernel_cachyos(10),
   kernel_stock(20),
   kernel_lts(30),
+  fish(),
   desktop(nvidia = False, autologin = True),
   systray(ryzen = True, nvidia = False),
   gaming(),
