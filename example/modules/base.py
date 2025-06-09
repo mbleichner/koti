@@ -107,7 +107,7 @@ def base(cachyos_repo: bool) -> ConfigGroups: return [
       Include = /etc/pacman.d/mirrorlist
       [multilib-testing]
       Include = /etc/pacman.d/mirrorlist
-    ''') + "\n\n" + cleandoc('''
+    ''') + "\n\n\n" + cleandoc('''
       # CachyOS für den Kernel
       [cachyos-v3]
       Include = /etc/pacman.d/cachyos-v3-mirrorlist
@@ -160,6 +160,8 @@ def base(cachyos_repo: bool) -> ConfigGroups: return [
     Package("base-devel"),
     Package("reflector"),
     Package("lostfiles"),
+
+    PostHook("update-package-database", lambda: shell_interactive("pacman -Sy"))
   ),
 
   ConfigGroup(
