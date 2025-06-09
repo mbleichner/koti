@@ -3,6 +3,7 @@ from inspect import cleandoc
 from koti import *
 from modules.desktop import desktop
 from modules.gaming import gaming
+from modules.kernel import kernel_cachyos, kernel_lts, kernel_stock
 from modules.ollama_aichat import ollama_aichat
 from modules.ryzen_undervolting import ryzen_undervolting
 from modules.systray import systray
@@ -10,7 +11,10 @@ from systems.common import common
 
 # Configuration for my Lenovo X13 laptop
 lenovo: list[ConfigGroups] = [
-  *common(cachyos_kernel = True, swapfile_gb = 4, min_freq = 1500, max_freq = 4500, governor = "powersave", throttle_after_boot = True),
+  *common(cachyos_repo = True, swapfile_gb = 4, min_freq = 1500, max_freq = 4500, governor = "powersave", throttle_after_boot = True),
+  kernel_cachyos(10),
+  kernel_stock(20),
+  kernel_lts(30),
   desktop(nvidia = False, autologin = True),
   systray(ryzen = True, nvidia = False),
   gaming(),

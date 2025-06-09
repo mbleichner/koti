@@ -3,9 +3,10 @@ from inspect import cleandoc
 from koti import *
 from koti.utils import shell_output
 
+root_uuid = shell_output("findmnt -n -o UUID $(stat -c '%m' /)")
 
-def kernel(cachyos_kernel: bool) -> ConfigGroups:
-  root_uuid = shell_output("findmnt -n -o UUID $(stat -c '%m' /)")
+
+def kernel_cachyos(sortkey: int) -> ConfigGroups:
   return [
     ConfigGroup(
       ConfirmMode("paranoid"),
@@ -15,12 +16,8 @@ def kernel(cachyos_kernel: bool) -> ConfigGroups:
         Package("cachyos-v3-mirrorlist")
       ),
 
-      Package("linux"),
-      Package("linux-firmware"),
-      Package("linux-headers"),
-      Package("efibootmgr"),
-      Package("linux-cachyos") if cachyos_kernel else None,
-      Package("linux-cachyos-headers") if cachyos_kernel else None,
+      Package("linux-cachyos"),
+      Package("linux-cachyos-headers"),
 
       File("/boot/loader/entries/arch-cachyos.conf", permissions = 0o555, content = cleandoc(f'''
         # managed by koti
@@ -28,8 +25,18 @@ def kernel(cachyos_kernel: bool) -> ConfigGroups:
         linux    /vmlinuz-linux-cachyos
         initrd   /initramfs-linux-cachyos.img
         options  root=UUID={root_uuid} rw console=tty1 loglevel=3 nowatchdog zswap.enabled=1
-        sort-key 0
-      ''')) if cachyos_kernel else None,
+        sort-key {sortkey}
+      ''')),
+    )
+  ]
+
+
+def kernel_stock(sortkey: int) -> ConfigGroups:
+  return [
+    ConfigGroup(
+      ConfirmMode("paranoid"),
+      Package("linux"),
+      Package("linux-headers"),
 
       File("/boot/loader/entries/arch-stock.conf", permissions = 0o555, content = cleandoc(f'''
         # managed by koti
@@ -37,28 +44,44 @@ def kernel(cachyos_kernel: bool) -> ConfigGroups:
         linux    /vmlinuz-linux
         initrd   /initramfs-linux.img
         options  root=UUID={root_uuid} rw console=tty1 loglevel=3 nowatchdog zswap.enabled=1
-        sort-key 10
+        sort-key {sortkey}
       ''')),
 
-      File("/boot/loader/entries/arch-fallback.conf", permissions = 0o555, content = cleandoc(f'''
+      File("/boot/loader/entries/arch-stock-fallback.conf", permissions = 0o555, content = cleandoc(f'''
         # managed by koti
-        title    Arch Linux Fallback Configuration
+        title    Arch Linux with Stock Kernel (Fallback)
         linux    /vmlinuz-linux
         initrd   /initramfs-linux-fallback.img
         options  root=UUID={root_uuid} rw
-        sort-key 99
+        sort-key {sortkey + 100}
+      ''')),
+    )
+  ]
+
+
+def kernel_lts(sortkey: int) -> ConfigGroups:
+  return [
+    ConfigGroup(
+      ConfirmMode("paranoid"),
+      Package("linux-lts"),
+      Package("linux-lts-headers"),
+
+      File("/boot/loader/entries/arch-lts.conf", permissions = 0o555, content = cleandoc(f'''
+        # managed by koti
+        title    Arch Linux with LTS Kernel
+        linux    /vmlinuz-linux-lts
+        initrd   /initramfs-linux-lts.img
+        options  root=UUID={root_uuid} rw console=tty1 loglevel=3 nowatchdog zswap.enabled=1
+        sort-key {sortkey}
       ''')),
 
-      File("/boot/loader/loader.conf", permissions = 0o555, content = cleandoc(f'''
+      File("/boot/loader/entries/arch-lts-fallback.conf", permissions = 0o555, content = cleandoc(f'''
         # managed by koti
-        default {"arch-cachyos.conf" if cachyos_kernel else "arch-stock.conf"}
-        timeout 3
-        console-mode 2
-      ''')),
-
-      File("/etc/modprobe.d/disable-watchdog-modules.conf", permissions = 0o444, content = cleandoc('''
-        # managed by koti
-        blacklist sp5100_tco
+        title    Arch Linux with LTS Kernel (Fallback)
+        linux    /vmlinuz-linux-lts
+        initrd   /initramfs-linux-lts-fallback.img
+        options  root=UUID={root_uuid} rw
+        sort-key {sortkey + 100}
       ''')),
     )
   ]

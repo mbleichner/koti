@@ -8,6 +8,8 @@ def base(swapfile_gb: int) -> ConfigGroups: return [
   ConfigGroup(
     ConfirmMode("paranoid"),
 
+    Package("linux-firmware"),
+    Package("efibootmgr"),
     Package("base"),
     Package("sudo"),
     Package("terminus-font"),
@@ -66,6 +68,17 @@ def base(swapfile_gb: int) -> ConfigGroups: return [
     SystemdUnit("systemd-boot-update.service"),
 
     Swapfile("/swapfile", swapfile_gb * 1024 ** 3),  # 8GB
+
+    File("/boot/loader/loader.conf", permissions = 0o555, content = cleandoc(f'''
+      # managed by koti
+      timeout 3
+      console-mode 2
+    ''')),
+
+    File("/etc/modprobe.d/disable-watchdog-modules.conf", permissions = 0o444, content = cleandoc('''
+      # managed by koti
+      blacklist sp5100_tco
+    ''')),
 
     File("/etc/vconsole.conf", permissions = 0o444, content = cleandoc('''
       # managed by koti

@@ -2,11 +2,14 @@ from inspect import cleandoc
 
 from koti import *
 from modules.docker import docker
+from modules.kernel import kernel_lts, kernel_stock
 from systems.common import common
 
 # Configuration for my 7700K homelab server
 mserver: list[ConfigGroups] = [
-  *common(cachyos_kernel = False, swapfile_gb = 8, min_freq = 800, max_freq = 4200, governor = "powersave", throttle_after_boot = False),
+  *common(cachyos_repo = False, swapfile_gb = 8, min_freq = 800, max_freq = 4200, governor = "powersave", throttle_after_boot = False),
+  kernel_lts(10),
+  kernel_stock(20),
   docker(),
 
   ConfigGroup(
