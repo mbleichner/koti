@@ -27,6 +27,15 @@ def kernel_cachyos(sortkey: int) -> ConfigGroups:
         options  root=UUID={root_uuid} rw console=tty1 loglevel=3 nowatchdog zswap.enabled=1
         sort-key {sortkey}
       ''')),
+
+      File("/boot/loader/entries/arch-cachyos-fallback.conf", permissions = 0o555, content = cleandoc(f'''
+        # managed by koti
+        title    Arch Linux with CachyOS Kernel (Fallback)
+        linux    /vmlinuz-linux-cachyos
+        initrd   /initramfs-linux-cachyos-fallback.img
+        options  root=UUID={root_uuid} rw
+        sort-key {sortkey + 80}
+      ''')),
     )
   ]
 
@@ -53,7 +62,7 @@ def kernel_stock(sortkey: int) -> ConfigGroups:
         linux    /vmlinuz-linux
         initrd   /initramfs-linux-fallback.img
         options  root=UUID={root_uuid} rw
-        sort-key {sortkey + 100}
+        sort-key {sortkey + 80}
       ''')),
     )
   ]
@@ -81,7 +90,7 @@ def kernel_lts(sortkey: int) -> ConfigGroups:
         linux    /vmlinuz-linux-lts
         initrd   /initramfs-linux-lts-fallback.img
         options  root=UUID={root_uuid} rw
-        sort-key {sortkey + 100}
+        sort-key {sortkey + 80}
       ''')),
     )
   ]

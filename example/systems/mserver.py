@@ -12,8 +12,8 @@ mserver: list[ConfigGroups] = [
   base(cachyos_repo = False),
   cpufreq(min_freq = 800, max_freq = 4200, governor = "powersave"),
   swapfile(8),
-  kernel_lts(10),
-  kernel_stock(20),
+  kernel_lts(1),
+  kernel_stock(2),
   fish(),
   docker(),
 
