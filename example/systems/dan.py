@@ -13,7 +13,7 @@ from modules.ollama_aichat import ollama_aichat
 from modules.ryzen_undervolting import ryzen_undervolting
 from modules.systray import systray
 
-# Configuration for my DAN A4-SFX gaming machine (Ryzen 5800X3D, RTX3080)
+# Configuration for my DAN A4-SFX desktop machine (Ryzen 5800X3D, RTX3080)
 dan: list[ConfigGroups] = [
   base(cachyos_repo = True),
   cpufreq(min_freq = 2000, max_freq = 4500, governor = "performance", ),
