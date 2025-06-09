@@ -80,5 +80,5 @@ def fish() -> ConfigGroups:
       }
     ''')),
 
-    File("/home/manuel/.config/fastfetch/fastfetch-logo.png", permissions = 0o444, owner = "manuel", path = "files/fastfetch-logo.png"),
+    File("/home/manuel/.config/fastfetch/fastfetch-logo.png", permissions = 0o444, owner = "manuel", content_from_file = "files/fastfetch-logo.png"),
   )

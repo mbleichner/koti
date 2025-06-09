@@ -12,13 +12,13 @@ class File(ConfigItem):
     self,
     identifier: str,
     content: str = None,
-    path = None,
+    content_from_file = None,
     permissions: int = 0o444,
     owner: str = "root",
   ):
     super().__init__(identifier)
     if content is not None: self.content = content.encode("utf-8")
-    if path is not None: self.content = Path(path).read_bytes()
+    if content_from_file is not None: self.content = Path(content_from_file).read_bytes()
     self.permissions = permissions
     self.owner = owner
 
