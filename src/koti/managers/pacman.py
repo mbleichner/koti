@@ -47,7 +47,6 @@ class PacmanAdapter:
       shell_interactive(f"{self.pacman} -D --asdeps {confirm_args} {" ".join(packages)}")
 
   def prune_unneeded(self, confirm_mode: ConfirmModeValues):
-    # https://wiki.archlinux.org/title/Pacman/Tips_and_tricks
     unneeded_packages = self.parse_pkgs(shell_output(f"{self.pacman} -Qdttq", check = False))
     if len(unneeded_packages) > 0:
       confirm_args = self.confirm_args(destructive = True, confirm_mode = confirm_mode)
