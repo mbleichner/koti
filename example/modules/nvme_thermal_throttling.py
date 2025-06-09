@@ -6,6 +6,7 @@ from koti import *
 def nvme_thermal_throttling() -> ConfigGroups:
   return ConfigGroup(
     Package("nvme-cli"),
+
     File("/etc/systemd/system/nvme-thermal-throttling.service", permissions = 0o444, content = cleandoc('''
       # managed by koti
       [Unit]

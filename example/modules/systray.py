@@ -22,6 +22,7 @@ def systray(ryzen: bool, nvidia: bool) -> ConfigGroups: return [
     systray_dialog("/opt/systray/cpu/dialog", "/opt/systray/cpu/actions"),
     systray_cpu_governor("/opt/systray/cpu/actions/governor-performance", "performance"),
     systray_cpu_governor("/opt/systray/cpu/actions/governor-powersave", "powersave"),
+    systray_cpu_freq("/opt/systray/cpu/actions/max-freq-1000mhz", "1000MHz"),
     systray_cpu_freq("/opt/systray/cpu/actions/max-freq-1500mhz", "1500MHz"),
     systray_cpu_freq("/opt/systray/cpu/actions/max-freq-2000mhz", "2000MHz"),
     systray_cpu_freq("/opt/systray/cpu/actions/max-freq-2500mhz", "2500MHz"),

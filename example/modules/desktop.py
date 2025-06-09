@@ -4,18 +4,6 @@ from typing import TypedDict
 from koti import *
 
 
-class TuiGreetSession(TypedDict):
-  user: str
-  command: str
-
-
-def tuigreet_session(autologin: bool) -> TuiGreetSession:
-  if autologin:
-    return {"user": "manuel", "command": "startplasma-wayland"}
-  else:
-    return {"user": "greeter", "command": "tuigreet -trc startplasma-wayland"}
-
-
 def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
   ConfigGroup(
     "plasma-optional-dependencies",
@@ -181,3 +169,15 @@ def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
     ''')),
   )
 ]
+
+
+class TuiGreetSession(TypedDict):
+  user: str
+  command: str
+
+
+def tuigreet_session(autologin: bool) -> TuiGreetSession:
+  if autologin:
+    return {"user": "manuel", "command": "startplasma-wayland"}
+  else:
+    return {"user": "greeter", "command": "tuigreet -trc startplasma-wayland"}
