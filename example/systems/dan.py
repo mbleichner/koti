@@ -21,7 +21,6 @@ dan: list[ConfigGroups] = [
   swapfile(12),
   kernel_cachyos(1),
   kernel_stock(2),
-  kernel_lts(3),
   fish(),
   desktop(nvidia = True, autologin = True),
   systray(ryzen = True, nvidia = True),
