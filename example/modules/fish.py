@@ -54,7 +54,7 @@ def fish() -> ConfigGroups:
         printf '@'
         
         if test -n "$SSH_CLIENT"
-          set_color red
+          set_color yellow
         else
           set_color brblue
         end
