@@ -57,7 +57,7 @@ mserver: list[ConfigGroups] = [
     File("/root/system-update.sh", permissions = 0o555, content = cleandoc('''
       #!/bin/bash
       arch-update
-      for DIR in homeassistant nextcloud pihole pyanodon-mapshot samba traefik; do
+      for DIR in homeassistant nextcloud pihole pyanodon-mapshot samba pacoloco traefik; do
         cd /opt/$DIR && docker compose pull && docker compose up -d
       done
     ''')),

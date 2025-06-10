@@ -51,6 +51,8 @@ def base() -> ConfigGroups: return [
     Package("traceroute"),
     Package("wireguard-tools"),
     Package("wget"),
+    Package("ethtool"),
+    Package("tcpdump"),
 
     # Hardware Utilities
     Package("cpupower"),
