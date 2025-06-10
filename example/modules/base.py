@@ -4,12 +4,7 @@ from koti import *
 from koti.utils import *
 
 
-def pacoloco(path: str, enabled: bool):
-  line = f"Server = http://pacoloco.fritz.box/repo/{path}"
-  return line if enabled else f"# {line}"
-
-
-def base(use_pacoloco_cache: bool = True) -> ConfigGroups: return [
+def base() -> ConfigGroups: return [
   ConfigGroup(
     "base-packages",
 
@@ -99,32 +94,35 @@ def base(use_pacoloco_cache: bool = True) -> ConfigGroups: return [
       LocalFileSigLevel = Optional
 
       [core]
-      {pacoloco("archlinux/$repo/os/$arch", enabled = use_pacoloco_cache)}
+      {pacoloco_cache("archlinux/$repo/os/$arch")}
       Include = /etc/pacman.d/mirrorlist
       
       [extra]
-      {pacoloco("archlinux/$repo/os/$arch", enabled = use_pacoloco_cache)}
+      {pacoloco_cache("archlinux/$repo/os/$arch")}
       Include = /etc/pacman.d/mirrorlist
       
       [multilib]
-      {pacoloco("archlinux/$repo/os/$arch", enabled = use_pacoloco_cache)}
+      {pacoloco_cache("archlinux/$repo/os/$arch")}
       Include = /etc/pacman.d/mirrorlist
 
       [core-testing]
+      {pacoloco_cache("archlinux/$repo/os/$arch")}
       Include = /etc/pacman.d/mirrorlist
       
       [extra-testing]
+      {pacoloco_cache("archlinux/$repo/os/$arch")}
       Include = /etc/pacman.d/mirrorlist
       
       [multilib-testing]
+      {pacoloco_cache("archlinux/$repo/os/$arch")}
       Include = /etc/pacman.d/mirrorlist
       
       [cachyos-v3]
-      {pacoloco("cachyos-v3/$arch_v3/$repo", use_pacoloco_cache)}
+      {pacoloco_cache("cachyos-v3/$arch_v3/$repo")}
       Include = /etc/pacman.d/cachyos-v3-mirrorlist
       
       [cachyos]
-      {pacoloco("cachyos/$arch/$repo", use_pacoloco_cache)}
+      {pacoloco_cache("cachyos/$arch/$repo")}
       Include = /etc/pacman.d/cachyos-mirrorlist
     ''')),
 
@@ -324,3 +322,8 @@ def swapfile(swapfile_gb: int) -> ConfigGroups: return [
     Swapfile("/swapfile", swapfile_gb * 1024 ** 3),  # 8GB
   )
 ]
+
+
+def pacoloco_cache(path: str, enabled: bool = True):
+  line = f"CacheServer = http://pacoloco.fritz.box/repo/{path}"
+  return line if enabled else f"# {line}"
