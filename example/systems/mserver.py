@@ -32,6 +32,7 @@ mserver: list[ConfigGroups] = [
   ConfigGroup(
     "networking",
     SystemdUnit("systemd-networkd.service"),
+
     File("/etc/systemd/network/20-wired.network", permissions = 0o444, content = cleandoc('''
       [Match]
       Name=enp0s31f6
@@ -42,6 +43,13 @@ mserver: list[ConfigGroups] = [
       Address=8.8.4.4/24
       Gateway=192.168.1.1
       DNS=192.168.1.1
+    ''')),
+
+    File("/etc/resolv.conf", permissions = 0o444, content = cleandoc('''
+      nameserver 192.168.1.100
+      nameserver 192.168.1.1
+      search fritz.box
+      options timeout:3
     ''')),
   ),
 
