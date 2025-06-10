@@ -11,8 +11,8 @@ class File(ConfigItem):
   def __init__(
     self,
     identifier: str,
-    content: str = None,
-    content_from_file = None,
+    content: str | None = None,
+    content_from_file: str | None = None,
     permissions: int = 0o444,
     owner: str = "root",
   ):
