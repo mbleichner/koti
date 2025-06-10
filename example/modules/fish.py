@@ -41,21 +41,36 @@ def fish() -> ConfigGroups:
       # managed by koti
       function fish_prompt --description 'Moep'
         set -l last_pipestatus $pipestatus
+        set -l host (prompt_hostname)
+        
+        if [ "$USER" = "root" ]
+          set_color red
+        else
+          set_color brblue
+        end
+        printf '\n%s' $USER
+        
+        set_color brwhite
+        printf '@'
+        
+        if test -n "$SSH_CLIENT"
+          set_color red
+        else
+          set_color brblue
+        end
+        printf '%s' (prompt_hostname)
       
-        set_color brblue
-        printf '\n%s@%s' $USER (prompt_hostname)
-      
-        set_color 999999
+        set_color 999
         printf ' %s' $PWD
       
         set -l git_info (fish_git_prompt " " | string trim)
-        if test -n "$git_info" 
+        if test -n "$git_info"
           set_color white
           printf " @ %s" $git_info
         end
       
         if test $CMD_DURATION -gt 2000
-          set_color 999999
+          set_color 999
           printf ' %ss' (math $CMD_DURATION / 1000.0)
         end
       
