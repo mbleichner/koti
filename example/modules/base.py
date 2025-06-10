@@ -96,35 +96,35 @@ def base() -> ConfigGroups: return [
       LocalFileSigLevel = Optional
 
       [core]
-      {pacoloco_cache("archlinux/$repo/os/$arch")}
+      CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
       Include = /etc/pacman.d/mirrorlist
       
       [extra]
-      {pacoloco_cache("archlinux/$repo/os/$arch")}
+      CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
       Include = /etc/pacman.d/mirrorlist
       
       [multilib]
-      {pacoloco_cache("archlinux/$repo/os/$arch")}
+      CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
       Include = /etc/pacman.d/mirrorlist
 
       [core-testing]
-      {pacoloco_cache("archlinux/$repo/os/$arch")}
+      CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
       Include = /etc/pacman.d/mirrorlist
       
       [extra-testing]
-      {pacoloco_cache("archlinux/$repo/os/$arch")}
+      CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
       Include = /etc/pacman.d/mirrorlist
       
       [multilib-testing]
-      {pacoloco_cache("archlinux/$repo/os/$arch")}
+      CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
       Include = /etc/pacman.d/mirrorlist
       
       [cachyos-v3]
-      {pacoloco_cache("cachyos-v3/$arch_v3/$repo")}
+      CacheServer = http://pacoloco.fritz.box/repo/cachyos-v3/$arch_v3/$repo
       Include = /etc/pacman.d/cachyos-v3-mirrorlist
       
       [cachyos]
-      {pacoloco_cache("cachyos/$arch/$repo")}
+      CacheServer = http://pacoloco.fritz.box/repo/cachyos/$arch/$repo
       Include = /etc/pacman.d/cachyos-mirrorlist
     ''')),
 
@@ -324,8 +324,3 @@ def swapfile(swapfile_gb: int) -> ConfigGroups: return [
     Swapfile("/swapfile", swapfile_gb * 1024 ** 3),  # 8GB
   )
 ]
-
-
-def pacoloco_cache(path: str, enabled: bool = True):
-  line = f"CacheServer = http://pacoloco.fritz.box/repo/{path}"
-  return line if enabled else f"# {line}"
