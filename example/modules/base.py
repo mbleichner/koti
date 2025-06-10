@@ -65,6 +65,7 @@ def base() -> ConfigGroups: return [
 
     SystemdUnit("systemd-timesyncd.service"),
     SystemdUnit("systemd-boot-update.service"),
+    SystemdUnit("fstrim.timer"),
   ),
 
   ConfigGroup(
