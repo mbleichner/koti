@@ -93,3 +93,7 @@ system that is no longer present in the configs:
 - **decman** is a really nice tool that I used for a while. Unfortunately, it makes a few assumptions about the order of things to execute that lead to technical problems. For example - usually you
   install packages and then set up the corresponding config files, but in other cases you need to set up some config files before installing packages (think of `pacman.conf`). Decman doesn't allow you
   to control this, which means when you have to setup a system from scratch, it will crash and you need to fix it by hand.
+
+# TODOs
+
+- User anlegen und Gruppen zuordnen
