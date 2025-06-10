@@ -13,7 +13,7 @@ from modules.systray import systray
 
 # Configuration for my Lenovo X13 laptop
 lenovo: list[ConfigGroups] = [
-  base(cachyos_repo = True),
+  base(),
   cpufreq(min_freq = 1000, max_freq = 4500, governor = "powersave"),
   throttle_after_boot(1500),
   swapfile(4),

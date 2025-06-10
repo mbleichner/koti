@@ -4,7 +4,7 @@ from koti import *
 from koti.utils import *
 
 
-def base(cachyos_repo: bool) -> ConfigGroups: return [
+def base() -> ConfigGroups: return [
   ConfigGroup(
     "base-packages",
 
@@ -72,12 +72,12 @@ def base(cachyos_repo: bool) -> ConfigGroups: return [
     Package("cachyos-keyring", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst"),
     Package("cachyos-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst"),
     Package("cachyos-v3-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst"),
-  ) if cachyos_repo else None,
+  ),
 
   ConfigGroup(
     "pacman-config",
     ConfirmMode("paranoid"),
-    Requires(Package("cachyos-mirrorlist"), Package("cachyos-v3-mirrorlist")) if cachyos_repo else None,
+    Requires(Package("cachyos-mirrorlist"), Package("cachyos-v3-mirrorlist")),
 
     File("/etc/pacman.conf", permissions = 0o444, content = cleandoc('''
       # managed by koti
@@ -107,13 +107,13 @@ def base(cachyos_repo: bool) -> ConfigGroups: return [
       Include = /etc/pacman.d/mirrorlist
       [multilib-testing]
       Include = /etc/pacman.d/mirrorlist
-    ''') + "\n\n\n" + cleandoc('''
+      
       # CachyOS für den Kernel
       [cachyos-v3]
       Include = /etc/pacman.d/cachyos-v3-mirrorlist
       [cachyos]
       Include = /etc/pacman.d/cachyos-mirrorlist
-    ''' if cachyos_repo else "")),
+    ''')),
 
     File("/etc/paru.conf", permissions = 0o444, content = cleandoc('''
       # managed by koti

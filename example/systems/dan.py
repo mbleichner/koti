@@ -15,7 +15,7 @@ from modules.systray import systray
 
 # Configuration for my DAN A4-SFX desktop machine (Ryzen 5800X3D, RTX3080)
 dan: list[ConfigGroups] = [
-  base(cachyos_repo = True),
+  base(),
   cpufreq(min_freq = 2000, max_freq = 4500, governor = "performance", ),
   throttle_after_boot(2000),
   swapfile(12),

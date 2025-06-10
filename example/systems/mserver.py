@@ -9,7 +9,7 @@ from modules.kernel import kernel_lts, kernel_stock
 
 # Configuration for my 7700K homelab server
 mserver: list[ConfigGroups] = [
-  base(cachyos_repo = False),
+  base(),
   cpufreq(min_freq = 800, max_freq = 4200, governor = "powersave"),
   swapfile(8),
   kernel_lts(1),
