@@ -5,6 +5,8 @@ from koti.utils import shell_output
 
 root_uuid = shell_output("findmnt -n -o UUID $(stat -c '%m' /)")
 
+kernel_params = "console=tty1 loglevel=3 nowatchdog zswap.enabled=1"
+
 
 def kernel_cachyos(sortkey: int) -> ConfigGroups:
   return [
@@ -24,7 +26,7 @@ def kernel_cachyos(sortkey: int) -> ConfigGroups:
         title    Arch Linux with CachyOS Kernel
         linux    /vmlinuz-linux-cachyos
         initrd   /initramfs-linux-cachyos.img
-        options  root=UUID={root_uuid} rw console=tty1 loglevel=3 nowatchdog zswap.enabled=1
+        options  root=UUID={root_uuid} rw {kernel_params}
         sort-key {sortkey}
       ''')),
 
@@ -52,7 +54,7 @@ def kernel_stock(sortkey: int) -> ConfigGroups:
         title    Arch Linux with Stock Kernel
         linux    /vmlinuz-linux
         initrd   /initramfs-linux.img
-        options  root=UUID={root_uuid} rw console=tty1 loglevel=3 nowatchdog zswap.enabled=1
+        options  root=UUID={root_uuid} rw {kernel_params}
         sort-key {sortkey}
       ''')),
 
@@ -80,7 +82,7 @@ def kernel_lts(sortkey: int) -> ConfigGroups:
         title    Arch Linux with LTS Kernel
         linux    /vmlinuz-linux-lts
         initrd   /initramfs-linux-lts.img
-        options  root=UUID={root_uuid} rw console=tty1 loglevel=3 nowatchdog zswap.enabled=1
+        options  root=UUID={root_uuid} rw {kernel_params}
         sort-key {sortkey}
       ''')),
 
