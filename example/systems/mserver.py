@@ -72,7 +72,12 @@ mserver: list[ConfigGroups] = [
 
   ConfigGroup(
     "nextcloud-deployment",
-    PostHook("update-nextcloud", lambda: shell_interactive("docker compose -f /opt/nextcloud/docker-compose.yml up -d")),
+
+    PostHook(
+      "update-nextcloud",
+      lambda: shell_interactive("docker compose -f /opt/nextcloud/docker-compose.yml up -d --force-recreate --remove-orphans")
+    ),
+
     File("/opt/nextcloud/docker-compose.yml", permissions = 0o555, content = cleandoc('''
       services:
         web:
@@ -122,6 +127,52 @@ mserver: list[ConfigGroups] = [
           - POSTGRES_PASSWORD=nextcloud
           volumes:
           - ./postgres-data:/var/lib/postgresql/data
+    ''')),
+  ),
+
+  ConfigGroup(
+    "pacoloco-deployment",
+
+    PostHook(
+      "update-pacoloco",
+      lambda: shell_interactive("docker compose -f /opt/pacoloco/docker-compose.yml up -d --force-recreate --remove-orphans")
+    ),
+
+    File("/opt/pacoloco/docker-compose.yml", permissions = 0o555, content = cleandoc('''
+      services:
+        pacoloco:
+          restart: unless-stopped
+          container_name: pacoloco
+          image: ghcr.io/anatol/pacoloco
+          volumes:
+          - /etc/pacman.d:/etc/pacman.d:ro
+          - ./pacoloco.yaml:/etc/pacoloco.yaml:ro
+          - ./cache:/var/cache/pacoloco:rw
+          environment:
+          - TZ=Europe/Berlin
+          labels:
+          - "traefik.enable=true"
+          - "traefik.http.services.pacoloco.loadbalancer.server.port=8000"
+          - "traefik.http.routers.pacoloco.rule=Host(`pacoloco.fritz.box`)"
+          - "traefik.http.routers.pacoloco.entrypoints=web"
+          - "traefik.http.routers.pacoloco.middlewares=local-only"
+    ''')),
+
+    File("/opt/pacoloco/docker-compose.yml", permissions = 0o555, content = cleandoc('''
+      port: 8000
+      cache_dir: /var/cache/pacoloco
+      purge_files_after: 2592000  # seconds
+      download_timeout: 600       # seconds
+      user_agent: Pacoloco/1.2
+      prefetch:
+        cron: 30 4-18 * * *
+      repos:
+        archlinux:
+          mirrorlist: /etc/pacman.d/mirrorlist
+        cachyos:
+          mirrorlist: /etc/pacman.d/cachyos-mirrorlist
+        cachyos-v3:
+          mirrorlist: /etc/pacman.d/cachyos-v3-mirrorlist
     ''')),
   ),
 ]
