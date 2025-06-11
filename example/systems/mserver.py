@@ -81,37 +81,37 @@ mserver: list[ConfigGroups] = [
   ConfigGroup(
     "traefik-deployment",
     DockerComposePostHook("/opt/traefik/docker-compose.yml"),
-    File("/opt/traefik/docker-compose.yml", permissions = 0o555, content_from_file = "../docker/traefik/docker-compose.yml"),
+    File("/opt/traefik/docker-compose.yml", permissions = 0o555, content_from_file = "docker/traefik/docker-compose.yml"),
   ),
 
   ConfigGroup(
     "nextcloud-deployment",
     DockerComposePostHook("/opt/nextcloud/docker-compose.yml"),
-    File("/opt/nextcloud/docker-compose.yml", permissions = 0o555, content_from_file = "../docker/nextcloud/docker-compose.yml"),
+    File("/opt/nextcloud/docker-compose.yml", permissions = 0o555, content_from_file = "docker/nextcloud/docker-compose.yml"),
   ),
 
   ConfigGroup(
     "homeassistant-deployment",
     DockerComposePostHook("/opt/homeassistant/docker-compose.yml"),
-    File("/opt/homeassistant/docker-compose.yml", permissions = 0o555, content_from_file = "../docker/homeassistant/docker-compose.yml"),
+    File("/opt/homeassistant/docker-compose.yml", permissions = 0o555, content_from_file = "docker/homeassistant/docker-compose.yml"),
   ),
 
   ConfigGroup(
     "pihole-deployment",
     DockerComposePostHook("/opt/pihole/docker-compose.yml"),
-    File("/opt/pihole/docker-compose.yml", permissions = 0o555, content_from_file = "../docker/pihole/docker-compose.yml"),
+    File("/opt/pihole/docker-compose.yml", permissions = 0o555, content_from_file = "docker/pihole/docker-compose.yml"),
   ),
 
   ConfigGroup(
     "pyanodon-mapshot-deployment",
     DockerComposePostHook("/opt/pyanodon-mapshot/docker-compose.yml"),
-    File("/opt/pyanodon-mapshot/docker-compose.yml", permissions = 0o555, content_from_file = "../files/pyanodon-mapshot-docker-compose.yml"),
+    File("/opt/pyanodon-mapshot/docker-compose.yml", permissions = 0o555, content_from_file = "docker/pyanodon-mapshot/docker-compose.yml"),
   ),
 
   ConfigGroup(
     "pacoloco-deployment",
     DockerComposePostHook("/opt/pacoloco/docker-compose.yml"),
-    File("/opt/pacoloco/docker-compose.yml", permissions = 0o555, content_from_file = "../docker/pacoloco/docker-compose.yml"),
-    File("/opt/pacoloco/pacoloco.yaml", permissions = 0o555, content_from_file = "../docker/pacoloco/pacoloco.yaml"),
+    File("/opt/pacoloco/docker-compose.yml", permissions = 0o555, content_from_file = "docker/pacoloco/docker-compose.yml"),
+    File("/opt/pacoloco/pacoloco.yaml", permissions = 0o555, content_from_file = "docker/pacoloco/pacoloco.yaml"),
   ),
 ]
