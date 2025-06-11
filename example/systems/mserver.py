@@ -158,7 +158,7 @@ mserver: list[ConfigGroups] = [
           - "traefik.http.routers.pacoloco.middlewares=local-only"
     ''')),
 
-    File("/opt/pacoloco/docker-compose.yml", permissions = 0o555, content = cleandoc('''
+    File("/opt/pacoloco/pacoloco.yaml", permissions = 0o555, content = cleandoc('''
       port: 8000
       cache_dir: /var/cache/pacoloco
       purge_files_after: 2592000  # seconds
