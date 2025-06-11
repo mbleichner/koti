@@ -72,7 +72,7 @@ mserver: list[ConfigGroups] = [
 
   ConfigGroup(
     "nextcloud-deployment",
-    PostHook("update-nextcloud", lambda: shell_interactive("docker compose up -d -f /opt/nextcloud/docker-compose.yml")),
+    PostHook("update-nextcloud", lambda: shell_interactive("docker compose -f /opt/nextcloud/docker-compose.yml up -d")),
     File("/opt/nextcloud/docker-compose.yml", permissions = 0o555, content = cleandoc('''
       services:
         web:
