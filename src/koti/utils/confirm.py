@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 from koti.core import ConfirmModeValues
 
 
@@ -10,7 +12,9 @@ def confirm(message: str, destructive: bool = True, mode: ConfirmModeValues = "p
   while True:
     answer = input(f'{message}: [Y/n] ').strip().lower()
     if answer in ('y', ''): return True
-    if answer == 'n': raise AssertionError("execution cancelled")
+    if answer == 'n':
+      print("execution cancelled")
+      sys.exit(1)
 
 
 def needs_confirmation(destructive: bool, mode: ConfirmModeValues):
