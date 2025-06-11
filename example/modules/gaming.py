@@ -1,5 +1,3 @@
-from inspect import cleandoc
-
 from koti import *
 from koti.utils import shell_interactive
 
@@ -21,10 +19,7 @@ def gaming() -> ConfigGroups:  return [
 
   ConfigGroup(
     # https://wiki.cachyos.org/configuration/general_system_tweaks
-    File("/etc/sysctl.d/99-splitlock.conf", permissions = 0o444, content = cleandoc(f'''
-      # managed by koti
-      kernel.split_lock_mitigate=0
-    ''')),
+    File("/etc/sysctl.d/99-splitlock.conf", permissions = 0o444, content = "kernel.split_lock_mitigate=0"),
     PostHook("apply-splitlock-sysctl", execute = lambda: shell_interactive("sysctl --system")),
   ),
 ]

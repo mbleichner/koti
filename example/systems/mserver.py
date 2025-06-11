@@ -1,9 +1,11 @@
 from inspect import cleandoc
 
+from modules.docker import docker
+
 from koti import *
+from koti.utils import shell_interactive
 from modules.base import base, swapfile
 from modules.cpufreq import cpufreq
-from modules.docker import docker
 from modules.fish import fish
 from modules.kernel import kernel_lts, kernel_stock
 
@@ -61,6 +63,68 @@ mserver: list[ConfigGroups] = [
       for DIR in homeassistant nextcloud pihole pyanodon-mapshot samba pacoloco traefik; do
         cd /opt/$DIR && sudo docker compose pull && sudo docker compose up -d
       done
+    ''')),
+  ),
+
+  ConfigGroup(
+    Package("docker"),
+    Package("docker-compose"),
+    Package("containerd"),
+    SystemdUnit("docker.service"),
+  ),
+
+  ConfigGroup(
+    "nextcloud-deployment",
+    PostHook("update-nextcloud", lambda: shell_interactive("docker compose up -d -f /opt/nextcloud/docker-compose.yml")),
+    File("/opt/nextcloud/docker-compose.yml", permissions = 0o555, content = cleandoc('''
+      services:
+        web:
+          image: nextcloud:31 # cron-Image ebenfalls anpassen!
+          restart: always
+          depends_on:
+          - postgres
+          environment:
+          - POSTGRES_DB=nextcloud
+          - POSTGRES_USER=nextcloud
+          - POSTGRES_PASSWORD=nextcloud
+          - POSTGRES_HOST=postgres
+          - PHP_MEMORY_LIMIT=8G
+          - PHP_UPLOAD_LIMIT=16G
+          - APACHE_BODY_LIMIT=0
+          volumes:
+          - ./nextcloud-data:/var/www/html
+          labels:
+          - "traefik.enable=true"
+          - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
+          - "traefik.http.routers.nextcloud-remote.rule=Host(`nextcloud.mbleichner.duckdns.org`)"
+          - "traefik.http.routers.nextcloud-remote.entrypoints=websecure"
+          - "traefik.http.routers.nextcloud-remote.tls.certresolver=letsencryptresolver"
+          - "traefik.http.routers.nextcloud-local.rule=Host(`nextcloud.fritz.box`)"
+          - "traefik.http.routers.nextcloud-local.entrypoints=web"
+          - "traefik.http.routers.nextcloud-local.middlewares=local-only"
+      
+        cron:
+          image: nextcloud:31
+          entrypoint: /cron.sh
+          restart: always
+          depends_on:
+          - postgres
+          environment:
+          - POSTGRES_DB=nextcloud
+          - POSTGRES_USER=nextcloud
+          - POSTGRES_PASSWORD=nextcloud
+          - POSTGRES_HOST=postgres
+          volumes:
+          - ./nextcloud-data:/var/www/html
+      
+        postgres:
+          image: postgres:16
+          restart: always
+          environment:
+          - POSTGRES_USER=nextcloud
+          - POSTGRES_PASSWORD=nextcloud
+          volumes:
+          - ./postgres-data:/var/lib/postgresql/data
     ''')),
   ),
 ]

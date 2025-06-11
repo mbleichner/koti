@@ -10,11 +10,7 @@ def fish() -> ConfigGroups:
     Package("pyenv"),
     Package("fastfetch"),
     Package("imagemagick"),  # notwendig für png-Anzeige in fastfetch
-
-    PostHook(
-      "set-fish-as-default-shell",
-      execute = lambda: shell_interactive("chsh -s /usr/bin/fish manuel"),
-    ),
+    PostHook("set-fish-as-default-shell", execute = lambda: shell_interactive("chsh -s /usr/bin/fish manuel")),
 
     File("/etc/fish/config.fish", permissions = 0o444, content = cleandoc(r'''
       # managed by koti

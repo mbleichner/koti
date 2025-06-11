@@ -44,7 +44,6 @@ def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
     Package("pavucontrol"),
     Package("plasma-meta"),
     Package("samba"),
-    Package("sddm"),
     Package("spectacle"),
     Package("wine"),
     Package("google-chrome"),

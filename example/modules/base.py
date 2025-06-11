@@ -232,11 +232,7 @@ def base() -> ConfigGroups: return [
 
     SystemdUnit("arch-update-tray.service", user = "manuel"),
     SystemdUnit("arch-update.timer", user = "manuel"),
-
-    PostHook(
-      "restart-arch-update-tray",
-      execute = lambda: "systemctl --user -M manuel@ restart arch-update-tray.service"
-    ),
+    PostHook("restart-arch-update-tray", execute = lambda: "systemctl --user -M manuel@ restart arch-update-tray.service"),
   ),
 
   ConfigGroup(
