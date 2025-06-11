@@ -62,7 +62,7 @@ mserver: list[ConfigGroups] = [
 
   ConfigGroup(
     File("/home/manuel/system-update", permissions = 0o555, content = cleandoc('''
-      #!/bin/bash
+      #!/bin/bash -ex
       arch-update
       echo
       for DIR in homeassistant nextcloud pihole pyanodon-mapshot pacoloco traefik; do
