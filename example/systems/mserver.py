@@ -1,7 +1,5 @@
 from inspect import cleandoc
 
-from modules.docker import docker
-
 from koti import *
 from koti.utils import shell_interactive
 from modules.base import base, swapfile
