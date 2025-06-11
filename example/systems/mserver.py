@@ -15,7 +15,6 @@ mserver: list[ConfigGroups] = [
   kernel_lts(1),
   kernel_stock(2),
   fish(),
-  docker(),
 
   ConfigGroup(
     ConfirmMode("paranoid"),
