@@ -7,6 +7,14 @@ from modules.cpufreq import cpufreq
 from modules.fish import fish
 from modules.kernel import kernel_lts, kernel_stock
 
+
+def DockerComposePostHook(composefile: str):
+  return PostHook(
+    f"docker compose {composefile}",
+    lambda: shell_interactive(f"docker compose -f {composefile} up -d --force-recreate --remove-orphans")
+  )
+
+
 # Configuration for my 7700K homelab server
 mserver: list[ConfigGroups] = [
   base(),
@@ -71,108 +79,39 @@ mserver: list[ConfigGroups] = [
   ),
 
   ConfigGroup(
+    "traefik-deployment",
+    DockerComposePostHook("/opt/traefik/docker-compose.yml"),
+    File("/opt/traefik/docker-compose.yml", permissions = 0o555, content_from_file = "../docker/traefik/docker-compose.yml"),
+  ),
+
+  ConfigGroup(
     "nextcloud-deployment",
+    DockerComposePostHook("/opt/nextcloud/docker-compose.yml"),
+    File("/opt/nextcloud/docker-compose.yml", permissions = 0o555, content_from_file = "../docker/nextcloud/docker-compose.yml"),
+  ),
 
-    PostHook(
-      "update-nextcloud",
-      lambda: shell_interactive("docker compose -f /opt/nextcloud/docker-compose.yml up -d --force-recreate --remove-orphans")
-    ),
+  ConfigGroup(
+    "homeassistant-deployment",
+    DockerComposePostHook("/opt/homeassistant/docker-compose.yml"),
+    File("/opt/homeassistant/docker-compose.yml", permissions = 0o555, content_from_file = "../docker/homeassistant/docker-compose.yml"),
+  ),
 
-    File("/opt/nextcloud/docker-compose.yml", permissions = 0o555, content = cleandoc('''
-      services:
-        web:
-          image: nextcloud:31 # cron-Image ebenfalls anpassen!
-          restart: always
-          depends_on:
-          - postgres
-          environment:
-          - POSTGRES_DB=nextcloud
-          - POSTGRES_USER=nextcloud
-          - POSTGRES_PASSWORD=nextcloud
-          - POSTGRES_HOST=postgres
-          - PHP_MEMORY_LIMIT=8G
-          - PHP_UPLOAD_LIMIT=16G
-          - APACHE_BODY_LIMIT=0
-          volumes:
-          - ./nextcloud-data:/var/www/html
-          labels:
-          - "traefik.enable=true"
-          - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
-          - "traefik.http.routers.nextcloud-remote.rule=Host(`nextcloud.mbleichner.duckdns.org`)"
-          - "traefik.http.routers.nextcloud-remote.entrypoints=websecure"
-          - "traefik.http.routers.nextcloud-remote.tls.certresolver=letsencryptresolver"
-          - "traefik.http.routers.nextcloud-local.rule=Host(`nextcloud.fritz.box`)"
-          - "traefik.http.routers.nextcloud-local.entrypoints=web"
-          - "traefik.http.routers.nextcloud-local.middlewares=local-only"
-      
-        cron:
-          image: nextcloud:31
-          entrypoint: /cron.sh
-          restart: always
-          depends_on:
-          - postgres
-          environment:
-          - POSTGRES_DB=nextcloud
-          - POSTGRES_USER=nextcloud
-          - POSTGRES_PASSWORD=nextcloud
-          - POSTGRES_HOST=postgres
-          volumes:
-          - ./nextcloud-data:/var/www/html
-      
-        postgres:
-          image: postgres:16
-          restart: always
-          environment:
-          - POSTGRES_USER=nextcloud
-          - POSTGRES_PASSWORD=nextcloud
-          volumes:
-          - ./postgres-data:/var/lib/postgresql/data
-    ''')),
+  ConfigGroup(
+    "pihole-deployment",
+    DockerComposePostHook("/opt/pihole/docker-compose.yml"),
+    File("/opt/pihole/docker-compose.yml", permissions = 0o555, content_from_file = "../docker/pihole/docker-compose.yml"),
+  ),
+
+  ConfigGroup(
+    "pyanodon-mapshot-deployment",
+    DockerComposePostHook("/opt/pyanodon-mapshot/docker-compose.yml"),
+    File("/opt/pyanodon-mapshot/docker-compose.yml", permissions = 0o555, content_from_file = "../files/pyanodon-mapshot-docker-compose.yml"),
   ),
 
   ConfigGroup(
     "pacoloco-deployment",
-
-    PostHook(
-      "update-pacoloco",
-      lambda: shell_interactive("docker compose -f /opt/pacoloco/docker-compose.yml up -d --force-recreate --remove-orphans")
-    ),
-
-    File("/opt/pacoloco/docker-compose.yml", permissions = 0o555, content = cleandoc('''
-      services:
-        pacoloco:
-          restart: unless-stopped
-          container_name: pacoloco
-          image: ghcr.io/anatol/pacoloco
-          volumes:
-          - /etc/pacman.d:/etc/pacman.d:ro
-          - ./pacoloco.yaml:/etc/pacoloco.yaml:ro
-          - ./cache:/var/cache/pacoloco:rw
-          environment:
-          - TZ=Europe/Berlin
-          labels:
-          - "traefik.enable=true"
-          - "traefik.http.services.pacoloco.loadbalancer.server.port=8000"
-          - "traefik.http.routers.pacoloco.rule=Host(`pacoloco.fritz.box`)"
-          - "traefik.http.routers.pacoloco.entrypoints=web"
-          - "traefik.http.routers.pacoloco.middlewares=local-only"
-    ''')),
-
-    File("/opt/pacoloco/pacoloco.yaml", permissions = 0o555, content = cleandoc('''
-      port: 8000
-      cache_dir: /var/cache/pacoloco
-      purge_files_after: 2592000  # seconds
-      download_timeout: 600       # seconds
-      user_agent: Pacoloco/1.2
-      prefetch:
-        cron: 30 4-18 * * *
-      repos:
-        archlinux:
-          mirrorlist: /etc/pacman.d/mirrorlist
-        cachyos:
-          mirrorlist: /etc/pacman.d/cachyos-mirrorlist
-        cachyos-v3:
-          mirrorlist: /etc/pacman.d/cachyos-v3-mirrorlist
-    ''')),
+    DockerComposePostHook("/opt/pacoloco/docker-compose.yml"),
+    File("/opt/pacoloco/docker-compose.yml", permissions = 0o555, content_from_file = "../docker/pacoloco/docker-compose.yml"),
+    File("/opt/pacoloco/pacoloco.yaml", permissions = 0o555, content_from_file = "../docker/pacoloco/pacoloco.yaml"),
   ),
 ]

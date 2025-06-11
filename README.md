@@ -97,3 +97,4 @@ system that is no longer present in the configs:
 # TODOs
 
 - User anlegen und Gruppen zuordnen
+- Directory() item => gamma-icc-profiles

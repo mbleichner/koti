@@ -1,0 +1,19 @@
+services:
+  homeassistant:
+    restart: always
+    container_name: homeassistant
+    image: "ghcr.io/home-assistant/home-assistant:stable"
+    volumes:
+    - ./config:/config
+    - /etc/localtime:/etc/localtime:ro
+    - /run/dbus:/run/dbus:ro
+    network_mode: host
+    cap_add:
+    - NET_ADMIN
+    - NET_RAW
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
+    - "traefik.http.routers.homeassistant-local.rule=Host(`homeassistant.fritz.box`) || Host(`homeassistant.local`)"
+    - "traefik.http.routers.homeassistant-local.entrypoints=web"
+    - "traefik.http.routers.homeassistant-local.middlewares=local-only"

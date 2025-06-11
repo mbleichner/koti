@@ -1,0 +1,12 @@
+services:
+  nginx:
+    image: nginx:1.25
+    restart: always
+    volumes:
+    - ./mapshot:/usr/share/nginx/html:ro
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.services.pyanodon.loadbalancer.server.port=80"
+    - "traefik.http.routers.pyanodon.entrypoints=websecure"
+    - "traefik.http.routers.pyanodon.rule=Host(`pyanodon.mbleichner.duckdns.org`)"
+    - "traefik.http.routers.pyanodon.tls.certresolver=letsencryptresolver"

@@ -1,0 +1,46 @@
+services:
+  traefik:
+    image: traefik:3
+    restart: always
+
+    # Damit Traefik ungehindert auf alle anderen Container zugreifen kann, sperren wir ihn nicht
+    # in einem virtuellen Netzwerk ein. Achtung: dadurch werden alle von Traefik geöffneten Ports
+    # nach außen freiegegeben. In der Fritzbox müssen entsprechende Firewall-Regeln eingestellt werden!
+    network_mode: host
+
+    command:
+    - "--api=true"
+    - "--api.dashboard=true"
+    - "--providers.docker=true"
+    - "--providers.docker.exposedbydefault=false"
+    - "--entrypoints.websecure.address=:443"
+    - "--entrypoints.web.address=:80"
+    - "--certificatesresolvers.letsencryptresolver.acme.tlschallenge=true"
+    - "--certificatesresolvers.letsencryptresolver.acme.email=mbleichner@gmail.com"
+    - "--certificatesresolvers.letsencryptresolver.acme.storage=/letsencrypt/acme.json"
+
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - ./certificates:/letsencrypt
+
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+
+    - "traefik.http.routers.api.rule=Host(`traefik.fritz.box`) && PathPrefix(`/api`)"
+    - "traefik.http.routers.api.entrypoints=web"
+    - "traefik.http.routers.api.service=api@internal"
+    - "traefik.http.routers.api.middlewares=local-only"
+
+    - "traefik.http.routers.dashboard.rule=Host(`traefik.fritz.box`)"
+    - "traefik.http.routers.dashboard.entrypoints=web"
+    - "traefik.http.routers.dashboard.service=dashboard@internal"
+    - "traefik.http.routers.dashboard.middlewares=local-only"
+
+    - "traefik.http.routers.redirect-https.rule=HostRegexp(`^.+\\.duckdns\\.org$`)"
+    - "traefik.http.routers.redirect-https.entrypoints=web"
+    - "traefik.http.routers.redirect-https.service=noop@internal"
+    - "traefik.http.routers.redirect-https.middlewares=redirect-https"
+
+    - "traefik.http.middlewares.redirect-https.redirectscheme.scheme=https"
+    - "traefik.http.middlewares.local-only.ipwhitelist.sourcerange=192.168.1.1/24,127.0.0.1/24"

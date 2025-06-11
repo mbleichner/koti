@@ -1,0 +1,14 @@
+port: 8000
+cache_dir: /var/cache/pacoloco
+purge_files_after: 2592000  # seconds
+download_timeout: 600       # seconds
+user_agent: Pacoloco/1.2
+prefetch:
+  cron: 30 4-18 * * *
+repos:
+  archlinux:
+    mirrorlist: /etc/pacman.d/mirrorlist
+  cachyos:
+    mirrorlist: /etc/pacman.d/cachyos-mirrorlist
+  cachyos-v3:
+    mirrorlist: /etc/pacman.d/cachyos-v3-mirrorlist
