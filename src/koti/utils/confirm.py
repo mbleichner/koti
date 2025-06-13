@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from typing import Literal
+type ConfirmModeValues = Literal["paranoid", "cautious", "yolo"]
 import sys
-
-from koti.core import ConfirmModeValues
 
 
 def confirm(message: str, destructive: bool = True, mode: ConfirmModeValues = "paranoid"):

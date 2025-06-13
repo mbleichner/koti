@@ -67,7 +67,14 @@ class PacmanPackageManager(ConfigManager[Package]):
   def check_configuration(self, item: Package, core: Koti):
     pass
 
-  def execute_phase(self, items: list[Package], core: Koti, state: ExecutionState):
+  def checksum_current(self, items: list[Package], koti: Koti, state: ExecutionState) -> list[str | int | None]:
+    explicit_packages = self.delegate.list_explicit_packages()
+    return [1 if item.identifier in explicit_packages else 0 for item in items]
+
+  def checksum_target(self, items: list[Package], koti: Koti, state: ExecutionState) -> list[str | int | None]:
+    return [1 for item in items]
+
+  def apply_phase(self, items: list[Package], core: Koti, state: ExecutionState):
     url_items = [item for item in items if item.url is not None]
     repo_items = [item for item in items if item.url is None]
     installed_packages = self.delegate.list_installed_packages()
@@ -107,7 +114,13 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
   def check_configuration(self, item: PacmanKey, core: Koti):
     pass
 
-  def execute_phase(self, items: list[PacmanKey], core: Koti, state: ExecutionState):
+  def checksum_current(self, items: list[PacmanKey], core: Koti, state: ExecutionState) -> list[str | int | None]:
+    return [1 if shell_success(f"pacman-key --list-keys | grep {item.key_id}") else 0 for item in items]
+
+  def checksum_target(self, items: list[PacmanKey], core: Koti, state: ExecutionState) -> list[str | int | None]:
+    return [1 for item in items]
+
+  def apply_phase(self, items: list[PacmanKey], core: Koti, state: ExecutionState):
     for item in items:
       key_already_installed = shell_success(f"pacman-key --list-keys | grep {item.key_id}")
       if not key_already_installed:

@@ -1,7 +1,8 @@
+import hashlib
 import os.path
 from typing import TypedDict
 
-from koti.core import Koti, ConfigManager, ConfirmModeValues, ExecutionState
+from koti.core import ConfigManager, ConfirmModeValues, ExecutionState, Koti
 from koti.items.swapfile import Swapfile
 from koti.utils.confirm import confirm
 from koti.utils.json_store import JsonMapping, JsonStore
@@ -25,7 +26,27 @@ class SwapfileManager(ConfigManager[Swapfile]):
     if item.size_bytes is None:
       raise AssertionError("missing size_bytes parameter")
 
-  def execute_phase(self, items: list[Swapfile], core: Koti, state: ExecutionState):
+  def checksum_current(self, items: list[Swapfile], core: Koti, state: ExecutionState) -> list[str | int | None]:
+    return [self.checksum_current_single(item, core, state) for item in items]
+
+  def checksum_target(self, items: list[Swapfile], core: Koti, state: ExecutionState) -> list[str | int | None]:
+    return [self.checksum_target_single(item, core, state) for item in items]
+
+  def checksum_current_single(self, item: Swapfile, core: Koti, state: ExecutionState) -> str | int | None:
+    exists = os.path.isfile(item.identifier)
+    current_size = os.stat(item.identifier).st_size if exists else 0
+    sha256_hash = hashlib.sha256()
+    sha256_hash.update(str(exists).encode())
+    sha256_hash.update(str(current_size).encode())
+    return sha256_hash.hexdigest()
+
+  def checksum_target_single(self, item: Swapfile, core: Koti, state: ExecutionState) -> str | int | None:
+    sha256_hash = hashlib.sha256()
+    sha256_hash.update(str(True).encode())
+    sha256_hash.update(str(item.size_bytes).encode())
+    return sha256_hash.hexdigest()
+
+  def apply_phase(self, items: list[Swapfile], core: Koti, state: ExecutionState):
     for item in items:
       exists = os.path.isfile(item.identifier)
       current_size = os.stat(item.identifier).st_size if exists else 0

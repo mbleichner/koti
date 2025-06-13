@@ -22,6 +22,20 @@ class FileManager(ConfigManager[File]):
     store = JsonStore("/var/cache/koti/FileManager.json")
     self.managed_files_store = store.mapping("managed_files")
 
+  def checksum_current(self, items: list[File], core: Koti, state: ExecutionState) -> list[str | int | None]:
+    return [self.checksum_current_single(item, core, state) for item in items]
+
+  def checksum_target(self, items: list[File], core: Koti, state: ExecutionState) -> list[str | int | None]:
+    return [self.checksum_target_single(item, core, state) for item in items]
+
+  def checksum_current_single(self, item: File, core: Koti, state: ExecutionState) -> str | None:
+    return file_hash(item.identifier)
+
+  def checksum_target_single(self, item: File, core: Koti, state: ExecutionState) -> str | None:
+    getpwnam = pwd.getpwnam(item.owner)
+    (uid, gid) = (getpwnam.pw_uid, getpwnam.pw_gid)
+    return virtual_file_hash(uid, gid, item.permissions, item.content)
+
   def check_configuration(self, item: File, core: Koti):
     if item.content is None:
       raise AssertionError("missing either content or content_from_file")
@@ -34,18 +48,18 @@ class FileManager(ConfigManager[File]):
     getpwnam = pwd.getpwnam(item.owner)
     os.chown(dir, uid = getpwnam.pw_uid, gid = getpwnam.pw_gid)
 
-  def execute_phase(self, items: list[File], core: Koti, state: ExecutionState):
+  def apply_phase(self, items: list[File], core: Koti, state: ExecutionState):
     for item in items:
       getpwnam = pwd.getpwnam(item.owner)
       uid = getpwnam.pw_uid
       gid = getpwnam.pw_gid
-      hash_before = file_hash(item.identifier)
       mode = item.permissions
       content = item.content
 
       directory = os.path.dirname(item.identifier)
       self.create_dir(directory, item)
 
+      hash_before = file_hash(item.identifier)
       hash_after = virtual_file_hash(uid, gid, mode, content)
       if hash_before != hash_after:
         confirm(
