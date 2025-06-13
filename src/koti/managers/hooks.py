@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 
 from koti.core import Checksums, ConfigManager, ExecutionState, Koti
@@ -19,25 +21,20 @@ class PostHookManager(ConfigManager[PostHook]):
     if item.execute is None:
       raise AssertionError("missing execute parameter")
 
-  def checksums(self, core: Koti, state: ExecutionState) -> Checksums[PostHook]:
+  def checksums(self, core: Koti, state: ExecutionState) -> PostHookChecksums:
     return PostHookChecksums(core, state, self.checksum_store)
 
   def apply_phase(self, items: list[PostHook], core: Koti, state: ExecutionState):
     checksums = self.checksums(core, state)
     for hook in items:
-      if self.has_triggered(hook, core, state):
-        confirm(
-          message = f"confirm executing {hook}",
-          destructive = False,
-          mode = core.get_confirm_mode_for_item(hook),
-        )
-        hook.execute()
-      self.checksum_store.put(hook.identifier, checksums.current(hook))
-
-  def has_triggered(self, hook: PostHook, core: Koti, state: ExecutionState) -> bool:
-    group_containing_hook = core.get_group_for_item(hook)
-    triggered_items_in_group = set(group_containing_hook.items).intersection(state.updated_items)
-    return len(triggered_items_in_group) > 0
+      confirm(
+        message = f"confirm executing {hook}",
+        destructive = False,
+        mode = core.get_confirm_mode_for_item(hook),
+      )
+      target_checksum = checksums.target(hook)
+      hook.execute()
+      self.checksum_store.put(hook.identifier, target_checksum)
 
   def cleanup(self, items: list[PostHook], core: Koti, state: ExecutionState):
     pass

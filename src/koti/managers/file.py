@@ -47,16 +47,13 @@ class FileManager(ConfigManager[File]):
 
       directory = os.path.dirname(item.identifier)
       self.create_dir(directory, item)
-
-      hash_before = file_hash(item.identifier)
-      hash_after = virtual_file_hash(uid, gid, mode, content)
-      if hash_before != hash_after:
-        confirm(
-          message = f"confirm {"changed" if hash_before is not None else "new"} file {item.identifier}",
-          destructive = hash_before is not None,
-          mode = core.get_confirm_mode_for_item(item),
-        )
-        state.updated_items += [item]
+      exists = os.path.exists(item.identifier)
+      confirm(
+        message = f"confirm {"changed" if exists else "new"} file {item.identifier}",
+        destructive = exists,
+        mode = core.get_confirm_mode_for_item(item),
+      )
+      state.updated_items += [item]
 
       with open(item.identifier, 'wb+') as fh:
         fh.write(content)

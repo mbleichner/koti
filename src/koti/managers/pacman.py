@@ -2,6 +2,7 @@ from koti import Checksums
 from koti.core import ConfigManager, ConfirmModeValues, ExecutionState, Koti
 from koti.items.package import Package
 from koti.items.pacman_key import PacmanKey
+from koti.utils import confirm
 from koti.utils.shell import shell_interactive, shell_output, shell_success
 
 
@@ -76,6 +77,7 @@ class PacmanPackageManager(ConfigManager[Package]):
     url_items = [item for item in items if item.url is not None]
     repo_items = [item for item in items if item.url is None]
     installed_packages = self.delegate.list_installed_packages()
+    explicit_packages = self.delegate.list_explicit_packages()
 
     additional_items_from_urls = [item for item in url_items if item.identifier not in installed_packages]
     self.delegate.install_from_url(
@@ -89,7 +91,6 @@ class PacmanPackageManager(ConfigManager[Package]):
       confirm_mode = core.get_confirm_mode_for_item(additional_items_from_repo)
     )
 
-    explicit_packages = self.delegate.list_explicit_packages()
     additional_explicit_items = [item for item in items if item.identifier not in explicit_packages]
     self.delegate.mark_as_explicit(
       packages = [item.identifier for item in additional_explicit_items],
@@ -132,12 +133,15 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
 
   def apply_phase(self, items: list[PacmanKey], core: Koti, state: ExecutionState):
     for item in items:
-      key_already_installed = shell_success(f"pacman-key --list-keys | grep {item.key_id}")
-      if not key_already_installed:
-        print(f"installing pacman-key {item.key_id} from {item.key_server}")
-        shell_interactive(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
-        shell_interactive(f"sudo pacman-key --lsign-key {item.key_id}")
-        state.updated_items += [item]
+      confirm(
+        message = f"confirm installing pacman key {item.identifier}",
+        destructive = False,
+        mode = core.get_confirm_mode_for_item(item),
+      )
+      print(f"installing pacman-key {item.key_id} from {item.key_server}")
+      shell_interactive(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
+      shell_interactive(f"sudo pacman-key --lsign-key {item.key_id}")
+      state.updated_items += [item]
 
   def cleanup(self, items: list[PacmanKey], core: Koti, state: ExecutionState):
     pass
