@@ -1,3 +1,4 @@
+from koti import Checksums
 from koti.core import ConfigManager, ConfirmModeValues, ExecutionState, Koti
 from koti.items.package import Package
 from koti.items.pacman_key import PacmanKey
@@ -59,6 +60,7 @@ class PacmanAdapter:
 
 class PacmanPackageManager(ConfigManager[Package]):
   managed_classes = [Package]
+  delegate: PacmanAdapter
 
   def __init__(self, delegate: PacmanAdapter):
     super().__init__()
@@ -67,12 +69,8 @@ class PacmanPackageManager(ConfigManager[Package]):
   def check_configuration(self, item: Package, core: Koti):
     pass
 
-  def checksum_current(self, items: list[Package], koti: Koti, state: ExecutionState) -> list[str | int | None]:
-    explicit_packages = self.delegate.list_explicit_packages()
-    return [1 if item.identifier in explicit_packages else 0 for item in items]
-
-  def checksum_target(self, items: list[Package], koti: Koti, state: ExecutionState) -> list[str | int | None]:
-    return [1 for item in items]
+  def checksums(self, core: Koti, state: ExecutionState) -> Checksums[Package]:
+    return PackageChecksums(self.delegate)
 
   def apply_phase(self, items: list[Package], core: Koti, state: ExecutionState):
     url_items = [item for item in items if item.url is not None]
@@ -108,17 +106,29 @@ class PacmanPackageManager(ConfigManager[Package]):
     self.delegate.prune_unneeded(confirm_mode = confirm_mode)
 
 
+class PackageChecksums(Checksums[Package]):
+  delegate: PacmanAdapter
+
+  def __init__(self, delegate: PacmanAdapter):
+    super().__init__()
+    self.delegate = delegate
+    self.explicit_packages = self.delegate.list_explicit_packages()
+
+  def current(self, item: Package) -> str | int | None:
+    return 1 if item.identifier in self.explicit_packages else 0
+
+  def target(self, item: Package) -> str | int | None:
+    return 1
+
+
 class PacmanKeyManager(ConfigManager[PacmanKey]):
   managed_classes = [PacmanKey]
 
   def check_configuration(self, item: PacmanKey, core: Koti):
     pass
 
-  def checksum_current(self, items: list[PacmanKey], core: Koti, state: ExecutionState) -> list[str | int | None]:
-    return [1 if shell_success(f"pacman-key --list-keys | grep {item.key_id}") else 0 for item in items]
-
-  def checksum_target(self, items: list[PacmanKey], core: Koti, state: ExecutionState) -> list[str | int | None]:
-    return [1 for item in items]
+  def checksums(self, core: Koti, state: ExecutionState) -> Checksums[PacmanKey]:
+    return PacmanKeyChecksums()
 
   def apply_phase(self, items: list[PacmanKey], core: Koti, state: ExecutionState):
     for item in items:
@@ -131,3 +141,12 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
 
   def cleanup(self, items: list[PacmanKey], core: Koti, state: ExecutionState):
     pass
+
+
+class PacmanKeyChecksums(Checksums[PacmanKey]):
+
+  def current(self, item: PacmanKey) -> str | int | None:
+    return 1 if shell_success(f"pacman-key --list-keys | grep {item.key_id}") else 0
+
+  def target(self, item: PacmanKey) -> str | int | None:
+    return 1

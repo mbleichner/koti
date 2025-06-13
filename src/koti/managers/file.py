@@ -3,7 +3,7 @@ import os
 import pwd
 from typing import TypedDict
 
-from koti.core import ConfigManager, ConfirmModeValues, ExecutionState, Koti
+from koti.core import Checksums, ConfigManager, ConfirmModeValues, ExecutionState, Koti
 from koti.items.file import File
 from koti.utils.confirm import confirm
 from koti.utils.json_store import JsonMapping, JsonStore
@@ -22,23 +22,12 @@ class FileManager(ConfigManager[File]):
     store = JsonStore("/var/cache/koti/FileManager.json")
     self.managed_files_store = store.mapping("managed_files")
 
-  def checksum_current(self, items: list[File], core: Koti, state: ExecutionState) -> list[str | int | None]:
-    return [self.checksum_current_single(item, core, state) for item in items]
-
-  def checksum_target(self, items: list[File], core: Koti, state: ExecutionState) -> list[str | int | None]:
-    return [self.checksum_target_single(item, core, state) for item in items]
-
-  def checksum_current_single(self, item: File, core: Koti, state: ExecutionState) -> str | None:
-    return file_hash(item.identifier)
-
-  def checksum_target_single(self, item: File, core: Koti, state: ExecutionState) -> str | None:
-    getpwnam = pwd.getpwnam(item.owner)
-    (uid, gid) = (getpwnam.pw_uid, getpwnam.pw_gid)
-    return virtual_file_hash(uid, gid, item.permissions, item.content)
-
   def check_configuration(self, item: File, core: Koti):
     if item.content is None:
       raise AssertionError("missing either content or content_from_file")
+
+  def checksums(self, core: Koti, state: ExecutionState) -> Checksums[File]:
+    return FileChecksums()
 
   def create_dir(self, dir: str, item: File):
     if os.path.exists(dir): return
@@ -116,3 +105,14 @@ def virtual_file_hash(uid, gid, mode, content):
   sha256_hash.update(str(mode & 0o777).encode())
   sha256_hash.update(content)
   return sha256_hash.hexdigest()
+
+
+class FileChecksums(Checksums[File]):
+
+  def current(self, item: File) -> str | int | None:
+    return file_hash(item.identifier)
+
+  def target(self, item: File) -> str | int | None:
+    getpwnam = pwd.getpwnam(item.owner)
+    (uid, gid) = (getpwnam.pw_uid, getpwnam.pw_gid)
+    return virtual_file_hash(uid, gid, item.permissions, item.content)

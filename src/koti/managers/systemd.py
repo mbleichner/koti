@@ -1,6 +1,6 @@
 from typing import TypedDict
 
-from koti.core import ConfigManager, ConfirmModeValues, ExecutionState, Koti
+from koti.core import Checksums, ConfigManager, ConfirmModeValues, ExecutionState, Koti
 from koti.items.systemd import SystemdUnit
 from koti.managers.pacman import shell_interactive
 from koti.utils import shell_success
@@ -25,17 +25,8 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
   def check_configuration(self, item: SystemdUnit, core: Koti):
     pass
 
-  def checksum_current(self, items: list[SystemdUnit], core: Koti, state: ExecutionState) -> list[str | int | None]:
-    return [self.checksum_current_single(item, core, state) for item in items]
-
-  def checksum_target(self, items: list[SystemdUnit], core: Koti, state: ExecutionState) -> list[str | int | None]:
-    return [self.checksum_target_single(item, core, state) for item in items]
-
-  def checksum_current_single(self, item: SystemdUnit, core: Koti, state: ExecutionState) -> str | int | None:
-    return 1 if shell_success(f"{systemctl_for_user(item.user)} is-enabled {item.identifier}") else 0
-
-  def checksum_target_single(self, item: SystemdUnit, core: Koti, state: ExecutionState) -> str | int | None:
-    return 1
+  def checksums(self, core: Koti, state: ExecutionState) -> Checksums[SystemdUnit]:
+    return SystemdUnitChecksums()
 
   def apply_phase(self, items: list[SystemdUnit], core: Koti, state: ExecutionState):
     if len(items) > 0:
@@ -82,3 +73,12 @@ def systemctl_for_user(user):
 
 def store_key_for_user(user):
   return f"user@{user}" if user is not None else "system"
+
+
+class SystemdUnitChecksums(Checksums[SystemdUnit]):
+
+  def current(self, item: SystemdUnit) -> str | int | None:
+    return 1 if shell_success(f"{systemctl_for_user(item.user)} is-enabled {item.identifier}") else 0
+
+  def target(self, item: SystemdUnit) -> str | int | None:
+    return 1

@@ -38,9 +38,8 @@ class Koti:
     for phase_idx, phase in enumerate(self.execution_phases):
       for manager, items in phase.execution_order:
         self.print_phase_log(phase_idx, manager, items)
-        checksums_old = manager.checksum_current(items, self, state)
-        checksums_new = manager.checksum_target(items, self, state)
-        items_to_update = [item for idx, item in enumerate(items) if checksums_old[idx] != checksums_new[idx]]
+        checksums = manager.checksums(self, state)
+        items_to_update = [item for item in items if checksums.current(item) != checksums.target(item)]
         if len(items_to_update) > 0:
           print(f"items to update: {", ".join([str(i) for i in items_to_update])}")
         manager.apply_phase(items_to_update, self, state) or []
@@ -228,6 +227,9 @@ class ConfigManager[T: ConfigItem]:
   def check_configuration(self, item: T, core: Koti):
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.check_configuration()")
 
+  def checksums(self, core: Koti, state: ExecutionState) -> Checksums[T]:
+    raise AssertionError(f"method not implemented: {self.__class__.__name__}.checksums()")
+
   def checksum_current(self, items: list[T], core: Koti, state: ExecutionState) -> str | int | None:
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.checksum_current()")
 
@@ -239,6 +241,15 @@ class ConfigManager[T: ConfigItem]:
 
   def cleanup(self, items: list[T], core: Koti, state: ExecutionState):
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.cleanup()")
+
+
+class Checksums[T:ConfigItem]:
+
+  def current(self, item: T) -> str | int | None:
+    pass
+
+  def target(self, item: T) -> str | int | None:
+    pass
 
 
 class ConfigMetadata:
