@@ -266,16 +266,6 @@ class Requires(ConfigMetadata):
     return f"Requires({", ".join([str(item) for item in self.items])})"
 
 
-# class After(ConfigMetadata):
-#   items: list[ConfigItem | ConfigGroup]
-#
-#   def __init__(self, *items: ConfigItem | ConfigGroup):
-#     self.items = list(items)
-#
-#   def __str__(self):
-#     return f"After({", ".join([str(item) for item in self.items])})"
-
-
 class ConfirmMode(ConfigMetadata):
   mode: ConfirmModeValues
 

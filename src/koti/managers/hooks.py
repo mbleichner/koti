@@ -22,7 +22,7 @@ class PostHookManager(ConfigManager[PostHook]):
       raise AssertionError("missing execute parameter")
 
   def checksums(self, core: Koti, state: ExecutionState) -> PostHookChecksums:
-    return PostHookChecksums(core, state, self.checksum_store)
+    return PostHookChecksums(self, core, state, self.checksum_store)
 
   def apply_phase(self, items: list[PostHook], core: Koti, state: ExecutionState):
     checksums = self.checksums(core, state)
@@ -41,11 +41,13 @@ class PostHookManager(ConfigManager[PostHook]):
 
 
 class PostHookChecksums(Checksums[PostHook]):
+  manager: PostHookManager
   core: Koti
   state: ExecutionState
   checksum_store: JsonMapping[str, str]
 
-  def __init__(self, core: Koti, state: ExecutionState, checksum_store: JsonMapping[str, str]):
+  def __init__(self, manager: PostHookManager, core: Koti, state: ExecutionState, checksum_store: JsonMapping[str, str]):
+    self.manager = manager
     self.checksum_store = checksum_store
     self.state = state
     self.core = core
@@ -55,14 +57,17 @@ class PostHookChecksums(Checksums[PostHook]):
 
   def target(self, hook: PostHook) -> str | int | None:
     group_containing_hook = self.core.get_group_for_item(hook)
-    processed_items_in_group = sorted(
-      list(set(group_containing_hook.items).intersection(self.state.processed_items)),
-      key = lambda x: f"{x.__class__.__name__}:{x.identifier}"
-    )
-    sub_checksums = [
-      str(self.core.get_manager_for_item(item).checksums(self.core, self.state).current(item))
-      for item in processed_items_in_group
-    ]
     sha256_hash = hashlib.sha256()
-    sha256_hash.update("\n".join(sub_checksums).encode())
+    sha256_hash.update("\n".join(self.get_trigger_checksums(group_containing_hook)).encode())
     return sha256_hash.hexdigest()
+
+  def get_trigger_checksums(self, group_containing_hook):
+    result = []
+    for manager in self.core.managers:
+      managed_items = [item for item in group_containing_hook.items if item.__class__ in manager.managed_classes]
+      if len(managed_items) == 0: continue
+      manager_checksums = manager.checksums(self.core, self.state)
+      for item in managed_items:
+        if self.core.managers.index(manager) < self.core.managers.index(self.manager):
+          result.append(str(manager_checksums.current(item)))
+    return result
