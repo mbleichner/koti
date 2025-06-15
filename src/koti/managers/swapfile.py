@@ -2,7 +2,7 @@ import hashlib
 import os.path
 from typing import TypedDict
 
-from koti.core import Checksums, ConfigManager, ConfirmModeValues, ExecutionState, Koti
+from koti.core import Checksums, ConfigManager, ConfirmModeValues, Koti
 from koti.items.swapfile import Swapfile
 from koti.utils.confirm import confirm
 from koti.utils.json_store import JsonMapping, JsonStore
@@ -26,10 +26,10 @@ class SwapfileManager(ConfigManager[Swapfile]):
     if item.size_bytes is None:
       raise AssertionError("missing size_bytes parameter")
 
-  def checksums(self, core: Koti, state: ExecutionState) -> Checksums[Swapfile]:
+  def checksums(self, core: Koti) -> Checksums[Swapfile]:
     return SwapfileChecksums()
 
-  def apply_phase(self, items: list[Swapfile], core: Koti, state: ExecutionState):
+  def apply_phase(self, items: list[Swapfile], core: Koti):
     for item in items:
       exists = os.path.isfile(item.identifier)
       current_size = os.stat(item.identifier).st_size if exists else 0
@@ -60,7 +60,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
           shell_interactive(f"rm -f {item.identifier}")
           self.create_swapfile(item)
 
-  def cleanup(self, items: list[Swapfile], core: Koti, state: ExecutionState):
+  def cleanup(self, items: list[Swapfile], core: Koti):
     for item in items:
       self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode_for_item(item)})
 

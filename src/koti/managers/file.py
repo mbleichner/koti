@@ -26,7 +26,7 @@ class FileManager(ConfigManager[File]):
     if item.content is None:
       raise AssertionError("missing either content or content_from_file")
 
-  def checksums(self, core: Koti, state: ExecutionState) -> Checksums[File]:
+  def checksums(self, core: Koti) -> Checksums[File]:
     return FileChecksums()
 
   def create_dir(self, dir: str, item: File):
@@ -37,7 +37,7 @@ class FileManager(ConfigManager[File]):
     getpwnam = pwd.getpwnam(item.owner)
     os.chown(dir, uid = getpwnam.pw_uid, gid = getpwnam.pw_gid)
 
-  def apply_phase(self, items: list[File], core: Koti, state: ExecutionState):
+  def apply_phase(self, items: list[File], core: Koti):
     for item in items:
       getpwnam = pwd.getpwnam(item.owner)
       uid = getpwnam.pw_uid
@@ -63,7 +63,7 @@ class FileManager(ConfigManager[File]):
       if mode != new_mode:
         raise AssertionError("cannot apply file permissions (incompatible file system?)")
 
-  def cleanup(self, items: list[File], core: Koti, state: ExecutionState):
+  def cleanup(self, items: list[File], core: Koti):
     for item in items:
       self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode_for_item(item)})
 

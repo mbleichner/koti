@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 
-from koti.core import Checksums, ConfigManager, ExecutionState, Koti
+from koti.core import Checksums, ConfigManager, Koti
 from koti.items.hooks import PostHook
 from koti.utils import JsonMapping, JsonStore
 from koti.utils.confirm import confirm
@@ -21,11 +21,11 @@ class PostHookManager(ConfigManager[PostHook]):
     if item.execute is None:
       raise AssertionError("missing execute parameter")
 
-  def checksums(self, core: Koti, state: ExecutionState) -> PostHookChecksums:
-    return PostHookChecksums(self, core, state, self.checksum_store)
+  def checksums(self, core: Koti) -> PostHookChecksums:
+    return PostHookChecksums(self, core, self.checksum_store)
 
-  def apply_phase(self, items: list[PostHook], core: Koti, state: ExecutionState):
-    checksums = self.checksums(core, state)
+  def apply_phase(self, items: list[PostHook], core: Koti):
+    checksums = self.checksums(core)
     for hook in items:
       confirm(
         message = f"confirm executing {hook}",
@@ -36,20 +36,18 @@ class PostHookManager(ConfigManager[PostHook]):
       hook.execute()
       self.checksum_store.put(hook.identifier, target_checksum)
 
-  def cleanup(self, items: list[PostHook], core: Koti, state: ExecutionState):
+  def cleanup(self, items: list[PostHook], core: Koti):
     pass
 
 
 class PostHookChecksums(Checksums[PostHook]):
   manager: PostHookManager
   core: Koti
-  state: ExecutionState
   checksum_store: JsonMapping[str, str]
 
-  def __init__(self, manager: PostHookManager, core: Koti, state: ExecutionState, checksum_store: JsonMapping[str, str]):
+  def __init__(self, manager: PostHookManager, core: Koti, checksum_store: JsonMapping[str, str]):
     self.manager = manager
     self.checksum_store = checksum_store
-    self.state = state
     self.core = core
 
   def current(self, hook: PostHook) -> str | int | None:
@@ -66,7 +64,7 @@ class PostHookChecksums(Checksums[PostHook]):
     for manager in self.core.managers:
       managed_items = [item for item in group_containing_hook.items if item.__class__ in manager.managed_classes]
       if len(managed_items) == 0: continue
-      manager_checksums = manager.checksums(self.core, self.state)
+      manager_checksums = manager.checksums(self.core)
       for item in managed_items:
         if self.core.managers.index(manager) < self.core.managers.index(self.manager):
           result.append(str(manager_checksums.current(item)))

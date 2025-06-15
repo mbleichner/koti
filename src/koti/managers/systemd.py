@@ -1,6 +1,6 @@
 from typing import TypedDict
 
-from koti.core import Checksums, ConfigManager, ConfirmModeValues, ExecutionState, Koti
+from koti.core import Checksums, ConfigManager, ConfirmModeValues, Koti
 from koti.items.systemd import SystemdUnit
 from koti.managers.pacman import shell_interactive
 from koti.utils import shell_success
@@ -25,13 +25,11 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
   def check_configuration(self, item: SystemdUnit, core: Koti):
     pass
 
-  def checksums(self, core: Koti, state: ExecutionState) -> Checksums[SystemdUnit]:
+  def checksums(self, core: Koti) -> Checksums[SystemdUnit]:
     return SystemdUnitChecksums()
 
-  def apply_phase(self, items: list[SystemdUnit], core: Koti, state: ExecutionState):
-    if len(items) > 0:
-      shell_interactive(f"systemctl daemon-reload")
-
+  def apply_phase(self, items: list[SystemdUnit], core: Koti):
+    if len(items) > 0: shell_interactive(f"systemctl daemon-reload")
     users = set([item.user for item in items])
     for user in users:
       items_for_user = [item for item in items if item.user == user]
@@ -45,7 +43,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
       )
       shell_interactive(f"{systemctl_for_user(user)} enable --now {" ".join([item.identifier for item in items_for_user])}")
 
-  def cleanup(self, items: list[SystemdUnit], core: Koti, state: ExecutionState):
+  def cleanup(self, items: list[SystemdUnit], core: Koti):
     shell_interactive(f"systemctl daemon-reload")
 
     users = set([item.user for item in items])

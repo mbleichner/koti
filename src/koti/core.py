@@ -33,17 +33,15 @@ class Koti:
   def apply(self):
     if os.getuid() != 0:
       raise AssertionError("this program must be run as root (or through sudo)")
-    state = ExecutionState()
 
     for phase_idx, phase in enumerate(self.execution_phases):
       for manager, items in phase.execution_order:
         self.print_phase_log(phase_idx, manager, items)
-        checksums = manager.checksums(self, state)
+        checksums = manager.checksums(self)
         items_to_update = [item for item in items if checksums.current(item) != checksums.target(item)]
         if len(items_to_update) > 0:
           print(f"items to update: {", ".join([str(i) for i in items_to_update])}")
-        manager.apply_phase(items_to_update, self, state) or []
-        state.processed_items += items
+        manager.apply_phase(items_to_update, self) or []
 
     for manager in reversed(self.managers):
       all_items_for_manager = [
@@ -54,7 +52,7 @@ class Koti:
       ]
       if len(all_items_for_manager):
         self.print_phase_log(None, manager, all_items_for_manager)
-        manager.cleanup(all_items_for_manager, self, state)
+        manager.cleanup(all_items_for_manager, self)
 
   def print_phase_log(self, phase_idx: int | None, manager: ConfigManager, items: list[ConfigItem]):
     count_by_class = defaultdict(lambda: 0)
@@ -227,19 +225,19 @@ class ConfigManager[T: ConfigItem]:
   def check_configuration(self, item: T, core: Koti):
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.check_configuration()")
 
-  def checksums(self, core: Koti, state: ExecutionState) -> Checksums[T]:
+  def checksums(self, core: Koti) -> Checksums[T]:
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.checksums()")
 
-  def checksum_current(self, items: list[T], core: Koti, state: ExecutionState) -> str | int | None:
+  def checksum_current(self, items: list[T], core: Koti) -> str | int | None:
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.checksum_current()")
 
-  def checksum_target(self, items: list[T], core: Koti, state: ExecutionState) -> str | int | None:
+  def checksum_target(self, items: list[T], core: Koti) -> str | int | None:
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.checksum_target()")
 
-  def apply_phase(self, items: list[T], core: Koti, state: ExecutionState):
+  def apply_phase(self, items: list[T], core: Koti):
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.apply_phase()")
 
-  def cleanup(self, items: list[T], core: Koti, state: ExecutionState):
+  def cleanup(self, items: list[T], core: Koti):
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.cleanup()")
 
 
