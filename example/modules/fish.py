@@ -22,7 +22,6 @@ def fish() -> ConfigGroups:
         fish_config theme choose "Base16 Default Dark"
         set -x fish_pager_color_selected_background --background=333
         
-        
         bind alt-u arch-update
         bind alt-m "history merge"
         bind alt-y y
@@ -46,7 +45,6 @@ def fish() -> ConfigGroups:
           set_color brblue
         end
         printf '\n%s' $USER
-        
         
         set_color brwhite
         printf '@'
