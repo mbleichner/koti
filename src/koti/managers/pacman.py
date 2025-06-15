@@ -131,11 +131,9 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
 
 
 class PackageChecksums(Checksums[Package]):
-  delegate: PacmanAdapter
 
   def __init__(self, delegate: PacmanAdapter):
-    self.delegate = delegate
-    self.explicit_packages = self.delegate.list_explicit_packages()
+    self.explicit_packages = delegate.list_explicit_packages()
 
   def current(self, item: Package) -> str | None:
     installed: bool = item.identifier in self.explicit_packages
