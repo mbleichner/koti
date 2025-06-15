@@ -23,12 +23,30 @@ class Koti:
     self.execution_phases = Koti.build_execution_phases(managers, configs)
     Koti.check_config_item_consistency(managers, configs, self)
 
-  def plan(self):
+  def plan(self, summary: bool = True) -> bool:
+    items_total: list[ConfigItem] = []
+    items_to_update: list[ConfigItem] = []
     for phase_idx, phase in enumerate(self.execution_phases):
       print(f"Phase {phase_idx + 1}:")
       for manager, items in phase.execution_order:
+        checksums = manager.checksums(self)
         for item in items:
-          print(f" - {item}")
+          items_total.append(item)
+          needs_update = checksums.current(item) != checksums.target(item)
+          if needs_update: items_to_update.append(item)
+          print(f"{"*" if needs_update else "-"} {item}")
+      print()
+
+    if summary:
+      if len(items_to_update) > 0:
+        print(f"{len(items_total)} items total, {len(items_to_update)} items to update:")
+        for item in items_to_update: print(f"- {item}")
+        print()
+      else:
+        print(f"{len(items_total)} items total, nothing to update")
+        print()
+
+    return len(items_to_update) > 0
 
   def apply(self):
     if os.getuid() != 0:
@@ -36,11 +54,9 @@ class Koti:
 
     for phase_idx, phase in enumerate(self.execution_phases):
       for manager, items in phase.execution_order:
-        self.print_phase_log(phase_idx, manager, items)
         checksums = manager.checksums(self)
         items_to_update = [item for item in items if checksums.current(item) != checksums.target(item)]
-        if len(items_to_update) > 0:
-          print(f"items to update: {", ".join([str(i) for i in items_to_update])}")
+        self.print_phase_log(phase_idx, manager, items, items_to_update)
         manager.apply_phase(items_to_update, self) or []
 
     for manager in reversed(self.managers):
@@ -51,17 +67,19 @@ class Koti:
         if phase_manager is manager
       ]
       if len(all_items_for_manager):
-        self.print_phase_log(None, manager, all_items_for_manager)
+        self.print_phase_log(None, manager, all_items_for_manager, [])
         manager.cleanup(all_items_for_manager, self)
 
-  def print_phase_log(self, phase_idx: int | None, manager: ConfigManager, items: list[ConfigItem]):
-    count_by_class = defaultdict(lambda: 0)
-    for item in items:
-      count_by_class[item.__class__.__name__] += 1
-    phase = f"phase {phase_idx + 1}" if phase_idx is not None else "cleanup"
-    items_string = ", ".join([f"{count} {"items" if count > 1 else "item"} of type {cls}" for cls, count in count_by_class.items()])
+  def print_phase_log(self, phase_idx: int | None, manager: ConfigManager, items: list[ConfigItem], items_to_update: list[ConfigItem]):
+    phase = f"Phase {phase_idx + 1}" if phase_idx is not None else "Cleanup"
     max_manager_name_len = max([len(m.__class__.__name__) for m in self.managers])
-    print(f"{phase}  {manager.__class__.__name__.ljust(max_manager_name_len)}  processing {items_string}")
+
+    if len(items_to_update) == 0:
+      details = "nothing to do"
+    else:
+      details = f"items to update: {", ".join([str(item) for item in items_to_update])}"
+
+    print(f"{phase}  {manager.__class__.__name__.ljust(max_manager_name_len)}  {details}")
 
   def get_group_for_item(self, item: ConfigItem) -> ConfigGroup:
     for phase in self.execution_phases:
