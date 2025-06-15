@@ -22,7 +22,7 @@ class Koti:
     self.execution_phases = Koti.build_execution_phases(managers, configs)
     Koti.check_config_item_consistency(managers, configs, self)
 
-  def plan(self, summary: bool = True) -> bool:
+  def plan(self, summary: bool = True) -> int:
     items_total: list[ConfigItem] = []
     items_to_update: list[ConfigItem] = []
     for phase_idx, phase in enumerate(self.execution_phases):
@@ -45,7 +45,7 @@ class Koti:
         print(f"{len(items_total)} items total, everything up to date")
         print()
 
-    return len(items_to_update) > 0
+    return len(items_to_update)
 
   def apply(self):
     if os.getuid() != 0:
