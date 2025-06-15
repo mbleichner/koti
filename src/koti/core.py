@@ -43,7 +43,7 @@ class Koti:
         for item in items_to_update: print(f"- {item}")
         print()
       else:
-        print(f"{len(items_total)} items total, nothing to update")
+        print(f"{len(items_total)} items total, everything up to date")
         print()
 
     return len(items_to_update) > 0
@@ -75,7 +75,7 @@ class Koti:
     max_manager_name_len = max([len(m.__class__.__name__) for m in self.managers])
 
     if len(items_to_update) == 0:
-      details = "nothing to do"
+      details = "all items up to date"
     else:
       details = f"items to update: {", ".join([str(item) for item in items_to_update])}"
 
