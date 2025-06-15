@@ -1,5 +1,5 @@
-import hashlib
 import os.path
+from hashlib import sha256
 from typing import TypedDict
 
 from koti.core import Checksums, ConfigManager, ConfirmModeValues, Koti
@@ -89,16 +89,16 @@ class SwapfileManager(ConfigManager[Swapfile]):
 
 class SwapfileChecksums(Checksums[Swapfile]):
 
-  def current(self, item: Swapfile) -> str | int | None:
+  def current(self, item: Swapfile) -> str | None:
     exists = os.path.isfile(item.identifier)
     current_size = os.stat(item.identifier).st_size if exists else 0
-    sha256_hash = hashlib.sha256()
+    sha256_hash = sha256()
     sha256_hash.update(str(exists).encode())
     sha256_hash.update(str(current_size).encode())
     return sha256_hash.hexdigest()
 
-  def target(self, item: Swapfile) -> str | int | None:
-    sha256_hash = hashlib.sha256()
+  def target(self, item: Swapfile) -> str | None:
+    sha256_hash = sha256()
     sha256_hash.update(str(True).encode())
     sha256_hash.update(str(item.size_bytes).encode())
     return sha256_hash.hexdigest()

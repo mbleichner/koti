@@ -1,6 +1,6 @@
-import hashlib
 import os
 import pwd
+from hashlib import sha256
 from typing import TypedDict
 
 from koti.core import Checksums, ConfigManager, ConfirmModeValues, Koti
@@ -85,7 +85,7 @@ def file_hash(filename) -> str | None:
   if not os.path.isfile(filename):
     return None
   stat = os.stat(filename)
-  sha256_hash = hashlib.sha256()
+  sha256_hash = sha256()
   sha256_hash.update(str(stat.st_uid).encode())
   sha256_hash.update(str(stat.st_gid).encode())
   sha256_hash.update(str(stat.st_mode & 0o777).encode())
@@ -96,7 +96,7 @@ def file_hash(filename) -> str | None:
 
 
 def virtual_file_hash(uid, gid, mode, content):
-  sha256_hash = hashlib.sha256()
+  sha256_hash = sha256()
   sha256_hash.update(str(uid).encode())
   sha256_hash.update(str(gid).encode())
   sha256_hash.update(str(mode & 0o777).encode())
@@ -106,10 +106,10 @@ def virtual_file_hash(uid, gid, mode, content):
 
 class FileChecksums(Checksums[File]):
 
-  def current(self, item: File) -> str | int | None:
+  def current(self, item: File) -> str | None:
     return file_hash(item.identifier)
 
-  def target(self, item: File) -> str | int | None:
+  def target(self, item: File) -> str | None:
     getpwnam = pwd.getpwnam(item.owner)
     (uid, gid) = (getpwnam.pw_uid, getpwnam.pw_gid)
     return virtual_file_hash(uid, gid, item.permissions, item.content)

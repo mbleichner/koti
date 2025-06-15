@@ -1,3 +1,4 @@
+from hashlib import sha256
 from typing import TypedDict
 
 from koti.core import Checksums, ConfigManager, ConfirmModeValues, Koti
@@ -86,8 +87,9 @@ def store_key_for_user(user):
 
 class SystemdUnitChecksums(Checksums[SystemdUnit]):
 
-  def current(self, item: SystemdUnit) -> str | int | None:
-    return 1 if shell_success(f"{systemctl_for_user(item.user)} is-enabled {item.identifier}") else 0
+  def current(self, item: SystemdUnit) -> str | None:
+    enabled: bool = shell_success(f"{systemctl_for_user(item.user)} is-enabled {item.identifier}")
+    return sha256(str(enabled).encode()).hexdigest()
 
-  def target(self, item: SystemdUnit) -> str | int | None:
-    return 1
+  def target(self, item: SystemdUnit) -> str | None:
+    return sha256(str(True).encode()).hexdigest()

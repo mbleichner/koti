@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import hashlib
+from hashlib import sha256
 
 from koti.core import Checksums, ConfigManager, Koti
 from koti.items.hooks import PostHook
@@ -50,12 +50,12 @@ class PostHookChecksums(Checksums[PostHook]):
     self.checksum_store = checksum_store
     self.core = core
 
-  def current(self, hook: PostHook) -> str | int | None:
+  def current(self, hook: PostHook) -> str | None:
     return self.checksum_store.get(hook.identifier, None)
 
-  def target(self, hook: PostHook) -> str | int | None:
+  def target(self, hook: PostHook) -> str | None:
     group_containing_hook = self.core.get_group_for_item(hook)
-    sha256_hash = hashlib.sha256()
+    sha256_hash = sha256()
     sha256_hash.update("\n".join(self.get_trigger_checksums(group_containing_hook)).encode())
     return sha256_hash.hexdigest()
 

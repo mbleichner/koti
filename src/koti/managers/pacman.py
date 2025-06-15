@@ -1,3 +1,5 @@
+from hashlib import sha256
+
 from koti import Checksums
 from koti.core import ConfigManager, ConfirmModeValues, Koti
 from koti.items.package import Package
@@ -105,21 +107,6 @@ class PacmanPackageManager(ConfigManager[Package]):
     self.delegate.prune_unneeded(confirm_mode = confirm_mode)
 
 
-class PackageChecksums(Checksums[Package]):
-  delegate: PacmanAdapter
-
-  def __init__(self, delegate: PacmanAdapter):
-    super().__init__()
-    self.delegate = delegate
-    self.explicit_packages = self.delegate.list_explicit_packages()
-
-  def current(self, item: Package) -> str | int | None:
-    return 1 if item.identifier in self.explicit_packages else 0
-
-  def target(self, item: Package) -> str | int | None:
-    return 1
-
-
 class PacmanKeyManager(ConfigManager[PacmanKey]):
   managed_classes = [PacmanKey]
 
@@ -144,10 +131,27 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
     pass
 
 
+class PackageChecksums(Checksums[Package]):
+  delegate: PacmanAdapter
+
+  def __init__(self, delegate: PacmanAdapter):
+    super().__init__()
+    self.delegate = delegate
+    self.explicit_packages = self.delegate.list_explicit_packages()
+
+  def current(self, item: Package) -> str | None:
+    installed: bool = item.identifier in self.explicit_packages
+    return sha256(str(installed).encode()).hexdigest()
+
+  def target(self, item: Package) -> str | None:
+    return sha256(str(True).encode()).hexdigest()
+
+
 class PacmanKeyChecksums(Checksums[PacmanKey]):
 
-  def current(self, item: PacmanKey) -> str | int | None:
-    return 1 if shell_success(f"pacman-key --list-keys | grep {item.key_id}") else 0
+  def current(self, item: PacmanKey) -> str | None:
+    installed: bool = shell_success(f"pacman-key --list-keys | grep {item.key_id}")
+    return sha256(str(installed).encode()).hexdigest()
 
-  def target(self, item: PacmanKey) -> str | int | None:
-    return 1
+  def target(self, item: PacmanKey) -> str | None:
+    return sha256(str(True).encode()).hexdigest()

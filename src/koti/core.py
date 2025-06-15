@@ -228,10 +228,10 @@ class ConfigManager[T: ConfigItem]:
   def checksums(self, core: Koti) -> Checksums[T]:
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.checksums()")
 
-  def checksum_current(self, items: list[T], core: Koti) -> str | int | None:
+  def checksum_current(self, items: list[T], core: Koti) -> str | None:
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.checksum_current()")
 
-  def checksum_target(self, items: list[T], core: Koti) -> str | int | None:
+  def checksum_target(self, items: list[T], core: Koti) -> str | None:
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.checksum_target()")
 
   def apply_phase(self, items: list[T], core: Koti):
@@ -243,10 +243,10 @@ class ConfigManager[T: ConfigItem]:
 
 class Checksums[T:ConfigItem]:
 
-  def current(self, item: T) -> str | int | None:
+  def current(self, item: T) -> str | None:
     pass
 
-  def target(self, item: T) -> str | int | None:
+  def target(self, item: T) -> str | None:
     pass
 
 
