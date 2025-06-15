@@ -15,7 +15,6 @@ class Koti:
   default_confirm_mode: ConfirmModeValues
 
   def __init__(self, managers: list[ConfigManager], configs: list[ConfigGroups], default_confirm_mode: ConfirmModeValues = "cautious"):
-    super().__init__()
     Koti.check_manager_consistency(managers, configs)
     self.default_confirm_mode = default_confirm_mode
     self.configs = configs
@@ -297,6 +296,5 @@ class ExecutionPhase:
   execution_order: list[tuple[ConfigManager, list[ConfigItem]]]
 
   def __init__(self, merged_groups: list[ConfigGroup], execution_order: list[tuple[ConfigManager, list[ConfigItem]]]):
-    super().__init__()
     self.execution_order = execution_order
     self.merged_groups = merged_groups

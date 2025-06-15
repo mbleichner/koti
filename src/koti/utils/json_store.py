@@ -40,7 +40,6 @@ class JsonMapping[K, V]:
   name: str
 
   def __init__(self, store: JsonStore, name: str):
-    super().__init__()
     self.name = name
     self.store = store
 
@@ -68,7 +67,6 @@ class JsonCollection[T]:
   name: str
 
   def __init__(self, store: JsonStore, name: str):
-    super().__init__()
     self.name = name
     self.store = store
 

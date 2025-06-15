@@ -18,7 +18,6 @@ class FileManager(ConfigManager[File]):
   managed_files_store: JsonMapping[str, FileStoreEntry]
 
   def __init__(self):
-    super().__init__()
     store = JsonStore("/var/cache/koti/FileManager.json")
     self.managed_files_store = store.mapping("managed_files")
 

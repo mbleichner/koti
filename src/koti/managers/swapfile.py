@@ -18,7 +18,6 @@ class SwapfileManager(ConfigManager[Swapfile]):
   managed_files_store: JsonMapping[str, SwapfileStoreEntry]
 
   def __init__(self):
-    super().__init__()
     store = JsonStore("/var/cache/koti/SwapfileManager.json")
     self.managed_files_store = store.mapping("managed_files")
 

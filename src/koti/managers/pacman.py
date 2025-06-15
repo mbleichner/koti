@@ -66,7 +66,6 @@ class PacmanPackageManager(ConfigManager[Package]):
   delegate: PacmanAdapter
 
   def __init__(self, delegate: PacmanAdapter):
-    super().__init__()
     self.delegate = delegate
 
   def check_configuration(self, item: Package, core: Koti):
@@ -135,7 +134,6 @@ class PackageChecksums(Checksums[Package]):
   delegate: PacmanAdapter
 
   def __init__(self, delegate: PacmanAdapter):
-    super().__init__()
     self.delegate = delegate
     self.explicit_packages = self.delegate.list_explicit_packages()
 

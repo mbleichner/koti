@@ -13,7 +13,6 @@ class PostHookManager(ConfigManager[PostHook]):
   checksum_store: JsonMapping[str, str]
 
   def __init__(self):
-    super().__init__()
     store = JsonStore("/var/cache/koti/PostHookManager.json")
     self.checksum_store = store.mapping("checksums")
 
