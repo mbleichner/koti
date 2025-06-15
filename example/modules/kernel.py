@@ -12,14 +12,9 @@ def kernel_cachyos(sortkey: int) -> ConfigGroups:
   return [
     ConfigGroup(
       ConfirmMode("paranoid"),
-      Requires(
-        Package("cachyos-keyring"),
-        Package("cachyos-mirrorlist"),
-        Package("cachyos-v3-mirrorlist")
-      ),
+      Requires(File("/etc/pacman.conf")),
 
-      Package("linux-cachyos"),
-      Package("linux-cachyos-headers"),
+      *Packages("linux-cachyos", "linux-cachyos-headers"),
 
       File("/boot/loader/entries/arch-cachyos.conf", permissions = 0o555, content = cleandoc(f'''
         # managed by koti
@@ -46,8 +41,9 @@ def kernel_stock(sortkey: int) -> ConfigGroups:
   return [
     ConfigGroup(
       ConfirmMode("paranoid"),
-      Package("linux"),
-      Package("linux-headers"),
+      Requires(File("/etc/pacman.conf")),
+
+      *Packages("linux", "linux-headers"),
 
       File("/boot/loader/entries/arch-stock.conf", permissions = 0o555, content = cleandoc(f'''
         # managed by koti
@@ -74,8 +70,9 @@ def kernel_lts(sortkey: int) -> ConfigGroups:
   return [
     ConfigGroup(
       ConfirmMode("paranoid"),
-      Package("linux-lts"),
-      Package("linux-lts-headers"),
+      Requires(File("/etc/pacman.conf")),
+
+      *Packages("linux-lts", "linux-lts-headers"),
 
       File("/boot/loader/entries/arch-lts.conf", permissions = 0o555, content = cleandoc(f'''
         # managed by koti

@@ -2,7 +2,7 @@ from koti import *
 from koti.utils import shell_interactive
 
 
-def gaming() -> ConfigGroups:  return [
+def gaming() -> ConfigGroups: return [
 
   ConfigGroup(
     Package("discord"),

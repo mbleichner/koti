@@ -108,7 +108,7 @@ def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
   ConfigGroup(
     "ananicy-cpp",
 
-    Requires(Package("cachyos-mirrorlist")),  # Das Package ist in den CachyOS Repos vorkompiliert vorhanden
+    Requires(File("/etc/pacman.conf")),
 
     Package("ananicy-cpp"),
     SystemdUnit("ananicy-cpp.service"),
