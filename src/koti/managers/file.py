@@ -3,7 +3,7 @@ import os
 import pwd
 from typing import TypedDict
 
-from koti.core import Checksums, ConfigManager, ConfirmModeValues, ExecutionState, Koti
+from koti.core import Checksums, ConfigManager, ConfirmModeValues, Koti
 from koti.items.file import File
 from koti.utils.confirm import confirm
 from koti.utils.json_store import JsonMapping, JsonStore
@@ -53,7 +53,6 @@ class FileManager(ConfigManager[File]):
         destructive = exists,
         mode = core.get_confirm_mode_for_item(item),
       )
-      state.updated_items += [item]
 
       with open(item.identifier, 'wb+') as fh:
         fh.write(content)
@@ -64,9 +63,10 @@ class FileManager(ConfigManager[File]):
       if mode != new_mode:
         raise AssertionError("cannot apply file permissions (incompatible file system?)")
 
+  def cleanup(self, items: list[File], core: Koti, state: ExecutionState):
+    for item in items:
       self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode_for_item(item)})
 
-  def cleanup(self, items: list[File], core: Koti, state: ExecutionState):
     currently_managed_files = [item.identifier for item in items]
     previously_managed_files = self.managed_files_store.keys()
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]

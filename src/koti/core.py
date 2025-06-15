@@ -284,8 +284,3 @@ class ExecutionPhase:
     super().__init__()
     self.execution_order = execution_order
     self.merged_groups = merged_groups
-
-
-class ExecutionState:
-  processed_items: list[ConfigItem] = []
-  updated_items: list[ConfigItem] = []

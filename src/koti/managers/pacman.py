@@ -97,8 +97,6 @@ class PacmanPackageManager(ConfigManager[Package]):
       confirm_mode = core.get_confirm_mode_for_item(additional_explicit_items)
     )
 
-    state.updated_items += list({*additional_items_from_urls, *additional_items_from_repo, *additional_explicit_items})
-
   def cleanup(self, items: list[Package], core: Koti, state: ExecutionState):
     desired = [pkg.identifier for pkg in items]
     explicit = self.delegate.list_explicit_packages()
@@ -141,7 +139,6 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
       print(f"installing pacman-key {item.key_id} from {item.key_server}")
       shell_interactive(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
       shell_interactive(f"sudo pacman-key --lsign-key {item.key_id}")
-      state.updated_items += [item]
 
   def cleanup(self, items: list[PacmanKey], core: Koti, state: ExecutionState):
     pass
