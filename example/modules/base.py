@@ -236,6 +236,11 @@ def base() -> ConfigGroups: return [
   ),
 
   ConfigGroup(
+    File("/etc/environment", permissions = 0o444, content = cleandoc(f'''
+      # managed by koti
+      EDITOR=nano
+    ''')),
+
     File("/boot/loader/loader.conf", permissions = 0o555, content = cleandoc(f'''
       # managed by koti
       timeout 3
