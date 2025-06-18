@@ -43,7 +43,11 @@ class PostHookManager(ConfigManager[PostHook]):
       self.checksum_store.put(hook.identifier, target_checksum)
 
   def cleanup(self, items: list[PostHook], core: Koti):
-    pass
+    currently_managed_hooks = [item.identifier for item in items]
+    previously_managed_hooks = self.checksum_store.keys()
+    hooks_to_delete = [identifier for identifier in previously_managed_hooks if identifier not in currently_managed_hooks]
+    for hook_identifier in hooks_to_delete:
+      self.checksum_store.remove(hook_identifier)
 
   @staticmethod
   def get_trigger_items(core: Koti, hook: PostHook) -> list[ConfigItem]:

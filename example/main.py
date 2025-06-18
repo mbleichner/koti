@@ -25,7 +25,7 @@ koti = Koti(
   }[gethostname()],
 )
 
-if koti.plan():
-  confirm("confirm execution")
-  koti.apply()
-  print("execution finished.")
+koti.plan()
+confirm("confirm execution")
+koti.apply()
+print("execution finished.")
