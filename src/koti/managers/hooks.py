@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from hashlib import sha256
 
-from koti import ConfigItem
+from koti import ConfigItem, ConfigMetadata
 from koti.core import Checksums, ConfigManager, Koti
 from koti.items.hooks import PostHook
 from koti.utils import JsonMapping, JsonStore
@@ -20,10 +20,12 @@ class PostHookManager(ConfigManager[PostHook]):
   def check_configuration(self, hook: PostHook, core: Koti):
     if hook.execute is None:
       raise AssertionError("missing execute parameter")
-    index_hook = PostHookManager.index_in_execution_order(core, hook)
-    for item in PostHookManager.get_dependent_items(core, hook):
-      if not PostHookManager.index_in_execution_order(core, item) < index_hook:
-        raise AssertionError(f"{str(hook)} depends on item {item} which comes later in execution order")
+    for item in PostHookManager.get_trigger_items(core, hook):
+
+      try:
+        PostHookManager.assert_valid_trigger(core, hook, item)
+      except AssertionError as e:
+        raise AssertionError(f"{str(hook)} depends on invalid trigger {item}: {str(e)}")
 
   def checksums(self, core: Koti) -> PostHookChecksums:
     return PostHookChecksums(self, core, self.checksum_store)
@@ -44,16 +46,31 @@ class PostHookManager(ConfigManager[PostHook]):
     pass
 
   @staticmethod
-  def get_dependent_items(core: Koti, hook: PostHook) -> list[ConfigItem]:
+  def get_trigger_items(core: Koti, hook: PostHook) -> list[ConfigItem]:
     if hook.trigger == "group":
-      items_in_group = [item for item in core.get_group_for_item(hook).items if isinstance(item, ConfigItem)]
-      index_hook = PostHookManager.index_in_execution_order(core, hook)
-      return [item for item in items_in_group if PostHookManager.index_in_execution_order(core, item) < index_hook]
+      return [item for item in core.get_group_for_item(hook).items if PostHookManager.is_valid_trigger(core, hook, item)]
     elif isinstance(hook.trigger, ConfigItem):
       return [hook.trigger]
     elif isinstance(hook.trigger, list):
       return hook.trigger
     raise AssertionError(f"illegal PostHook trigger argument: {hook.trigger}")
+
+  @staticmethod
+  def assert_valid_trigger(core: Koti, hook: PostHook, item: ConfigItem | ConfigMetadata):
+    if isinstance(item, PostHook):
+      raise AssertionError("cannot be a PostHook")
+    if not isinstance(item, ConfigItem):
+      raise AssertionError("needs to be a ConfigItem")
+    if not PostHookManager.index_in_execution_order(core, item) < PostHookManager.index_in_execution_order(core, hook):
+      raise AssertionError("needs to be executed before hook")
+
+  @staticmethod
+  def is_valid_trigger(core: Koti, hook: PostHook, item: ConfigItem | ConfigMetadata) -> bool:
+    try:
+      PostHookManager.assert_valid_trigger(core, hook, item)
+      return True
+    except AssertionError as e:
+      return False
 
   @staticmethod
   def index_in_execution_order(core: Koti, needle: ConfigItem) -> int:
@@ -82,19 +99,21 @@ class PostHookChecksums(Checksums[PostHook]):
     return self.checksum_store.get(hook.identifier, None)
 
   def target(self, hook: PostHook) -> str | None:
-    dependent_items = PostHookManager.get_dependent_items(self.core, hook)
-    checksums = self.get_current_checksums_for_items(dependent_items)
+    trigger_items = PostHookManager.get_trigger_items(self.core, hook)
+    checksums = self.get_current_checksums_for_items(trigger_items)
     sha256_hash = sha256()
-    sha256_hash.update("\n".join(checksums).encode())
+    for idx, trigger in enumerate(trigger_items):
+      checksum = checksums[idx]
+      sha256_hash.update(str(trigger).encode())
+      sha256_hash.update(str(checksum).encode())
     return sha256_hash.hexdigest()
 
-  def get_current_checksums_for_items(self, dependent_items: list[ConfigItem]) -> list[str]:
+  def get_current_checksums_for_items(self, dependent_items: list[ConfigItem]) -> list[str | None]:
     result = []
     for manager in self.core.managers:
       managed_items = [item for item in dependent_items if item.__class__ in manager.managed_classes]
       if len(managed_items) == 0: continue
       manager_checksums = manager.checksums(self.core)
       for item in managed_items:
-        if self.core.managers.index(manager) < self.core.managers.index(self.manager):
-          result.append(str(manager_checksums.current(item)))
+        result.append(manager_checksums.current(item))
     return result
