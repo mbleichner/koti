@@ -81,7 +81,7 @@ class Koti:
 
   def get_group_for_item(self, item: ConfigItem) -> ConfigGroup:
     for phase in self.execution_phases:
-      for group in phase.groups:
+      for group in phase.groups_in_phase:
         if item in group.items:
           return group
     raise AssertionError(f"group not found for {item}")
@@ -269,9 +269,9 @@ class ConfirmMode(ConfigMetadata):
 
 
 class ExecutionPhase:
-  groups: list[ConfigGroup]
+  groups_in_phase: list[ConfigGroup]
   execution_order: list[tuple[ConfigManager, list[ConfigItem]]]
 
-  def __init__(self, groups: list[ConfigGroup], execution_order: list[tuple[ConfigManager, list[ConfigItem]]]):
-    self.groups = groups
+  def __init__(self, groups_in_phase: list[ConfigGroup], execution_order: list[tuple[ConfigManager, list[ConfigItem]]]):
+    self.groups_in_phase = groups_in_phase
     self.execution_order = execution_order

@@ -80,12 +80,11 @@ class PostHookManager(ConfigManager[PostHook]):
   def index_in_execution_order(core: Koti, needle: ConfigItem) -> int:
     result = 0
     for phase in core.execution_phases:
-      for group in phase.groups:
-        for item in group.items:
-          if isinstance(item, ConfigItem):
-            if item.__class__ == needle.__class__ and item.identifier == needle.identifier:
-              return result
-            result += 1
+      for manager, items_for_manager in phase.execution_order:
+        for item in items_for_manager:
+          if item.__class__ == needle.__class__ and item.identifier == needle.identifier:
+            return result
+          result += 1
     raise AssertionError(f"item not found in execution order: {needle}")
 
 
