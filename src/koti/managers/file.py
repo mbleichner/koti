@@ -80,35 +80,27 @@ class FileManager(ConfigManager[File]):
       self.managed_files_store.remove(file)
 
 
-def file_hash(filename) -> str | None:
-  if not os.path.isfile(filename):
-    return None
-  stat = os.stat(filename)
-  sha256_hash = sha256()
-  sha256_hash.update(str(stat.st_uid).encode())
-  sha256_hash.update(str(stat.st_gid).encode())
-  sha256_hash.update(str(stat.st_mode & 0o777).encode())
-  with open(filename, "rb") as f:
-    for byte_block in iter(lambda: f.read(4096), b""):
-      sha256_hash.update(byte_block)
-  return sha256_hash.hexdigest()
-
-
-def virtual_file_hash(uid, gid, mode, content):
-  sha256_hash = sha256()
-  sha256_hash.update(str(uid).encode())
-  sha256_hash.update(str(gid).encode())
-  sha256_hash.update(str(mode & 0o777).encode())
-  sha256_hash.update(content)
-  return sha256_hash.hexdigest()
-
-
 class FileChecksums(Checksums[File]):
 
   def current(self, item: File) -> str | None:
-    return file_hash(item.identifier)
+    if not os.path.isfile(item.identifier):
+      return None
+    stat = os.stat(item.identifier)
+    sha256_hash = sha256()
+    sha256_hash.update(str(stat.st_uid).encode())
+    sha256_hash.update(str(stat.st_gid).encode())
+    sha256_hash.update(str(stat.st_mode & 0o777).encode())
+    with open(item.identifier, "rb") as f:
+      for byte_block in iter(lambda: f.read(4096), b""):
+        sha256_hash.update(byte_block)
+    return sha256_hash.hexdigest()
 
   def target(self, item: File) -> str | None:
     getpwnam = pwd.getpwnam(item.owner)
     (uid, gid) = (getpwnam.pw_uid, getpwnam.pw_gid)
-    return virtual_file_hash(uid, gid, item.permissions, item.content)
+    sha256_hash = sha256()
+    sha256_hash.update(str(uid).encode())
+    sha256_hash.update(str(gid).encode())
+    sha256_hash.update(str(item.permissions & 0o777).encode())
+    sha256_hash.update(item.content)
+    return sha256_hash.hexdigest()

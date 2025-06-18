@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from hashlib import sha256
 
+from koti import ConfigItem
 from koti.core import Checksums, ConfigManager, Koti
 from koti.items.hooks import PostHook
 from koti.utils import JsonMapping, JsonStore
@@ -16,9 +17,13 @@ class PostHookManager(ConfigManager[PostHook]):
     store = JsonStore("/var/cache/koti/PostHookManager.json")
     self.checksum_store = store.mapping("checksums")
 
-  def check_configuration(self, item: PostHook, core: Koti):
-    if item.execute is None:
+  def check_configuration(self, hook: PostHook, core: Koti):
+    if hook.execute is None:
       raise AssertionError("missing execute parameter")
+    index_hook = PostHookManager.index_in_execution_order(core, hook)
+    for item in PostHookManager.get_dependent_items(core, hook):
+      if not PostHookManager.index_in_execution_order(core, item) < index_hook:
+        raise AssertionError(f"{str(hook)} depends on item {item} which comes later in execution order")
 
   def checksums(self, core: Koti) -> PostHookChecksums:
     return PostHookChecksums(self, core, self.checksum_store)
@@ -38,6 +43,30 @@ class PostHookManager(ConfigManager[PostHook]):
   def cleanup(self, items: list[PostHook], core: Koti):
     pass
 
+  @staticmethod
+  def get_dependent_items(core: Koti, hook: PostHook) -> list[ConfigItem]:
+    if hook.trigger == "group":
+      items_in_group = [item for item in core.get_group_for_item(hook).items if isinstance(item, ConfigItem)]
+      index_hook = PostHookManager.index_in_execution_order(core, hook)
+      return [item for item in items_in_group if PostHookManager.index_in_execution_order(core, item) < index_hook]
+    elif isinstance(hook.trigger, ConfigItem):
+      return [hook.trigger]
+    elif isinstance(hook.trigger, list):
+      return hook.trigger
+    raise AssertionError(f"illegal PostHook trigger argument: {hook.trigger}")
+
+  @staticmethod
+  def index_in_execution_order(core: Koti, needle: ConfigItem) -> int:
+    result = 0
+    for phase in core.execution_phases:
+      for group in phase.groups:
+        for item in group.items:
+          if isinstance(item, ConfigItem):
+            if item.__class__ == needle.__class__ and item.identifier == needle.identifier:
+              return result
+            result += 1
+    raise AssertionError(f"item not found in execution order: {needle}")
+
 
 class PostHookChecksums(Checksums[PostHook]):
   manager: PostHookManager
@@ -53,15 +82,16 @@ class PostHookChecksums(Checksums[PostHook]):
     return self.checksum_store.get(hook.identifier, None)
 
   def target(self, hook: PostHook) -> str | None:
-    group_containing_hook = self.core.get_group_for_item(hook)
+    dependent_items = PostHookManager.get_dependent_items(self.core, hook)
+    checksums = self.get_current_checksums_for_items(dependent_items)
     sha256_hash = sha256()
-    sha256_hash.update("\n".join(self.get_trigger_checksums(group_containing_hook)).encode())
+    sha256_hash.update("\n".join(checksums).encode())
     return sha256_hash.hexdigest()
 
-  def get_trigger_checksums(self, group_containing_hook):
+  def get_current_checksums_for_items(self, dependent_items: list[ConfigItem]) -> list[str]:
     result = []
     for manager in self.core.managers:
-      managed_items = [item for item in group_containing_hook.items if item.__class__ in manager.managed_classes]
+      managed_items = [item for item in dependent_items if item.__class__ in manager.managed_classes]
       if len(managed_items) == 0: continue
       manager_checksums = manager.checksums(self.core)
       for item in managed_items:

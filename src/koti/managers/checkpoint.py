@@ -1,5 +1,3 @@
-from hashlib import sha256
-
 from koti import Checkpoint
 from koti.core import Checksums, ConfigManager, Koti
 from koti.items.file import File
@@ -22,10 +20,9 @@ class CheckpointManager(ConfigManager[Checkpoint]):
 
 
 class CheckpointChecksums(Checksums[Checkpoint]):
-  checksum = sha256("".encode()).hexdigest()
 
   def current(self, item: Checkpoint) -> str | None:
-    return self.checksum
+    return None
 
   def target(self, item: Checkpoint) -> str | None:
-    return self.checksum
+    return None
