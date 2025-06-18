@@ -117,7 +117,7 @@ class Koti:
   def check_manager_consistency(managers: list[ConfigManager], configs: list[ConfigGroups]):
     for group in Koti.get_all_provided_groups(configs):
       for item in group.items:
-        if isinstance(item, ConfigMetadata): continue
+        if not isinstance(item, ConfigItem): continue
         matching_managers = [manager for manager in managers if item.__class__ in manager.managed_classes]
         if len(matching_managers) == 0:
           raise AssertionError(f"no manager found for class {item.__class__.__name__}")
@@ -128,7 +128,7 @@ class Koti:
   def check_config_item_consistency(managers: list[ConfigManager], configs: list[ConfigGroups], koti: Koti):
     for group in Koti.get_all_provided_groups(configs):
       for item in group.items:
-        if isinstance(item, ConfigMetadata): continue
+        if not isinstance(item, ConfigItem): continue
         matching_managers = [manager for manager in managers if item.__class__ in manager.managed_classes]
         manager = matching_managers[0]
         try:
