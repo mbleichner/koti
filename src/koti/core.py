@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from collections import defaultdict
 from typing import Literal, Type
 
 type ConfirmModeValues = Literal["paranoid", "cautious", "yolo"]
@@ -82,7 +81,7 @@ class Koti:
 
   def get_group_for_item(self, item: ConfigItem) -> ConfigGroup:
     for phase in self.execution_phases:
-      for group in phase.merged_groups:
+      for group in phase.groups:
         if item in group.items:
           return group
     raise AssertionError(f"group not found for {item}")
@@ -107,11 +106,10 @@ class Koti:
 
   @staticmethod
   def build_execution_phases(managers: list[ConfigManager], configs: list[ConfigGroups]) -> list[ExecutionPhase]:
-    original_groups = Koti.get_all_provided_groups(configs)
-    merged_groups = Koti.merge_groups(original_groups)
-    merged_groups_ordered_into_phases = Koti.reorder_into_phases(merged_groups)
+    groups = Koti.get_all_provided_groups(configs)
+    groups_ordered_into_phases = Koti.reorder_into_phases(groups)
     execution_phases: list[ExecutionPhase] = [
-      Koti.create_execution_phase(managers, groups_in_phase) for groups_in_phase in merged_groups_ordered_into_phases
+      Koti.create_execution_phase(managers, groups_in_phase) for groups_in_phase in groups_ordered_into_phases
     ]
     return execution_phases
 
@@ -139,8 +137,8 @@ class Koti:
           raise AssertionError(f"{manager.__class__.__name__}: {e}")
 
   @staticmethod
-  def reorder_into_phases(merged_groups: list[ConfigGroup]):
-    result: list[list[ConfigGroup]] = [merged_groups]
+  def reorder_into_phases(groups: list[ConfigGroup]):
+    result: list[list[ConfigGroup]] = [groups]
     while True:
       violation = Koti.find_dependency_violation(result)
       if violation is None: break
@@ -163,30 +161,14 @@ class Koti:
     return result
 
   @staticmethod
-  def create_execution_phase(managers: list[ConfigManager], merged_groups_in_phase: list[ConfigGroup]) -> ExecutionPhase:
-    flattened_items = [item for group in merged_groups_in_phase for item in group.items]
+  def create_execution_phase(managers: list[ConfigManager], groups_in_phase: list[ConfigGroup]) -> ExecutionPhase:
+    flattened_items = [item for group in groups_in_phase for item in group.items]
     execution_order: list[tuple[ConfigManager, list[ConfigItem]]] = []
     for manager in managers:
       managed_items = [item for item in flattened_items if item.__class__ in manager.managed_classes]
       if len(managed_items) > 0:
         execution_order.append((manager, managed_items))
-    return ExecutionPhase(merged_groups_in_phase, execution_order)
-
-  @staticmethod
-  def merge_groups(groups: list[ConfigGroup]) -> list[ConfigGroup]:
-    grouped_by_identifier: dict[str, list[ConfigGroup]] = defaultdict(list)
-    unnamed_groups: list[ConfigGroup] = []
-    for group in groups:
-      if group.identifier is not None:
-        grouped_by_identifier[group.identifier].append(group)
-      else:
-        unnamed_groups.append(group)
-    result: list[ConfigGroup] = []
-    for identifier, group_group in grouped_by_identifier.items():
-      merged_items = [item for group in group_group for item in group.items]
-      result.append(ConfigGroup(identifier, *merged_items))
-    result += unnamed_groups
-    return result
+    return ExecutionPhase(groups_in_phase, execution_order)
 
   @staticmethod
   def find_dependency_violation(phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup] | None:
@@ -199,7 +181,7 @@ class Koti:
               raise AssertionError(f"required item not found: {required_item}")
             required_phase_idx, required_group = required_phase_and_group
             if required_phase_idx >= phase_idx:
-              if group == required_group: raise AssertionError(f"group with dependency to itself: {group.identifier if group.identifier else "<unnamed>"}")
+              if group == required_group: raise AssertionError(f"group with dependency to itself")
               return required_phase_idx, required_group
     return None
 
@@ -207,8 +189,6 @@ class Koti:
   def find_required_group(required_item: ConfigItem | ConfigGroup, phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup] | None:
     for idx_phase, phase in enumerate(phases):
       for group in phase:
-        if isinstance(required_item, ConfigGroup) and required_item.identifier == group.identifier:
-          return idx_phase, group
         for group_item in group.items:
           if group_item.__class__ == required_item.__class__ and group_item.identifier == required_item.identifier:
             return idx_phase, group
@@ -227,13 +207,10 @@ class ConfigItem:
 
 
 class ConfigGroup:
-  identifier: str | None
-  items: list[ConfigItem | None]
+  items: list[ConfigItem | ConfigMetadata | None]
 
-  def __init__(self, first: str | ConfigItem | ConfigMetadata, *items: ConfigItem | ConfigMetadata | None):
-    self.identifier = None if not isinstance(first, str) else first
-    combined_items = ([] if isinstance(first, str) else [first]) + list(items)
-    self.items = [item for item in combined_items if item is not None]
+  def __init__(self, *items: ConfigItem | ConfigMetadata | None):
+    self.items = list(items)
 
 
 class ConfigManager[T: ConfigItem]:
@@ -272,9 +249,9 @@ class ConfigMetadata:
 
 
 class Requires(ConfigMetadata):
-  items: list[ConfigItem | ConfigGroup]
+  items: list[ConfigItem]
 
-  def __init__(self, *items: ConfigItem | ConfigGroup):
+  def __init__(self, *items: ConfigItem):
     self.items = list(items)
 
   def __str__(self):
@@ -292,9 +269,9 @@ class ConfirmMode(ConfigMetadata):
 
 
 class ExecutionPhase:
-  merged_groups: list[ConfigGroup]
+  groups: list[ConfigGroup]
   execution_order: list[tuple[ConfigManager, list[ConfigItem]]]
 
-  def __init__(self, merged_groups: list[ConfigGroup], execution_order: list[tuple[ConfigManager, list[ConfigItem]]]):
+  def __init__(self, groups: list[ConfigGroup], execution_order: list[tuple[ConfigManager, list[ConfigItem]]]):
+    self.groups = groups
     self.execution_order = execution_order
-    self.merged_groups = merged_groups

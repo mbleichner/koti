@@ -6,7 +6,7 @@ from modules.cpufreq import cpufreq, throttle_after_boot
 from modules.desktop import desktop
 from modules.fish import fish
 from modules.gaming import gaming
-from modules.kernel import kernel_cachyos, kernel_lts, kernel_stock
+from modules.kernel import kernel_cachyos, kernel_stock
 from modules.ollama_aichat import ollama_aichat
 from modules.ryzen_undervolting import ryzen_undervolting
 from modules.systray import systray
@@ -27,7 +27,6 @@ lenovo: list[ConfigGroups] = [
   ollama_aichat(cuda = False),
 
   ConfigGroup(
-    "networking",
     Package("networkmanager"),
     SystemdUnit("wpa_supplicant.service"),
     SystemdUnit("NetworkManager.service"),

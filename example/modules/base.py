@@ -6,8 +6,6 @@ from koti.utils import *
 
 def base() -> ConfigGroups: return [
   ConfigGroup(
-    "base-packages",
-
     Package("linux-firmware"),
     Package("efibootmgr"),
     Package("base"),
@@ -69,7 +67,6 @@ def base() -> ConfigGroups: return [
   ),
 
   ConfigGroup(
-    "cachyos-repo",
     ConfirmMode("paranoid"),
     PacmanKey("cachyos", key_id = "F3B607488DB35A47"),
     Package("cachyos-keyring", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst"),
@@ -78,7 +75,6 @@ def base() -> ConfigGroups: return [
   ),
 
   ConfigGroup(
-    "pacman-config",
     ConfirmMode("paranoid"),
     Requires(Package("cachyos-mirrorlist"), Package("cachyos-v3-mirrorlist")),
 
@@ -217,8 +213,6 @@ def base() -> ConfigGroups: return [
   ),
 
   ConfigGroup(
-    "arch-update",
-
     Package("arch-update"),
 
     File("/home/manuel/.config/arch-update/arch-update.conf", owner = "manuel", permissions = 0o444, content = cleandoc('''
@@ -282,7 +276,6 @@ def base() -> ConfigGroups: return [
   ),
 
   ConfigGroup(
-    "ssh-server",
     Package("openssh"),
     SystemdUnit("sshd.service"),
     File("/etc/ssh/sshd_config", owner = "root", permissions = 0o444, content = cleandoc('''
@@ -295,8 +288,6 @@ def base() -> ConfigGroups: return [
   ),
 
   ConfigGroup(
-    "locale-setup",
-
     File("/etc/locale.conf", permissions = 0o444, content = cleandoc('''
       LANG=en_US.UTF-8
       LC_ADDRESS=de_DE.UTF-8

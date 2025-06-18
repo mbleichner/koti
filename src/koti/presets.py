@@ -12,6 +12,7 @@ class KotiManagerPresets:
       FileManager(),
       SystemdUnitManager(),
       PostHookManager(),
+      CheckpointManager(),
     ]
 
   @staticmethod
@@ -22,4 +23,5 @@ class KotiManagerPresets:
       FileManager(),
       SystemdUnitManager(),
       PostHookManager(),
+      CheckpointManager(),
     ]

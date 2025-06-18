@@ -6,7 +6,7 @@ from koti import *
 
 def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
   ConfigGroup(
-    "plasma-optional-dependencies",
+    Checkpoint("plasma-optional-dependencies"),
     Package("qt6-multimedia-ffmpeg"),  # qt6-multimedia-backend
     Package("phonon-qt6-vlc"),  # phonon-qt6-backend
     Package("pipewire-jack"),  # jack
@@ -16,9 +16,9 @@ def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
   ),
 
   ConfigGroup(
-    "desktop-packages",
+    Checkpoint("desktop-packages"),
     Requires(
-      ConfigGroup("plasma-optional-dependencies"),  # avoid pacman asking for possible alternatives
+      Checkpoint("plasma-optional-dependencies"),  # avoid pacman asking for possible alternatives
       File("/etc/pacman.conf"),  # wg. NoExtract = etc/xdg/autostart/org.kde.discover.notifier.desktop
     ),
     Package("archlinux-wallpaper"),
@@ -58,8 +58,7 @@ def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
   ),
 
   ConfigGroup(
-    "display-manager",
-
+    Checkpoint("display-manager"),
     Package("greetd-tuigreet"),
     SystemdUnit("greetd.service"),
 
@@ -106,8 +105,7 @@ def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
   ),
 
   ConfigGroup(
-    "ananicy-cpp",
-
+    Checkpoint("ananicy"),
     Requires(File("/etc/pacman.conf")),
 
     Package("ananicy-cpp"),

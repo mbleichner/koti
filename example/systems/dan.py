@@ -31,7 +31,6 @@ dan: list[ConfigGroups] = [
   ollama_aichat(cuda = True),
 
   ConfigGroup(
-    "networking",
     Package("networkmanager"),
     SystemdUnit("wpa_supplicant.service"),
     SystemdUnit("NetworkManager.service"),
