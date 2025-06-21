@@ -15,13 +15,13 @@ class KotiManagerPresets:
       CheckpointManager(),
     ]
 
-  @staticmethod
-  def debian() -> list[ConfigManager]:
-    return [
-      DebianPackageManager,
-      SwapfileManager(),
-      FileManager(),
-      SystemdUnitManager(),
-      PostHookManager(),
-      CheckpointManager(),
-    ]
+  # @staticmethod
+  # def debian() -> list[ConfigManager]:
+  #   return [
+  #     DebianPackageManager,
+  #     SwapfileManager(),
+  #     FileManager(),
+  #     SystemdUnitManager(),
+  #     PostHookManager(),
+  #     CheckpointManager(),
+  #   ]

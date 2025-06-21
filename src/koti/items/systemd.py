@@ -2,9 +2,9 @@ from koti.core import ConfigItem
 
 
 class SystemdUnit(ConfigItem):
-  user: str = None
+  user: str | None = None
 
-  def __init__(self, identifier: str, user: str = None):
+  def __init__(self, identifier: str, user: str | None = None):
     super().__init__(identifier)
     self.user = user
 

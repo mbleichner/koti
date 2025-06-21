@@ -25,6 +25,7 @@ class PostHookManager(ConfigManager[PostHook]):
     for item in hook.trigger:
       exec_order_item = PostHookManager.index_in_execution_order(core, item)  # can be None in case the item isn't set up by koti (i.e. files created by pacman hooks or such)
       exec_order_hook = PostHookManager.index_in_execution_order(core, hook)
+      if exec_order_hook is None: raise AssertionError("illegal state")
       if exec_order_item is not None and not exec_order_item < exec_order_hook:
         raise AssertionError(f"{hook} has trigger that is evaluated too late: {item}")
 
@@ -40,8 +41,10 @@ class PostHookManager(ConfigManager[PostHook]):
         mode = core.get_confirm_mode_for_item(hook),
       )
       target_checksum = checksums.target(hook)
+      if hook.execute is None:
+        raise AssertionError(f"{hook} has no execute method")
       hook.execute()
-      self.checksum_store.put(hook.identifier, target_checksum)
+      self.checksum_store.put(hook.identifier, str(target_checksum))
 
   def cleanup(self, items: list[PostHook], core: Koti):
     currently_managed_hooks = [item.identifier for item in items]
@@ -59,6 +62,7 @@ class PostHookManager(ConfigManager[PostHook]):
           if item.__class__ == needle.__class__ and item.identifier == needle.identifier:
             return result
           result += 1
+    return None
 
 
 class PostHookChecksums(Checksums[PostHook]):

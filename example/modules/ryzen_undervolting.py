@@ -1,10 +1,11 @@
 from inspect import cleandoc
+from typing import Generator
 
 from koti import *
 
 
-def ryzen_undervolting() -> ConfigGroups:
-  return ConfigGroup(
+def ryzen_undervolting() -> Generator[ConfigGroup]:
+  yield ConfigGroup(
     description = "Ryzen 5800X3D undervolting",
     provides = [
       Package("ryzen_smu-dkms-git"),

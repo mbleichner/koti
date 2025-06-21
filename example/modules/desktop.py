@@ -1,13 +1,13 @@
 from inspect import cleandoc
-from typing import TypedDict
+from typing import Generator, TypedDict
 
 from koti import *
 from koti.items.hooks import PostHookTriggerScope
 from koti.utils import shell
 
 
-def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
-  ConfigGroup(
+def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
+  yield ConfigGroup(
     description = "optional dependencies for desktop",
     provides = [
       Checkpoint("desktop-optional-dependencies"),
@@ -18,9 +18,9 @@ def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
       Package("nvidia-utils" if nvidia else "vulkan-radeon"),  # vulkan-driver
       Package("lib32-nvidia-utils" if nvidia else "lib32-vulkan-radeon"),  # lib32-vulkan-driver
     ]
-  ),
+  )
 
-  ConfigGroup(
+  yield ConfigGroup(
     description = "desktop packages",
     requires = [
       Checkpoint("desktop-optional-dependencies"),  # avoid pacman asking for possible alternatives
@@ -62,9 +62,9 @@ def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
       SystemdUnit("coolercontrold.service"),
       SystemdUnit("bluetooth.service"),
     ]
-  ),
+  )
 
-  ConfigGroup(
+  yield ConfigGroup(
     description = "display manager and auto-login",
     provides = [
       Checkpoint("display-manager"),
@@ -80,9 +80,9 @@ def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
         command = "{tuigreet_session(autologin)["command"]}"
       ''')),
     ]
-  ),
+  )
 
-  ConfigGroup(
+  yield ConfigGroup(
     description = "wireplumber priorities",
     provides = [
       File("/home/manuel/.config/wireplumber/wireplumber.conf.d/priorities.conf", permissions = 0o444, owner = "manuel", content = cleandoc('''
@@ -114,9 +114,9 @@ def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
         ]
       ''')),
     ]
-  ),
+  )
 
-  ConfigGroup(
+  yield ConfigGroup(
     description = "ananicy-cpp and configuration",
     requires = [
       Package("cachyos-mirrorlist"),
@@ -186,7 +186,6 @@ def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
       )
     ]
   )
-]
 
 
 class TuiGreetSession(TypedDict):

@@ -2,9 +2,9 @@ from koti.core import ConfigItem
 
 
 class Checkpoint(ConfigItem):
-  identifier: str | None
+  identifier: str
 
-  def __init__(self, identifier: str | None):
+  def __init__(self, identifier: str):
     super().__init__(identifier)
     self.identifier = identifier
 

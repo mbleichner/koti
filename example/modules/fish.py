@@ -1,11 +1,12 @@
 from inspect import cleandoc
+from typing import Generator
 
 from koti import *
 from koti.utils import shell
 
 
-def fish() -> ConfigGroups:
-  return ConfigGroup(
+def fish() -> Generator[ConfigGroup]:
+  yield ConfigGroup(
     description = "fish (+fastfetch)",
     provides = [
       Package("fish"),

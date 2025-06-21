@@ -1,4 +1,5 @@
 from inspect import cleandoc
+from typing import Generator
 
 from koti import *
 from modules.base import base, swapfile
@@ -14,25 +15,26 @@ from modules.ollama_aichat import ollama_aichat
 from modules.ryzen_undervolting import ryzen_undervolting
 from modules.systray import systray
 
-# Configuration for my DAN A4-SFX desktop machine (Ryzen 5800X3D, RTX3080)
-dan: list[ConfigGroups] = [
-  base(),
-  cpufreq(min_freq = 2000, max_freq = 4500, governor = "performance", ),
-  throttle_after_boot(2000),
-  swapfile(12),
-  kernel_cachyos(1),
-  kernel_stock(2),
-  fish(),
-  desktop(nvidia = True, autologin = True),
-  systray(ryzen = True, nvidia = True),
-  gaming(),
-  nvme_thermal_throttling(),
-  nvidia_undervolting(),
-  ryzen_undervolting(),
-  ollama_aichat(cuda = True),
-  network_manager(),
 
-  ConfigGroup(
+# Configuration for my DAN A4-SFX desktop machine (Ryzen 5800X3D, RTX3080)
+def dan() -> Generator[ConfigGroup | None]:
+  yield from base()
+  yield from cpufreq(min_freq = 2000, max_freq = 4500, governor = "performance")
+  yield from throttle_after_boot(2000)
+  yield from swapfile(12)
+  yield from kernel_cachyos(1)
+  yield from kernel_stock(2)
+  yield from fish()
+  yield from desktop(nvidia = True, autologin = True)
+  yield from systray(ryzen = True, nvidia = True)
+  yield from gaming()
+  yield from nvme_thermal_throttling()
+  yield from nvidia_undervolting()
+  yield from ryzen_undervolting()
+  yield from ollama_aichat(cuda = True)
+  yield from network_manager()
+
+  yield ConfigGroup(
     description = "fstab (dan)",
     confirm_mode = "paranoid",
     requires = [
@@ -49,4 +51,3 @@ dan: list[ConfigGroups] = [
       ''')),
     ]
   )
-]

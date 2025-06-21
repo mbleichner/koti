@@ -54,7 +54,7 @@ class FileManager(ConfigManager[File]):
       )
 
       with open(item.identifier, 'wb+') as fh:
-        fh.write(content)
+        fh.write(content)  # type: ignore
       os.chown(item.identifier, uid = uid, gid = gid)
       os.chmod(item.identifier, mode)
 
@@ -71,10 +71,11 @@ class FileManager(ConfigManager[File]):
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]
     for file in files_to_delete:
       if os.path.isfile(file):
+        store_entry: FileStoreEntry = self.managed_files_store.get(file, {"confirm_mode": core.default_confirm_mode})
         confirm(
           message = f"confirm to delete file: {file}",
           destructive = True,
-          mode = self.managed_files_store.get(file, {}).get("confirm_mode", core.default_confirm_mode),
+          mode = store_entry["confirm_mode"],
         )
         os.unlink(file)
       self.managed_files_store.remove(file)
@@ -98,6 +99,8 @@ class FileChecksums(Checksums[File]):
   def target(self, item: File) -> str | None:
     getpwnam = pwd.getpwnam(item.owner)
     (uid, gid) = (getpwnam.pw_uid, getpwnam.pw_gid)
+    if item.content is None:
+      raise AssertionError(f"{item}: content missing")
     sha256_hash = sha256()
     sha256_hash.update(str(uid).encode())
     sha256_hash.update(str(gid).encode())

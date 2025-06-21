@@ -2,7 +2,9 @@ from koti.core import ConfigItem
 
 
 class Package(ConfigItem):
-  def __init__(self, identifier: str, url: str = None):
+  url: str | None
+
+  def __init__(self, identifier: str, url: str | None = None):
     super().__init__(identifier)
     self.url = url
 

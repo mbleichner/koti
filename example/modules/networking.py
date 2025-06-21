@@ -1,8 +1,10 @@
+from typing import Generator
+
 from koti import *
 
 
-def network_manager() -> ConfigGroups:
-  return ConfigGroup(
+def network_manager() -> Generator[ConfigGroup]:
+  yield ConfigGroup(
     description = "network-manager and wifi",
     provides = [
       Package("networkmanager"),

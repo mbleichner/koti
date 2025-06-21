@@ -1,10 +1,11 @@
 from inspect import cleandoc
+from typing import Generator
 
 from koti import *
 
 
-def systray(ryzen: bool, nvidia: bool) -> ConfigGroups: return [
-  ConfigGroup(
+def systray(ryzen: bool, nvidia: bool) -> Generator[ConfigGroup | None]:
+  yield ConfigGroup(
     description = "systray: CPU items",
     provides = [
       Package("kdialog"),
@@ -34,9 +35,9 @@ def systray(ryzen: bool, nvidia: bool) -> ConfigGroups: return [
       systray_hyperthreading("/opt/systray/cpu/actions/hyperthreading-on", "on"),
       systray_hyperthreading("/opt/systray/cpu/actions/hyperthreading-off", "off"),
     ],
-  ) if ryzen else None,
+  ) if ryzen else None
 
-  ConfigGroup(
+  yield ConfigGroup(
     description = "systray: GPU items",
     provides = [
       Package("kdialog"),
@@ -57,7 +58,6 @@ def systray(ryzen: bool, nvidia: bool) -> ConfigGroups: return [
       systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-220w", 220),
     ]
   ) if nvidia else None
-]
 
 
 # ACHTUNG: Beim Aufruf des Skripts per Command Output Widget muss man aufgrund eines

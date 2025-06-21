@@ -1,4 +1,5 @@
 from inspect import cleandoc
+from typing import Generator
 
 from koti import *
 from koti.utils import shell_output
@@ -8,8 +9,8 @@ root_uuid = shell_output("findmnt -n -o UUID $(stat -c '%m' /)")
 kernel_params = "console=tty1 loglevel=3 nowatchdog zswap.enabled=1"
 
 
-def kernel_cachyos(sortkey: int) -> ConfigGroups:
-  return ConfigGroup(
+def kernel_cachyos(sortkey: int) -> Generator[ConfigGroup]:
+  yield ConfigGroup(
     description = "CachyOS kernel + systemd-boot entry",
     confirm_mode = "paranoid",
     requires = [
@@ -37,8 +38,8 @@ def kernel_cachyos(sortkey: int) -> ConfigGroups:
   )
 
 
-def kernel_stock(sortkey: int) -> ConfigGroups:
-  return ConfigGroup(
+def kernel_stock(sortkey: int) -> Generator[ConfigGroup]:
+  yield ConfigGroup(
     description = "Arch kernel + systemd-boot entry",
     confirm_mode = "paranoid",
     provides = [
@@ -63,8 +64,8 @@ def kernel_stock(sortkey: int) -> ConfigGroups:
   )
 
 
-def kernel_lts(sortkey: int) -> ConfigGroups:
-  return ConfigGroup(
+def kernel_lts(sortkey: int) -> Generator[ConfigGroup]:
+  yield ConfigGroup(
     description = "Arch LTS kernel + systemd-boot entry",
     confirm_mode = "paranoid",
     provides = [

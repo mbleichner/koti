@@ -1,4 +1,5 @@
 from inspect import cleandoc
+from typing import Generator
 
 from koti import *
 from koti.items.hooks import PostHookTriggerScope
@@ -21,15 +22,15 @@ def DockerComposeService(composefile: File, *other: ConfigItem) -> list[ConfigIt
 
 
 # Configuration for my 7700K homelab server
-mserver: list[ConfigGroups] = [
-  base(),
-  cpufreq(min_freq = 800, max_freq = 4200, governor = "powersave"),
-  swapfile(8),
-  kernel_lts(1),
-  kernel_stock(2),
-  fish(),
+def mserver() -> Generator[ConfigGroup | None]:
+  yield from base()
+  yield from cpufreq(min_freq = 800, max_freq = 4200, governor = "powersave")
+  yield from swapfile(8)
+  yield from kernel_lts(1)
+  yield from kernel_stock(2)
+  yield from fish()
 
-  ConfigGroup(
+  yield ConfigGroup(
     description = "fstab",
     confirm_mode = "paranoid",
     requires = [
@@ -44,9 +45,9 @@ mserver: list[ConfigGroups] = [
         /swapfile                                  swap   swap  defaults 0 0
       ''')),
     ]
-  ),
+  )
 
-  ConfigGroup(
+  yield ConfigGroup(
     description = "networking via systemd-networkd",
     confirm_mode = "paranoid",
     provides = [
@@ -71,9 +72,9 @@ mserver: list[ConfigGroups] = [
         options timeout:3
       ''')),
     ]
-  ),
+  )
 
-  ConfigGroup(
+  yield ConfigGroup(
     description = "system update script",
     confirm_mode = "yolo",
     provides = [
@@ -86,9 +87,9 @@ mserver: list[ConfigGroups] = [
         done
       ''')),
     ]
-  ),
+  )
 
-  ConfigGroup(
+  yield ConfigGroup(
     description = "docker and services",
     confirm_mode = "paranoid",
     provides = [
@@ -122,5 +123,4 @@ mserver: list[ConfigGroups] = [
         File("/opt/pacoloco/pacoloco.yaml", permissions = 0o444, content_from_file = "docker/pacoloco/pacoloco.yaml"),
       ),
     ]
-  ),
-]
+  )

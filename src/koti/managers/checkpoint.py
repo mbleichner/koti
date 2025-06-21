@@ -6,7 +6,7 @@ from koti.items.file import File
 class CheckpointManager(ConfigManager[Checkpoint]):
   managed_classes = [Checkpoint]
 
-  def check_configuration(self, item: File, core: Koti):
+  def check_configuration(self, item: Checkpoint, core: Koti):
     pass
 
   def checksums(self, core: Koti) -> Checksums[Checkpoint]:

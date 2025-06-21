@@ -1,12 +1,13 @@
 from inspect import cleandoc
+from typing import Generator
 
 from koti import *
 from koti.items.hooks import PostHookTriggerScope
 from koti.utils import shell
 
 
-def gaming() -> ConfigGroups: return [
-  ConfigGroup(
+def gaming() -> Generator[ConfigGroup]:
+  yield ConfigGroup(
     description = "gaming-packages",
     provides = [
       Package("discord"),
@@ -19,9 +20,9 @@ def gaming() -> ConfigGroups: return [
       Package("nexusmods-app-bin"),
       Package("r2modman-bin"),
       Package("mangohud"),
-    ]),
-
-  ConfigGroup(
+    ]
+  )
+  yield ConfigGroup(
     description = "gaming-settings",
     provides = [
       *PostHookTriggerScope(
@@ -33,5 +34,4 @@ def gaming() -> ConfigGroups: return [
         PostHook("apply-splitlock-sysctl", execute = lambda: shell("sysctl --system")),
       )
     ]
-  ),
-]
+  )

@@ -1,10 +1,11 @@
 from inspect import cleandoc
+from typing import Generator
 
 from koti import *
 
 
-def cpufreq(min_freq: int, max_freq: int, governor: str) -> ConfigGroups:
-  return ConfigGroup(
+def cpufreq(min_freq: int, max_freq: int, governor: str) -> Generator[ConfigGroup]:
+  yield ConfigGroup(
     description = "set default cpu frequency range and governor",
     provides = [
       Package("cpupower"),
@@ -17,8 +18,8 @@ def cpufreq(min_freq: int, max_freq: int, governor: str) -> ConfigGroups:
   )
 
 
-def throttle_after_boot(freq: int) -> ConfigGroups:
-  return ConfigGroup(
+def throttle_after_boot(freq: int) -> Generator[ConfigGroup]:
+  yield ConfigGroup(
     description = f"set up cpu throttling to {freq}MHz after boot",
     provides = [
       Package("cpupower"),

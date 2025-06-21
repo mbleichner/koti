@@ -1,11 +1,12 @@
 from inspect import cleandoc
+from typing import Generator
 
 from koti import *
 from koti.utils import *
 
 
-def base() -> ConfigGroups: return [
-  ConfigGroup(
+def base() -> Generator[ConfigGroup]:
+  yield ConfigGroup(
     description = "base packages needed on every system",
     provides = [
       Package("linux-firmware"),
@@ -44,6 +45,7 @@ def base() -> ConfigGroups: return [
       Package("tig"),
       Package("python"),
       Package("pyenv"),
+      Package("mypy"),
 
       # Networking
       Package("bind"),
@@ -67,9 +69,9 @@ def base() -> ConfigGroups: return [
       SystemdUnit("systemd-boot-update.service"),
       SystemdUnit("fstrim.timer"),
     ]
-  ),
+  )
 
-  ConfigGroup(
+  yield ConfigGroup(
     description = "cachyos keyring and mirrorlist",
     confirm_mode = "paranoid",
     provides = [
@@ -78,9 +80,9 @@ def base() -> ConfigGroups: return [
       Package("cachyos-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst"),
       Package("cachyos-v3-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst"),
     ]
-  ),
+  )
 
-  ConfigGroup(
+  yield ConfigGroup(
     description = "pacman.conf and related utilities",
     confirm_mode = "paranoid",
     requires = [
@@ -191,9 +193,9 @@ def base() -> ConfigGroups: return [
         File("/etc/paru.conf"),
       ]),
     ]
-  ),
+  )
 
-  ConfigGroup(
+  yield ConfigGroup(
     description = "sudo + /etc/sudoers",
     provides = [
       Package("sudo"),
@@ -232,9 +234,9 @@ def base() -> ConfigGroups: return [
         manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/checkservices *
       ''')),
     ],
-  ),
+  )
 
-  ConfigGroup(
+  yield ConfigGroup(
     description = "arch-update (for user manuel)",
     confirm_mode = "yolo",
     provides = [
@@ -253,9 +255,9 @@ def base() -> ConfigGroups: return [
         File("/home/manuel/.config/arch-update/arch-update.conf"),
       ]),
     ]
-  ),
+  )
 
-  ConfigGroup(
+  yield ConfigGroup(
     description = "various system config files",
     confirm_mode = "paranoid",
     provides = [
@@ -324,9 +326,9 @@ def base() -> ConfigGroups: return [
         File("/etc/locale.gen"),
       ]),
     ]
-  ),
+  )
 
-  ConfigGroup(
+  yield ConfigGroup(
     description = "ssh daemon + config",
     provides = [
       Package("openssh"),
@@ -339,15 +341,13 @@ def base() -> ConfigGroups: return [
         Subsystem sftp /usr/lib/ssh/sftp-server
       ''')),
     ],
-  ),
-]
+  )
 
 
-def swapfile(swapfile_gb: int) -> ConfigGroups: return [
-  ConfigGroup(
+def swapfile(swapfile_gb: int) -> Generator[ConfigGroup]:
+  yield ConfigGroup(
     description = f"swapfile ({swapfile_gb} GByte)",
     provides = [
       Swapfile("/swapfile", swapfile_gb * 1024 ** 3),  # 8GB
     ]
   )
-]

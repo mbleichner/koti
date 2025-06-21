@@ -68,10 +68,11 @@ class SwapfileManager(ConfigManager[Swapfile]):
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]
     for swapfile in files_to_delete:
       if os.path.isfile(swapfile):
+        store_entry: SwapfileStoreEntry = self.managed_files_store.get(swapfile, {"confirm_mode": core.default_confirm_mode})
         confirm(
           message = f"confirm to delete swapfile {swapfile}",
           destructive = True,
-          mode = self.managed_files_store.get(swapfile, {}).get("confirm_mode", core.default_confirm_mode),
+          mode = store_entry["confirm_mode"],
         )
         if self.is_mounted(swapfile):
           shell(f"swapoff {swapfile}")

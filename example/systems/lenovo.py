@@ -1,4 +1,5 @@
 from inspect import cleandoc
+from typing import Generator
 
 from koti import *
 from modules.base import base, swapfile
@@ -12,23 +13,24 @@ from modules.ollama_aichat import ollama_aichat
 from modules.ryzen_undervolting import ryzen_undervolting
 from modules.systray import systray
 
-# Configuration for my Lenovo X13 laptop
-lenovo: list[ConfigGroups] = [
-  base(),
-  cpufreq(min_freq = 1000, max_freq = 4500, governor = "powersave"),
-  throttle_after_boot(1500),
-  swapfile(4),
-  kernel_cachyos(1),
-  kernel_stock(2),
-  fish(),
-  desktop(nvidia = False, autologin = True),
-  systray(ryzen = True, nvidia = False),
-  gaming(),
-  ryzen_undervolting(),
-  ollama_aichat(cuda = False),
-  network_manager(),
 
-  ConfigGroup(
+# Configuration for my Lenovo X13 laptop
+def lenovo() -> Generator[ConfigGroup | None]:
+  yield from base()
+  yield from cpufreq(min_freq = 1000, max_freq = 4500, governor = "powersave")
+  yield from throttle_after_boot(1500)
+  yield from swapfile(4)
+  yield from kernel_cachyos(1)
+  yield from kernel_stock(2)
+  yield from fish()
+  yield from desktop(nvidia = False, autologin = True)
+  yield from systray(ryzen = True, nvidia = False)
+  yield from gaming()
+  yield from ryzen_undervolting()
+  yield from ollama_aichat(cuda = False)
+  yield from network_manager()
+
+  yield ConfigGroup(
     description = "fstab",
     confirm_mode = "paranoid",
     requires = [
@@ -42,5 +44,4 @@ lenovo: list[ConfigGroups] = [
         /swapfile                                  swap   swap  defaults 0 0
       '''))
     ]
-  ),
-]
+  )

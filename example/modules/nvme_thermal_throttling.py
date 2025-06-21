@@ -1,10 +1,11 @@
 from inspect import cleandoc
+from typing import Generator
 
 from koti import *
 
 
-def nvme_thermal_throttling() -> ConfigGroups:
-  return ConfigGroup(
+def nvme_thermal_throttling() -> Generator[ConfigGroup]:
+  yield ConfigGroup(
     description = "NVMe thermal throttling (Kingston KC3000)",
     provides = [
       Package("nvme-cli"),

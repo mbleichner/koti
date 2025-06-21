@@ -1,10 +1,11 @@
 from inspect import cleandoc
+from typing import Generator
 
 from koti import *
 
 
-def ollama_aichat(cuda: bool) -> ConfigGroups:
-  return ConfigGroup(
+def ollama_aichat(cuda: bool) -> Generator[ConfigGroup]:
+  yield ConfigGroup(
     description = "ollama + aichat",
     provides = [
       Package("aichat"),

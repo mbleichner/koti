@@ -1,19 +1,18 @@
-from typing import Callable
+from typing import Callable, Sequence
 
 from koti.core import ConfigItem
 
 
 class PostHook(ConfigItem):
-  identifier: str | None
+  identifier: str
   execute: None | Callable
   trigger: list[ConfigItem]
 
-  def __init__(self, identifier: str | None, execute: Callable = None, trigger: ConfigItem | list[ConfigItem] = None):
+  def __init__(self, identifier: str, execute: Callable | None = None, trigger: Sequence[ConfigItem] | None = None):
     super().__init__(identifier)
     self.identifier = identifier
     self.execute = execute
-    self.trigger = trigger if isinstance(trigger, list) else [trigger]
-    self.trigger = list(filter(lambda x: x is not None, self.trigger))
+    self.trigger = [item for item in (trigger or []) if item is not None]
 
   def __str__(self):
     return f"PostHook('{self.identifier}')"

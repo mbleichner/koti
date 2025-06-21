@@ -45,15 +45,10 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
 
   def cleanup(self, items: list[SystemdUnit], core: Koti):
     shell(f"systemctl daemon-reload")
+    self.store_all_seen_units(core, items)
+    self.deactivate_removed_units(core, items)
 
-    users = set([item.user for item in items])
-    for user in users:
-      items_for_user = [item for item in items if item.user == user]
-      units_store: JsonMapping[str, SystemdUnitStoreEntry] = self.store.mapping(store_key_for_user(user))
-      for item in items_for_user:
-        units_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode_for_item(item)})
-        if user is not None: self.user_list_store.add(user)
-
+  def deactivate_removed_units(self, core: Koti, items: list[SystemdUnit]):
     previously_seen_users = self.user_list_store.elements()
     users = set([item.user for item in items] + previously_seen_users + [None])
     for user in users:
@@ -68,12 +63,21 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
           else f"confirm to deactivate units for user {user}: {", ".join(units_to_deactivate)}",
           destructive = True,
           mode = core.get_effective_confirm_mode([
-            units_store.get(unit, {}).get("confirm_mode", core.default_confirm_mode) for unit in units_to_deactivate
+            units_store.get(unit, {"confirm_mode": core.default_confirm_mode})["confirm_mode"] for unit in units_to_deactivate
           ]),
         )
         shell(f"{systemctl_for_user(user)} disable --now {" ".join(units_to_deactivate)}")
         for identifier in units_to_deactivate:
           units_store.remove(identifier)
+
+  def store_all_seen_units(self, core: Koti, items: list[SystemdUnit]):
+    users = set([item.user for item in items])
+    for user in users:
+      items_for_user = [item for item in items if item.user == user]
+      units_store: JsonMapping[str, SystemdUnitStoreEntry] = self.store.mapping(store_key_for_user(user))
+      for item in items_for_user:
+        units_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode_for_item(item)})
+        if user is not None: self.user_list_store.add(user)
 
 
 def systemctl_for_user(user):
