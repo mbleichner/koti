@@ -11,11 +11,13 @@ class Koti:
   managers: list[ConfigManager]
   configs: list[ConfigGroups]
   execution_phases: list[ExecutionPhase]
+  default_confirm_mode: ConfirmModeValues
 
-  def __init__(self, managers: list[ConfigManager], configs: list[ConfigGroups]):
+  def __init__(self, managers: list[ConfigManager], configs: list[ConfigGroups], default_confirm_mode: ConfirmModeValues = "cautious"):
     Koti.check_manager_consistency(managers, configs)
     self.configs = configs
     self.managers = managers
+    self.default_confirm_mode = default_confirm_mode
     self.execution_phases = Koti.build_execution_phases(managers, configs)
     Koti.check_config_item_consistency(managers, configs, self)
 
@@ -204,24 +206,6 @@ class ConfigItem:
 
   def state_hash(self) -> str:
     pass
-
-
-# class ConfigGroup:
-#   items: list[ConfigItem | ConfigMetadata | None]
-#
-#   def __init__(self, *items: ConfigItem | ConfigMetadata | None):
-#     self.items = list(items)
-
-def YoloScope(*items: ConfigItem) -> list[ConfigItem]:
-  return list(items)
-
-
-def CautiousMode(*items: ConfigItem) -> list[ConfigItem]:
-  return list(items)
-
-
-def ParanoidMode(*items: ConfigItem) -> list[ConfigItem]:
-  return list(items)
 
 
 class ConfigGroup:

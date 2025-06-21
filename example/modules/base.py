@@ -8,32 +8,28 @@ def base() -> ConfigGroups: return [
   ConfigGroup(
     name = "base-packages",
     provides = [
-      *ParanoidMode(
-        Package("linux-firmware"),
-        Package("efibootmgr"),
-        Package("base"),
-        Package("terminus-font"),
-        Package("ca-certificates"),
-        Package("ca-certificates-mozilla"),
-      ),
+      Package("linux-firmware"),
+      Package("efibootmgr"),
+      Package("base"),
+      Package("terminus-font"),
+      Package("ca-certificates"),
+      Package("ca-certificates-mozilla"),
 
       # Command Line Utilities
-      *YoloScope(
-        Package("nano"),
-        Package("less"),
-        Package("bat"),
-        Package("moreutils"),  # enthält sponge
-        Package("jq"),
-        Package("man-db"),
-        Package("man-pages"),
-        Package("tealdeer"),
-        Package("unrar"),
-        Package("zip"),
-        Package("unzip"),
-        Package("7zip"),
-        Package("yazi"),
-        Package("zoxide"),
-      ),
+      Package("nano"),
+      Package("less"),
+      Package("bat"),
+      Package("moreutils"),  # enthält sponge
+      Package("jq"),
+      Package("man-db"),
+      Package("man-pages"),
+      Package("tealdeer"),
+      Package("unrar"),
+      Package("zip"),
+      Package("unzip"),
+      Package("7zip"),
+      Package("yazi"),
+      Package("zoxide"),
 
       # Monitoring + Analyse
       Package("btop"),
@@ -241,7 +237,7 @@ def base() -> ConfigGroups: return [
   ConfigGroup(
     name = "arch-update",
     confirm_mode = "yolo",
-    provides = YoloScope(
+    provides = [
       Package("arch-update"),
       File("/home/manuel/.config/arch-update/arch-update.conf", owner = "manuel", permissions = 0o444, content = cleandoc('''
         # managed by koti
@@ -256,7 +252,7 @@ def base() -> ConfigGroups: return [
       PostHook("restart-arch-update-tray", execute = lambda: "systemctl --user -M manuel@ restart arch-update-tray.service", trigger = [
         File("/home/manuel/.config/arch-update/arch-update.conf"),
       ]),
-    )
+    ]
   ),
 
   ConfigGroup(
