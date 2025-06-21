@@ -6,7 +6,7 @@ from modules.cpufreq import cpufreq, throttle_after_boot
 from modules.desktop import desktop
 from modules.fish import fish
 from modules.gaming import gaming
-from modules.kernel import kernel_cachyos, kernel_lts, kernel_stock
+from modules.kernel import kernel_cachyos, kernel_stock
 from modules.nvidia_undervolting import nvidia_undervolting
 from modules.nvme_thermal_throttling import nvme_thermal_throttling
 from modules.ollama_aichat import ollama_aichat
@@ -31,21 +31,29 @@ dan: list[ConfigGroups] = [
   ollama_aichat(cuda = True),
 
   ConfigGroup(
-    Package("networkmanager"),
-    SystemdUnit("wpa_supplicant.service"),
-    SystemdUnit("NetworkManager.service"),
+    name = "networking",
+    provides = [
+      Package("networkmanager"),
+      SystemdUnit("wpa_supplicant.service"),
+      SystemdUnit("NetworkManager.service"),
+    ]
   ),
 
   ConfigGroup(
-    ConfirmMode("paranoid"),
-    Requires(Swapfile("/swapfile")),
-    File("/etc/fstab", permissions = 0o444, content = cleandoc('''
-      # managed by koti
-      UUID=3409a847-0bd6-43e4-96fd-6e8be4e3c58d  /             ext4  rw,noatime 0 1
-      UUID=AF4E-18BD                             /boot         vfat  rw,defaults 0 2
-      UUID=CCA2A808A2A7F55C                      /mnt/windows  ntfs  rw,x-systemd.automount 0 0
-      UUID=c0b79d2c-5a0a-4f82-8fab-9554344159a5  /home/shared  ext4  rw,noatime 0 1
-      /swapfile                                  swap          swap  defaults 0 0
-    ''')),
+    name = "fstab",
+    confirm_mode = "paranoid",
+    requires = [
+      Swapfile("/swapfile"),
+    ],
+    provides = [
+      File("/etc/fstab", permissions = 0o444, content = cleandoc('''
+        # managed by koti
+        UUID=3409a847-0bd6-43e4-96fd-6e8be4e3c58d  /             ext4  rw,noatime 0 1
+        UUID=AF4E-18BD                             /boot         vfat  rw,defaults 0 2
+        UUID=CCA2A808A2A7F55C                      /mnt/windows  ntfs  rw,x-systemd.automount 0 0
+        UUID=c0b79d2c-5a0a-4f82-8fab-9554344159a5  /home/shared  ext4  rw,noatime 0 1
+        /swapfile                                  swap          swap  defaults 0 0
+      ''')),
+    ]
   )
 ]

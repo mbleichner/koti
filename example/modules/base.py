@@ -6,314 +6,352 @@ from koti.utils import *
 
 def base() -> ConfigGroups: return [
   ConfigGroup(
-    Package("linux-firmware"),
-    Package("efibootmgr"),
-    Package("base"),
-    Package("terminus-font"),
-    Package("ca-certificates"),
-    Package("ca-certificates-mozilla"),
+    name = "base-packages",
+    provides = [
+      *ParanoidMode(
+        Package("linux-firmware"),
+        Package("efibootmgr"),
+        Package("base"),
+        Package("terminus-font"),
+        Package("ca-certificates"),
+        Package("ca-certificates-mozilla"),
+      ),
 
-    # Command Line Utilities
-    Package("nano"),
-    Package("less"),
-    Package("bat"),
-    Package("moreutils"),  # enthält sponge
-    Package("jq"),
-    Package("man-db"),
-    Package("man-pages"),
-    Package("tealdeer"),
-    Package("unrar"),
-    Package("zip"),
-    Package("unzip"),
-    Package("7zip"),
-    Package("yazi"),
-    Package("zoxide"),
+      # Command Line Utilities
+      *YoloScope(
+        Package("nano"),
+        Package("less"),
+        Package("bat"),
+        Package("moreutils"),  # enthält sponge
+        Package("jq"),
+        Package("man-db"),
+        Package("man-pages"),
+        Package("tealdeer"),
+        Package("unrar"),
+        Package("zip"),
+        Package("unzip"),
+        Package("7zip"),
+        Package("yazi"),
+        Package("zoxide"),
+      ),
 
-    # Monitoring + Analyse
-    Package("btop"),
-    Package("htop"),
-    Package("iotop"),
-    Package("ncdu"),
-    Package("bandwhich"),
+      # Monitoring + Analyse
+      Package("btop"),
+      Package("htop"),
+      Package("iotop"),
+      Package("ncdu"),
+      Package("bandwhich"),
 
-    # Development und Libraries
-    Package("git"),
-    Package("git-lfs"),
-    Package("tig"),
-    Package("python"),
-    Package("pyenv"),
+      # Development und Libraries
+      Package("git"),
+      Package("git-lfs"),
+      Package("tig"),
+      Package("python"),
+      Package("pyenv"),
 
-    # Networking
-    Package("bind"),
-    Package("openbsd-netcat"),
-    Package("traceroute"),
-    Package("wireguard-tools"),
-    Package("wget"),
-    Package("ethtool"),
-    Package("tcpdump"),
+      # Networking
+      Package("bind"),
+      Package("openbsd-netcat"),
+      Package("traceroute"),
+      Package("wireguard-tools"),
+      Package("wget"),
+      Package("ethtool"),
+      Package("tcpdump"),
 
-    # Hardware Utilities
-    Package("cpupower"),
-    Package("bluez-utils"),
+      # Hardware Utilities
+      Package("cpupower"),
+      Package("bluez-utils"),
 
-    # Dateisysteme
-    Package("gparted"),
-    Package("ntfs-3g"),
-    Package("dosfstools"),
+      # Dateisysteme
+      Package("gparted"),
+      Package("ntfs-3g"),
+      Package("dosfstools"),
 
-    SystemdUnit("systemd-timesyncd.service"),
-    SystemdUnit("systemd-boot-update.service"),
-    SystemdUnit("fstrim.timer"),
+      SystemdUnit("systemd-timesyncd.service"),
+      SystemdUnit("systemd-boot-update.service"),
+      SystemdUnit("fstrim.timer"),
+    ]
   ),
 
   ConfigGroup(
-    ConfirmMode("paranoid"),
-    PacmanKey("cachyos", key_id = "F3B607488DB35A47"),
-    Package("cachyos-keyring", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst"),
-    Package("cachyos-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst"),
-    Package("cachyos-v3-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst"),
+    name = "cachyos-mirrors",
+    confirm_mode = "paranoid",
+    provides = [
+      PacmanKey("cachyos", key_id = "F3B607488DB35A47"),
+      Package("cachyos-keyring", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst"),
+      Package("cachyos-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst"),
+      Package("cachyos-v3-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst"),
+    ]
   ),
 
   ConfigGroup(
-    ConfirmMode("paranoid"),
-    Requires(Package("cachyos-mirrorlist"), Package("cachyos-v3-mirrorlist")),
+    name = "pacman",
+    confirm_mode = "paranoid",
+    requires = [
+      Package("cachyos-mirrorlist"),
+      Package("cachyos-v3-mirrorlist"),
+    ],
+    provides = [
+      File("/etc/pacman.conf", permissions = 0o444, content = cleandoc(f'''
+        # managed by koti
+        [options]
+        HoldPkg = pacman glibc
+        Architecture = auto x86_64_v3
+        NoExtract = etc/xdg/autostart/org.kde.discover.notifier.desktop
+        Color
+        CheckSpace
+        VerbosePkgLists
+        ParallelDownloads = 5
+        DownloadUser = alpm
+        SigLevel = Required DatabaseOptional
+        LocalFileSigLevel = Optional
+  
+        [core]
+        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+        Include = /etc/pacman.d/mirrorlist
+        
+        [extra]
+        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+        Include = /etc/pacman.d/mirrorlist
+        
+        [multilib]
+        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+        Include = /etc/pacman.d/mirrorlist
+  
+        [core-testing]
+        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+        Include = /etc/pacman.d/mirrorlist
+        
+        [extra-testing]
+        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+        Include = /etc/pacman.d/mirrorlist
+        
+        [multilib-testing]
+        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+        Include = /etc/pacman.d/mirrorlist
+        
+        [cachyos-v3]
+        CacheServer = http://pacoloco.fritz.box/repo/cachyos-v3/$arch_v3/$repo
+        Include = /etc/pacman.d/cachyos-v3-mirrorlist
+        
+        [cachyos]
+        CacheServer = http://pacoloco.fritz.box/repo/cachyos/$arch/$repo
+        Include = /etc/pacman.d/cachyos-mirrorlist
+      ''')),
 
-    File("/etc/pacman.conf", permissions = 0o444, content = cleandoc(f'''
-      # managed by koti
-      [options]
-      HoldPkg = pacman glibc
-      Architecture = auto x86_64_v3
-      NoExtract = etc/xdg/autostart/org.kde.discover.notifier.desktop
-      Color
-      CheckSpace
-      VerbosePkgLists
-      ParallelDownloads = 5
-      DownloadUser = alpm
-      SigLevel = Required DatabaseOptional
-      LocalFileSigLevel = Optional
+      File("/etc/paru.conf", permissions = 0o444, content = cleandoc('''
+        # managed by koti
+        [options]
+        PgpFetch
+        Devel
+        Provides
+        DevelSuffixes = -git -cvs -svn -bzr -darcs -always -hg -fossil
+        RemoveMake
+        SudoLoop
+        CombinedUpgrade
+        CleanAfter
+      ''')),
 
-      [core]
-      CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
-      Include = /etc/pacman.d/mirrorlist
-      
-      [extra]
-      CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
-      Include = /etc/pacman.d/mirrorlist
-      
-      [multilib]
-      CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
-      Include = /etc/pacman.d/mirrorlist
+      File("/etc/pacman.d/hooks/nvidia.hook", permissions = 0o444, content = cleandoc('''
+        # managed by koti
+        [Trigger]
+        Operation=Install
+        Operation=Upgrade
+        Operation=Remove
+        Type=Package
+        Target=nvidia-open
+  
+        [Action]
+        Description=Updating NVIDIA module in initcpio
+        Depends=mkinitcpio
+        When=PostTransaction
+        NeedsTargets
+        Exec=/usr/bin/mkinitcpio -P
+      ''')),
 
-      [core-testing]
-      CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
-      Include = /etc/pacman.d/mirrorlist
-      
-      [extra-testing]
-      CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
-      Include = /etc/pacman.d/mirrorlist
-      
-      [multilib-testing]
-      CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
-      Include = /etc/pacman.d/mirrorlist
-      
-      [cachyos-v3]
-      CacheServer = http://pacoloco.fritz.box/repo/cachyos-v3/$arch_v3/$repo
-      Include = /etc/pacman.d/cachyos-v3-mirrorlist
-      
-      [cachyos]
-      CacheServer = http://pacoloco.fritz.box/repo/cachyos/$arch/$repo
-      Include = /etc/pacman.d/cachyos-mirrorlist
-    ''')),
+      File("/etc/xdg/reflector/reflector.conf", permissions = 0o444, content = cleandoc('''
+        # managed by koti
+        --save /etc/pacman.d/mirrorlist
+        --protocol https
+        --country France,Germany,Switzerland
+        --latest 5
+        --sort delay
+      ''')),
 
-    File("/etc/paru.conf", permissions = 0o444, content = cleandoc('''
-      # managed by koti
-      [options]
-      PgpFetch
-      Devel
-      Provides
-      DevelSuffixes = -git -cvs -svn -bzr -darcs -always -hg -fossil
-      RemoveMake
-      SudoLoop
-      CombinedUpgrade
-      CleanAfter
-    ''')),
+      Package("pacman-contrib"),
+      Package("pacutils"),
+      Package("paru"),
+      Package("base-devel"),
+      Package("reflector"),
+      Package("lostfiles"),
 
-    File("/etc/pacman.d/hooks/nvidia.hook", permissions = 0o444, content = cleandoc('''
-      # managed by koti
-      [Trigger]
-      Operation=Install
-      Operation=Upgrade
-      Operation=Remove
-      Type=Package
-      Target=nvidia-open
+      PostHook("reflector", execute = lambda: shell("systemctl start reflector"), trigger = [
+        File("/etc/xdg/reflector/reflector.conf"),
+      ]),
 
-      [Action]
-      Description=Updating NVIDIA module in initcpio
-      Depends=mkinitcpio
-      When=PostTransaction
-      NeedsTargets
-      Exec=/usr/bin/mkinitcpio -P
-    ''')),
-
-    File("/etc/xdg/reflector/reflector.conf", permissions = 0o444, content = cleandoc('''
-      # managed by koti
-      --save /etc/pacman.d/mirrorlist
-      --protocol https
-      --country France,Germany,Switzerland
-      --latest 5
-      --sort delay
-    ''')),
-
-    Package("pacman-contrib"),
-    Package("pacutils"),
-    Package("paru"),
-    Package("base-devel"),
-    Package("reflector"),
-    Package("lostfiles"),
-
-    PostHook("update-package-database", lambda: shell_interactive("pacman -Sy"))
+      PostHook("update-package-database", execute = lambda: shell("pacman -Sy"), trigger = [
+        File("/etc/pacman.d/mirrorlist"),
+        File("/etc/pacman.conf"),
+        File("/etc/paru.conf"),
+      ]),
+    ]
   ),
 
   ConfigGroup(
-    Package("sudo"),
-    File("/etc/sudoers", permissions = 0o444, content = cleandoc('''
-      # managed by koti
-      ## Defaults specification
-      ##
-      ## Preserve editor environment variables for visudo.
-      ## To preserve these for all commands, remove the "!visudo" qualifier.
-      Defaults!/usr/bin/visudo env_keep += "SUDO_EDITOR EDITOR VISUAL"
-      ##
-      ## Use a hard-coded PATH instead of the user's to find commands.
-      ## This also helps prevent poorly written scripts from running
-      ## artbitrary commands under sudo.
-      Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"
-      
-      # https://www.reddit.com/r/archlinux/comments/dnxjbx/annoyance_with_sudo_password_expired/
-      Defaults passwd_tries=3, passwd_timeout=180
-      
-      # Notwendig für paru SudoLoop ohne initiale Passworteingabe  
-      Defaults verifypw = any
-      
-      root ALL=(ALL:ALL) ALL
-      %wheel ALL=(ALL:ALL) ALL
-      
-      @includedir /etc/sudoers.d
-      
-      # Für die Systray Tools
-      manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/cpupower
-      manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/tee /sys/devices/system/cpu/*
-      manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/nvidia-smi *
-      
-      # Erlaubt von arch-update aufgerufene Kommandos ohne Passwort
-      manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/pacman *
-      manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/paccache *
-      manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/checkservices *
-    ''')),
+    name = "sudo",
+    provides = [
+      Package("sudo"),
+      File("/etc/sudoers", permissions = 0o444, content = cleandoc('''
+        # managed by koti
+        ## Defaults specification
+        ##
+        ## Preserve editor environment variables for visudo.
+        ## To preserve these for all commands, remove the "!visudo" qualifier.
+        Defaults!/usr/bin/visudo env_keep += "SUDO_EDITOR EDITOR VISUAL"
+        ##
+        ## Use a hard-coded PATH instead of the user's to find commands.
+        ## This also helps prevent poorly written scripts from running
+        ## artbitrary commands under sudo.
+        Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"
+        
+        # https://www.reddit.com/r/archlinux/comments/dnxjbx/annoyance_with_sudo_password_expired/
+        Defaults passwd_tries=3, passwd_timeout=180
+        
+        # Notwendig für paru SudoLoop ohne initiale Passworteingabe  
+        Defaults verifypw = any
+        
+        root ALL=(ALL:ALL) ALL
+        %wheel ALL=(ALL:ALL) ALL
+        
+        @includedir /etc/sudoers.d
+        
+        # Für die Systray Tools
+        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/cpupower
+        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/tee /sys/devices/system/cpu/*
+        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/nvidia-smi *
+        
+        # Erlaubt von arch-update aufgerufene Kommandos ohne Passwort
+        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/pacman *
+        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/paccache *
+        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/checkservices *
+      ''')),
+    ],
   ),
 
   ConfigGroup(
-    Package("arch-update"),
-
-    File("/home/manuel/.config/arch-update/arch-update.conf", owner = "manuel", permissions = 0o444, content = cleandoc('''
-      # managed by koti
-      NoNotification
-      KeepOldPackages=2
-      KeepUninstalledPackages=0
-      DiffProg=diff
-      TrayIconStyle=light
-    ''')),
-
-    SystemdUnit("arch-update-tray.service", user = "manuel"),
-    SystemdUnit("arch-update.timer", user = "manuel"),
-    PostHook("restart-arch-update-tray", execute = lambda: "systemctl --user -M manuel@ restart arch-update-tray.service"),
+    name = "arch-update",
+    confirm_mode = "yolo",
+    provides = YoloScope(
+      Package("arch-update"),
+      File("/home/manuel/.config/arch-update/arch-update.conf", owner = "manuel", permissions = 0o444, content = cleandoc('''
+        # managed by koti
+        NoNotification
+        KeepOldPackages=2
+        KeepUninstalledPackages=0
+        DiffProg=diff
+        TrayIconStyle=light
+      ''')),
+      SystemdUnit("arch-update-tray.service", user = "manuel"),
+      SystemdUnit("arch-update.timer", user = "manuel"),
+      PostHook("restart-arch-update-tray", execute = lambda: "systemctl --user -M manuel@ restart arch-update-tray.service", trigger = [
+        File("/home/manuel/.config/arch-update/arch-update.conf"),
+      ]),
+    )
   ),
 
   ConfigGroup(
-    File("/etc/environment", permissions = 0o444, content = cleandoc(f'''
-      # managed by koti
-      EDITOR=nano
-    ''')),
+    name = "system-config-files",
+    confirm_mode = "paranoid",
+    provides = [
+      File("/etc/environment", permissions = 0o444, content = cleandoc(f'''
+        # managed by koti
+        EDITOR=nano
+      ''')),
 
-    File("/boot/loader/loader.conf", permissions = 0o555, content = cleandoc(f'''
-      # managed by koti
-      timeout 3
-      console-mode 2
-    ''')),
+      File("/boot/loader/loader.conf", permissions = 0o555, content = cleandoc(f'''
+        # managed by koti
+        timeout 3
+        console-mode 2
+      ''')),
 
-    File("/etc/vconsole.conf", permissions = 0o444, content = cleandoc('''
-      # managed by koti
-      KEYMAP=de-latin1
-      FONT=ter-124b
-    ''')),
+      File("/etc/vconsole.conf", permissions = 0o444, content = cleandoc('''
+        # managed by koti
+        KEYMAP=de-latin1
+        FONT=ter-124b
+      ''')),
 
-    File("/etc/modprobe.d/disable-watchdog-modules.conf", permissions = 0o444, content = cleandoc('''
-      # managed by koti
-      blacklist sp5100_tco
-    ''')),
+      File("/etc/modprobe.d/disable-watchdog-modules.conf", permissions = 0o444, content = cleandoc('''
+        # managed by koti
+        blacklist sp5100_tco
+      ''')),
 
-    File("/etc/udev/rules.d/50-disable-usb-wakeup.rules", permissions = 0o444, content = cleandoc('''
-      # managed by koti
-      ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="usb", ATTR{power/wakeup}="disabled"
-    ''')),
+      File("/etc/udev/rules.d/50-disable-usb-wakeup.rules", permissions = 0o444, content = cleandoc('''
+        # managed by koti
+        ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="usb", ATTR{power/wakeup}="disabled"
+      ''')),
+
+      File("/home/manuel/.gitconfig", owner = "manuel", permissions = 0o444, content = cleandoc('''
+        # managed by koti
+        [user]
+        email = mbleichner@gmail.com
+        name = Manuel Bleichner
+        [pull]
+        rebase = true
+      ''')),
+
+      File("/home/manuel/.config/tealdeer/config.toml", owner = "manuel", permissions = 0o444, content = cleandoc('''
+        # managed by koti
+        [updates]
+        auto_update = true
+      ''')),
+
+      File("/etc/locale.conf", permissions = 0o444, content = cleandoc('''
+        LANG=en_US.UTF-8
+        LC_ADDRESS=de_DE.UTF-8
+        LC_IDENTIFICATION=de_DE.UTF-8
+        LC_MEASUREMENT=de_DE.UTF-8
+        LC_MONETARY=de_DE.UTF-8
+        LC_NAME=de_DE.UTF-8
+        LC_NUMERIC=de_DE.UTF-8
+        LC_PAPER=de_DE.UTF-8
+        LC_TELEPHONE=de_DE.UTF-8
+        LC_TIME=de_DE.UTF-8
+      ''')),
+
+      File("/etc/locale.gen", permissions = 0o444, content = cleandoc('''
+        en_US.UTF-8 UTF-8
+        de_DE.UTF-8 UTF-8
+        # Zeilenumbruch hinter den Locales ist wichtig, sonst werden sie ignoriert
+      ''')),
+
+      PostHook("regenerate-locales", execute = lambda: shell("locale-gen"), trigger = [
+        File("/etc/locale.gen"),
+      ]),
+    ]
   ),
 
   ConfigGroup(
-    File("/home/manuel/.gitconfig", owner = "manuel", permissions = 0o444, content = cleandoc('''
-      # managed by koti
-      [user]
-      email = mbleichner@gmail.com
-      name = Manuel Bleichner
-      [pull]
-      rebase = true
-    ''')),
-
-    File("/home/manuel/.config/tealdeer/config.toml", owner = "manuel", permissions = 0o444, content = cleandoc('''
-      # managed by koti
-      [updates]
-      auto_update = true
-    ''')),
+    name = "ssh daemon",
+    provides = [
+      Package("openssh"),
+      SystemdUnit("sshd.service"),
+      File("/etc/ssh/sshd_config", owner = "root", permissions = 0o444, content = cleandoc('''
+        # managed by koti
+        Include /etc/ssh/sshd_config.d/*.conf
+        PermitRootLogin yes
+        AuthorizedKeysFile .ssh/authorized_keys
+        Subsystem sftp /usr/lib/ssh/sftp-server
+      ''')),
+    ],
   ),
-
-  ConfigGroup(
-    Package("openssh"),
-    SystemdUnit("sshd.service"),
-    File("/etc/ssh/sshd_config", owner = "root", permissions = 0o444, content = cleandoc('''
-      # managed by koti
-      Include /etc/ssh/sshd_config.d/*.conf
-      PermitRootLogin yes
-      AuthorizedKeysFile .ssh/authorized_keys
-      Subsystem sftp /usr/lib/ssh/sftp-server
-    ''')),
-  ),
-
-  ConfigGroup(
-    File("/etc/locale.conf", permissions = 0o444, content = cleandoc('''
-      LANG=en_US.UTF-8
-      LC_ADDRESS=de_DE.UTF-8
-      LC_IDENTIFICATION=de_DE.UTF-8
-      LC_MEASUREMENT=de_DE.UTF-8
-      LC_MONETARY=de_DE.UTF-8
-      LC_NAME=de_DE.UTF-8
-      LC_NUMERIC=de_DE.UTF-8
-      LC_PAPER=de_DE.UTF-8
-      LC_TELEPHONE=de_DE.UTF-8
-      LC_TIME=de_DE.UTF-8
-    ''')),
-
-    File("/etc/locale.gen", permissions = 0o444, content = cleandoc('''
-      en_US.UTF-8 UTF-8
-      de_DE.UTF-8 UTF-8
-      # Zeilenumbruch hinter den Locales ist wichtig, sonst werden sie ignoriert
-    ''')),
-
-    PostHook("regenerate-locales", execute = lambda: shell_interactive("locale-gen")),
-  )
 ]
 
 
 def swapfile(swapfile_gb: int) -> ConfigGroups: return [
   ConfigGroup(
-    Swapfile("/swapfile", swapfile_gb * 1024 ** 3),  # 8GB
+    name = "swapfile",
+    provides = [
+      Swapfile("/swapfile", swapfile_gb * 1024 ** 3),  # 8GB
+    ]
   )
 ]

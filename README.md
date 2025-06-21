@@ -99,3 +99,8 @@ system that is no longer present in the configs:
 - User anlegen und Gruppen zuordnen
 - Directory() item => gamma-icc-profiles
 - File(content_from_file) für große Dateien
+
+# ConfigGroups
+
+- Items in selber Phase ausführen
+- Dependencies

@@ -11,28 +11,30 @@ class Koti:
   managers: list[ConfigManager]
   configs: list[ConfigGroups]
   execution_phases: list[ExecutionPhase]
-  default_confirm_mode: ConfirmModeValues
 
-  def __init__(self, managers: list[ConfigManager], configs: list[ConfigGroups], default_confirm_mode: ConfirmModeValues = "cautious"):
+  def __init__(self, managers: list[ConfigManager], configs: list[ConfigGroups]):
     Koti.check_manager_consistency(managers, configs)
-    self.default_confirm_mode = default_confirm_mode
     self.configs = configs
     self.managers = managers
     self.execution_phases = Koti.build_execution_phases(managers, configs)
     Koti.check_config_item_consistency(managers, configs, self)
 
-  def plan(self, summary: bool = True) -> int:
+  def plan_items(self, groups: bool = True, items: bool = True, summary: bool = True) -> int:
     items_total: list[ConfigItem] = []
     items_to_update: list[ConfigItem] = []
     for phase_idx, phase in enumerate(self.execution_phases):
       print(f"Phase {phase_idx + 1}:")
-      for manager, items in phase.execution_order:
+      if groups:
+        for group in phase.groups_in_phase:
+          print(f"- {group}")
+      for manager, items_in_phase in phase.execution_order:
         checksums = manager.checksums(self)
-        for item in items:
+        for item in items_in_phase:
           items_total.append(item)
           needs_update = checksums.current(item) != checksums.target(item)
           if needs_update: items_to_update.append(item)
-          print(f"{"*" if needs_update else "-"} {item}")
+          if items:
+            print(f"{"*" if needs_update else "-"} {item}")
       print()
 
     if summary:
@@ -82,21 +84,21 @@ class Koti:
   def get_group_for_item(self, item: ConfigItem) -> ConfigGroup:
     for phase in self.execution_phases:
       for group in phase.groups_in_phase:
-        if item in group.items:
+        if item in group.provides:
           return group
     raise AssertionError(f"group not found for {item}")
 
   def get_confirm_mode_for_item(self, items: ConfigItem | list[ConfigItem]) -> ConfirmModeValues:
     item_list = items if isinstance(items, list) else [items]
     groups = [self.get_group_for_item(item) for item in item_list]
-    confirm_modes = [item.mode for group in groups for item in group.items if isinstance(item, ConfirmMode)]
+    confirm_modes = [group.confirm_mode for group in groups]
     return self.get_effective_confirm_mode(confirm_modes)
 
   def get_effective_confirm_mode(self, modes: list[ConfirmModeValues]) -> ConfirmModeValues:
     modes_in_order: list[ConfirmModeValues] = ["paranoid", "cautious", "yolo"]
     for mode in modes_in_order:
       if mode in modes: return mode
-    return self.default_confirm_mode
+    return "cautious"
 
   def get_manager_for_item(self, item: ConfigItem):
     for manager in self.managers:
@@ -116,8 +118,7 @@ class Koti:
   @staticmethod
   def check_manager_consistency(managers: list[ConfigManager], configs: list[ConfigGroups]):
     for group in Koti.get_all_provided_groups(configs):
-      for item in group.items:
-        if not isinstance(item, ConfigItem): continue
+      for item in filter(lambda x: x is not None, group.provides):
         matching_managers = [manager for manager in managers if item.__class__ in manager.managed_classes]
         if len(matching_managers) == 0:
           raise AssertionError(f"no manager found for class {item.__class__.__name__}")
@@ -127,7 +128,7 @@ class Koti:
   @staticmethod
   def check_config_item_consistency(managers: list[ConfigManager], configs: list[ConfigGroups], koti: Koti):
     for group in Koti.get_all_provided_groups(configs):
-      for item in group.items:
+      for item in filter(lambda x: x is not None, group.provides):
         if not isinstance(item, ConfigItem): continue
         matching_managers = [manager for manager in managers if item.__class__ in manager.managed_classes]
         manager = matching_managers[0]
@@ -162,7 +163,7 @@ class Koti:
 
   @staticmethod
   def create_execution_phase(managers: list[ConfigManager], groups_in_phase: list[ConfigGroup]) -> ExecutionPhase:
-    flattened_items = [item for group in groups_in_phase for item in group.items]
+    flattened_items = [item for group in groups_in_phase for item in group.provides if item is not None]
     execution_order: list[tuple[ConfigManager, list[ConfigItem]]] = []
     for manager in managers:
       managed_items = [item for item in flattened_items if item.__class__ in manager.managed_classes]
@@ -174,22 +175,21 @@ class Koti:
   def find_dependency_violation(phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup] | None:
     for phase_idx, phase in enumerate(phases):
       for group in phase:
-        for requires_item in [item for item in group.items if isinstance(item, Requires)]:
-          for required_item in requires_item.items:
-            required_phase_and_group = Koti.find_required_group(required_item, phases)
-            if required_phase_and_group is None:
-              raise AssertionError(f"required item not found: {required_item}")
-            required_phase_idx, required_group = required_phase_and_group
-            if required_phase_idx >= phase_idx:
-              if group == required_group: raise AssertionError(f"group with dependency to itself")
-              return required_phase_idx, required_group
+        for required_item in group.requires:
+          required_phase_and_group = Koti.find_required_group(required_item, phases)
+          if required_phase_and_group is None:
+            raise AssertionError(f"required item not found: {required_item}")
+          required_phase_idx, required_group = required_phase_and_group
+          if required_phase_idx >= phase_idx:
+            if group == required_group: raise AssertionError(f"group with dependency to itself")
+            return required_phase_idx, required_group
     return None
 
   @staticmethod
   def find_required_group(required_item: ConfigItem | ConfigGroup, phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup] | None:
     for idx_phase, phase in enumerate(phases):
       for group in phase:
-        for group_item in group.items:
+        for group_item in group.provides:
           if group_item.__class__ == required_item.__class__ and group_item.identifier == required_item.identifier:
             return idx_phase, group
     return None
@@ -206,11 +206,38 @@ class ConfigItem:
     pass
 
 
-class ConfigGroup:
-  items: list[ConfigItem | ConfigMetadata | None]
+# class ConfigGroup:
+#   items: list[ConfigItem | ConfigMetadata | None]
+#
+#   def __init__(self, *items: ConfigItem | ConfigMetadata | None):
+#     self.items = list(items)
 
-  def __init__(self, *items: ConfigItem | ConfigMetadata | None):
-    self.items = list(items)
+def YoloScope(*items: ConfigItem) -> list[ConfigItem]:
+  return list(items)
+
+
+def CautiousMode(*items: ConfigItem) -> list[ConfigItem]:
+  return list(items)
+
+
+def ParanoidMode(*items: ConfigItem) -> list[ConfigItem]:
+  return list(items)
+
+
+class ConfigGroup:
+  name: str
+  confirm_mode: ConfirmModeValues
+  requires: list[ConfigItem]
+  provides: list[ConfigItem]
+
+  def __init__(self, name: str, provides: list[ConfigItem], requires: list[ConfigItem] = None, confirm_mode: ConfirmModeValues = "cautious"):
+    self.name = name
+    self.confirm_mode = confirm_mode
+    self.requires = [item for item in (requires or []) if item is not None]
+    self.provides = [item for item in (provides or []) if item is not None]
+
+  def __str__(self):
+    return f"ConfigGroup('{self.name}')"
 
 
 class ConfigManager[T: ConfigItem]:
@@ -248,24 +275,24 @@ class ConfigMetadata:
   pass
 
 
-class Requires(ConfigMetadata):
-  items: list[ConfigItem]
-
-  def __init__(self, *items: ConfigItem):
-    self.items = list(items)
-
-  def __str__(self):
-    return f"Requires({", ".join([str(item) for item in self.items])})"
-
-
-class ConfirmMode(ConfigMetadata):
-  mode: ConfirmModeValues
-
-  def __init__(self, mode: ConfirmModeValues):
-    self.mode = mode
-
-  def __str__(self):
-    return f"ConfirmMode({self.mode})"
+# class Requires(ConfigMetadata):
+#   items: list[ConfigItem]
+#
+#   def __init__(self, *items: ConfigItem):
+#     self.items = list(items)
+#
+#   def __str__(self):
+#     return f"Requires({", ".join([str(item) for item in self.items])})"
+#
+#
+# class ConfirmMode(ConfigMetadata):
+#   mode: ConfirmModeValues
+#
+#   def __init__(self, mode: ConfirmModeValues):
+#     self.mode = mode
+#
+#   def __str__(self):
+#     return f"ConfirmMode({self.mode})"
 
 
 class ExecutionPhase:

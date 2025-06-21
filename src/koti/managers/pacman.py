@@ -5,7 +5,7 @@ from koti.core import ConfigManager, ConfirmModeValues, Koti
 from koti.items.package import Package
 from koti.items.pacman_key import PacmanKey
 from koti.utils import confirm
-from koti.utils.shell import shell_interactive, shell_output, shell_success
+from koti.utils.shell import shell, shell_output, shell_success
 
 
 class PacmanAdapter:
@@ -33,28 +33,28 @@ class PacmanAdapter:
   def install(self, packages: list[str], confirm_mode: ConfirmModeValues):
     if packages:
       confirm_args = self.confirm_args(destructive = False, confirm_mode = confirm_mode)
-      shell_interactive(f"{self.pacman} -S {confirm_args} {" ".join(packages)}")
+      shell(f"{self.pacman} -S {confirm_args} {" ".join(packages)}")
 
   def install_from_url(self, urls: list[str], confirm_mode: ConfirmModeValues):
     if urls:
       confirm_args = self.confirm_args(destructive = False, confirm_mode = confirm_mode)
-      shell_interactive(f"{self.pacman} -U {confirm_args} {" ".join(urls)}")
+      shell(f"{self.pacman} -U {confirm_args} {" ".join(urls)}")
 
   def mark_as_explicit(self, packages: list[str], confirm_mode: ConfirmModeValues):
     if packages:
       confirm_args = self.confirm_args(destructive = False, confirm_mode = confirm_mode)
-      shell_interactive(f"{self.pacman} -D --asexplicit {confirm_args} {" ".join(packages)}")
+      shell(f"{self.pacman} -D --asexplicit {confirm_args} {" ".join(packages)}")
 
   def mark_as_dependency(self, packages: list[str], confirm_mode: ConfirmModeValues):
     if packages:
       confirm_args = self.confirm_args(destructive = False, confirm_mode = confirm_mode)
-      shell_interactive(f"{self.pacman} -D --asdeps {confirm_args} {" ".join(packages)}")
+      shell(f"{self.pacman} -D --asdeps {confirm_args} {" ".join(packages)}")
 
   def prune_unneeded(self, confirm_mode: ConfirmModeValues):
     unneeded_packages = self.parse_pkgs(shell_output(f"{self.pacman} -Qdttq", check = False))
     if len(unneeded_packages) > 0:
       confirm_args = self.confirm_args(destructive = True, confirm_mode = confirm_mode)
-      shell_interactive(f"{self.pacman} -Rns {confirm_args} {" ".join(unneeded_packages)}")
+      shell(f"{self.pacman} -Rns {confirm_args} {" ".join(unneeded_packages)}")
 
   def parse_pkgs(self, output: str) -> list[str]:
     if "there is nothing to do" in output: return []
@@ -123,8 +123,8 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
         mode = core.get_confirm_mode_for_item(item),
       )
       print(f"installing pacman-key {item.key_id} from {item.key_server}")
-      shell_interactive(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
-      shell_interactive(f"sudo pacman-key --lsign-key {item.key_id}")
+      shell(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
+      shell(f"sudo pacman-key --lsign-key {item.key_id}")
 
   def cleanup(self, items: list[PacmanKey], core: Koti):
     pass

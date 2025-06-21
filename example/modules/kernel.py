@@ -9,13 +9,14 @@ kernel_params = "console=tty1 loglevel=3 nowatchdog zswap.enabled=1"
 
 
 def kernel_cachyos(sortkey: int) -> ConfigGroups:
-  return [
-    ConfigGroup(
-      ConfirmMode("paranoid"),
-      Requires(File("/etc/pacman.conf")),
-
+  return ConfigGroup(
+    name = "cachyos-kernel",
+    confirm_mode = "paranoid",
+    requires = [
+      File("/etc/pacman.conf"),
+    ],
+    provides = [
       *Packages("linux-cachyos", "linux-cachyos-headers"),
-
       File("/boot/loader/entries/arch-cachyos.conf", permissions = 0o555, content = cleandoc(f'''
         # managed by koti
         title    Arch Linux with CachyOS Kernel
@@ -24,7 +25,6 @@ def kernel_cachyos(sortkey: int) -> ConfigGroups:
         options  root=UUID={root_uuid} rw {kernel_params}
         sort-key {sortkey}
       ''')),
-
       File("/boot/loader/entries/arch-cachyos-fallback.conf", permissions = 0o555, content = cleandoc(f'''
         # managed by koti
         title    Arch Linux with CachyOS Kernel (Fallback)
@@ -33,18 +33,19 @@ def kernel_cachyos(sortkey: int) -> ConfigGroups:
         options  root=UUID={root_uuid} rw
         sort-key {sortkey + 80}
       ''')),
-    )
-  ]
+    ]
+  )
 
 
 def kernel_stock(sortkey: int) -> ConfigGroups:
-  return [
-    ConfigGroup(
-      ConfirmMode("paranoid"),
-      Requires(File("/etc/pacman.conf")),
-
+  return ConfigGroup(
+    name = "stock-kernel",
+    confirm_mode = "paranoid",
+    requires = [
+      File("/etc/pacman.conf"),
+    ],
+    provides = [
       *Packages("linux", "linux-headers"),
-
       File("/boot/loader/entries/arch-stock.conf", permissions = 0o555, content = cleandoc(f'''
         # managed by koti
         title    Arch Linux with Stock Kernel
@@ -53,7 +54,6 @@ def kernel_stock(sortkey: int) -> ConfigGroups:
         options  root=UUID={root_uuid} rw {kernel_params}
         sort-key {sortkey}
       ''')),
-
       File("/boot/loader/entries/arch-stock-fallback.conf", permissions = 0o555, content = cleandoc(f'''
         # managed by koti
         title    Arch Linux with Stock Kernel (Fallback)
@@ -62,18 +62,19 @@ def kernel_stock(sortkey: int) -> ConfigGroups:
         options  root=UUID={root_uuid} rw
         sort-key {sortkey + 80}
       ''')),
-    )
-  ]
+    ]
+  )
 
 
 def kernel_lts(sortkey: int) -> ConfigGroups:
-  return [
-    ConfigGroup(
-      ConfirmMode("paranoid"),
-      Requires(File("/etc/pacman.conf")),
-
+  return ConfigGroup(
+    name = "lts-kernel",
+    confirm_mode = "paranoid",
+    requires = [
+      File("/etc/pacman.conf"),
+    ],
+    provides = [
       *Packages("linux-lts", "linux-lts-headers"),
-
       File("/boot/loader/entries/arch-lts.conf", permissions = 0o555, content = cleandoc(f'''
         # managed by koti
         title    Arch Linux with LTS Kernel
@@ -82,7 +83,6 @@ def kernel_lts(sortkey: int) -> ConfigGroups:
         options  root=UUID={root_uuid} rw {kernel_params}
         sort-key {sortkey}
       ''')),
-
       File("/boot/loader/entries/arch-lts-fallback.conf", permissions = 0o555, content = cleandoc(f'''
         # managed by koti
         title    Arch Linux with LTS Kernel (Fallback)
@@ -91,5 +91,5 @@ def kernel_lts(sortkey: int) -> ConfigGroups:
         options  root=UUID={root_uuid} rw
         sort-key {sortkey + 80}
       ''')),
-    )
-  ]
+    ]
+  )

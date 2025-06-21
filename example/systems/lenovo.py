@@ -27,19 +27,27 @@ lenovo: list[ConfigGroups] = [
   ollama_aichat(cuda = False),
 
   ConfigGroup(
-    Package("networkmanager"),
-    SystemdUnit("wpa_supplicant.service"),
-    SystemdUnit("NetworkManager.service"),
+    name = "networking",
+    provides = [
+      Package("networkmanager"),
+      SystemdUnit("wpa_supplicant.service"),
+      SystemdUnit("NetworkManager.service"),
+    ]
   ),
 
   ConfigGroup(
-    ConfirmMode("paranoid"),
-    Requires(Swapfile("/swapfile")),
-    File("/etc/fstab", permissions = 0o444, content = cleandoc('''
-      # managed by koti
-      UUID=79969cb9-9b6e-48e2-a672-4aee50f04c56  /      ext4  rw,noatime 0 1
-      UUID=1CA6-490D                             /boot  vfat  rw,defaults 0 2
-      /swapfile                                  swap   swap  defaults 0 0
-    ''')),
-  )
+    name = "fstab",
+    confirm_mode = "paranoid",
+    requires = [
+      Swapfile("/swapfile"),
+    ],
+    provides = [
+      File("/etc/fstab", permissions = 0o444, content = cleandoc('''
+        # managed by koti
+        UUID=79969cb9-9b6e-48e2-a672-4aee50f04c56  /      ext4  rw,noatime 0 1
+        UUID=1CA6-490D                             /boot  vfat  rw,defaults 0 2
+        /swapfile                                  swap   swap  defaults 0 0
+      '''))
+    ]
+  ),
 ]

@@ -6,7 +6,7 @@ from koti.core import Checksums, ConfigManager, ConfirmModeValues, Koti
 from koti.items.swapfile import Swapfile
 from koti.utils.confirm import confirm
 from koti.utils.json_store import JsonMapping, JsonStore
-from koti.utils.shell import shell_interactive, shell_success
+from koti.utils.shell import shell, shell_success
 
 
 class SwapfileStoreEntry(TypedDict):
@@ -46,17 +46,17 @@ class SwapfileManager(ConfigManager[Swapfile]):
             destructive = True,
             mode = core.get_confirm_mode_for_item(item),
           )
-          shell_interactive(f"swapoff {item.identifier}")
+          shell(f"swapoff {item.identifier}")
           os.unlink(item.identifier)
           self.create_swapfile(item)
-          shell_interactive(f"swapon {item.identifier}")
+          shell(f"swapon {item.identifier}")
         else:
           confirm(
             message = f"confirm resize of swapfile {item.identifier}",
             destructive = True,
             mode = core.get_confirm_mode_for_item(item),
           )
-          shell_interactive(f"rm -f {item.identifier}")
+          shell(f"rm -f {item.identifier}")
           self.create_swapfile(item)
 
   def cleanup(self, items: list[Swapfile], core: Koti):
@@ -74,13 +74,13 @@ class SwapfileManager(ConfigManager[Swapfile]):
           mode = self.managed_files_store.get(swapfile, {}).get("confirm_mode", core.default_confirm_mode),
         )
         if self.is_mounted(swapfile):
-          shell_interactive(f"swapoff {swapfile}")
+          shell(f"swapoff {swapfile}")
         os.unlink(swapfile)
       self.managed_files_store.remove(swapfile)
 
   def create_swapfile(self, item: Swapfile):
-    shell_interactive(f"mkswap -U clear --size {item.size_bytes} --file {item.identifier}")
-    shell_interactive(f"chmod 600 {item.identifier}")
+    shell(f"mkswap -U clear --size {item.size_bytes} --file {item.identifier}")
+    shell(f"chmod 600 {item.identifier}")
 
   def is_mounted(self, swapfile: str) -> bool:
     return shell_success(f"swapon --show | grep {swapfile}")

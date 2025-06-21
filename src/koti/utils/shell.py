@@ -3,7 +3,7 @@ from __future__ import annotations
 from subprocess import CalledProcessError, Popen, run
 
 
-def shell_interactive(command: str, check: bool = True):
+def shell(command: str, check: bool = True):
   with Popen(command, shell = True) as process:
     if process.wait() != 0 and check:
       raise AssertionError(f"command failed: {command}")
