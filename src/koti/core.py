@@ -21,21 +21,27 @@ class Koti:
     self.execution_phases = Koti.build_execution_phases(managers, configs)
     Koti.check_config_item_consistency(managers, configs, self)
 
-  def plan_items(self, groups: bool = True, items: bool = True, summary: bool = True) -> int:
+  def plan(self, groups: bool = True, items: bool = True, summary: bool = True) -> int:
     items_total: list[ConfigItem] = []
     items_to_update: list[ConfigItem] = []
     for phase_idx, phase in enumerate(self.execution_phases):
-      print(f"Phase {phase_idx + 1}:")
-      if groups:
-        for group in phase.groups_in_phase:
-          print(f"- {group}")
+
       for manager, items_in_phase in phase.execution_order:
         checksums = manager.checksums(self)
         for item in items_in_phase:
           items_total.append(item)
           needs_update = checksums.current(item) != checksums.target(item)
           if needs_update: items_to_update.append(item)
-          if items:
+
+      print(f"Phase {phase_idx + 1}:")
+      if groups:
+        for group in phase.groups_in_phase:
+          needs_update = len([item for item in group.provides if item in items_to_update]) > 0
+          print(f"{"*" if needs_update else "-"} {group.description}")
+      if items:
+        for manager, items_in_phase in phase.execution_order:
+          for item in items_in_phase:
+            needs_update = item in items_to_update
             print(f"{"*" if needs_update else "-"} {item}")
       print()
 
@@ -209,19 +215,19 @@ class ConfigItem:
 
 
 class ConfigGroup:
-  name: str
+  description: str
   confirm_mode: ConfirmModeValues
   requires: list[ConfigItem]
   provides: list[ConfigItem]
 
-  def __init__(self, name: str, provides: list[ConfigItem], requires: list[ConfigItem] = None, confirm_mode: ConfirmModeValues = "cautious"):
-    self.name = name
+  def __init__(self, description: str, provides: list[ConfigItem], requires: list[ConfigItem] = None, confirm_mode: ConfirmModeValues = "cautious"):
+    self.description = description
     self.confirm_mode = confirm_mode
     self.requires = [item for item in (requires or []) if item is not None]
     self.provides = [item for item in (provides or []) if item is not None]
 
   def __str__(self):
-    return f"ConfigGroup('{self.name}')"
+    return f"ConfigGroup('{self.description}')"
 
 
 class ConfigManager[T: ConfigItem]:

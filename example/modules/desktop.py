@@ -8,7 +8,7 @@ from koti.utils import shell
 
 def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
   ConfigGroup(
-    name = "desktop-optional-dependencies",
+    description = "optional dependencies for desktop",
     provides = [
       Checkpoint("desktop-optional-dependencies"),
       Package("qt6-multimedia-ffmpeg"),  # qt6-multimedia-backend
@@ -21,7 +21,7 @@ def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
   ),
 
   ConfigGroup(
-    name = "desktop-packages",
+    description = "desktop packages",
     requires = [
       Checkpoint("desktop-optional-dependencies"),  # avoid pacman asking for possible alternatives
       File("/etc/pacman.conf"),  # wg. NoExtract = etc/xdg/autostart/org.kde.discover.notifier.desktop
@@ -65,7 +65,7 @@ def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
   ),
 
   ConfigGroup(
-    name = "display-manager",
+    description = "display manager and auto-login",
     provides = [
       Checkpoint("display-manager"),
       Package("greetd-tuigreet"),
@@ -83,7 +83,7 @@ def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
   ),
 
   ConfigGroup(
-    name = "wireplumber",
+    description = "wireplumber priorities",
     provides = [
       File("/home/manuel/.config/wireplumber/wireplumber.conf.d/priorities.conf", permissions = 0o444, owner = "manuel", content = cleandoc('''
         # managed by koti
@@ -117,7 +117,7 @@ def desktop(nvidia: bool, autologin: bool) -> ConfigGroups: return [
   ),
 
   ConfigGroup(
-    name = "ananicy",
+    description = "ananicy-cpp and configuration",
     requires = [
       Package("cachyos-mirrorlist"),
       Package("cachyos-v3-mirrorlist"),

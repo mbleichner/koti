@@ -10,7 +10,7 @@ kernel_params = "console=tty1 loglevel=3 nowatchdog zswap.enabled=1"
 
 def kernel_cachyos(sortkey: int) -> ConfigGroups:
   return ConfigGroup(
-    name = "cachyos-kernel",
+    description = "CachyOS kernel + systemd-boot entry",
     confirm_mode = "paranoid",
     requires = [
       File("/etc/pacman.conf"),
@@ -39,11 +39,8 @@ def kernel_cachyos(sortkey: int) -> ConfigGroups:
 
 def kernel_stock(sortkey: int) -> ConfigGroups:
   return ConfigGroup(
-    name = "stock-kernel",
+    description = "Arch kernel + systemd-boot entry",
     confirm_mode = "paranoid",
-    requires = [
-      File("/etc/pacman.conf"),
-    ],
     provides = [
       *Packages("linux", "linux-headers"),
       File("/boot/loader/entries/arch-stock.conf", permissions = 0o555, content = cleandoc(f'''
@@ -68,11 +65,8 @@ def kernel_stock(sortkey: int) -> ConfigGroups:
 
 def kernel_lts(sortkey: int) -> ConfigGroups:
   return ConfigGroup(
-    name = "lts-kernel",
+    description = "Arch LTS kernel + systemd-boot entry",
     confirm_mode = "paranoid",
-    requires = [
-      File("/etc/pacman.conf"),
-    ],
     provides = [
       *Packages("linux-lts", "linux-lts-headers"),
       File("/boot/loader/entries/arch-lts.conf", permissions = 0o555, content = cleandoc(f'''

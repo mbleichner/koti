@@ -7,7 +7,7 @@ from koti.utils import shell
 
 def gaming() -> ConfigGroups: return [
   ConfigGroup(
-    name = "gaming-packages",
+    description = "gaming-packages",
     provides = [
       Package("discord"),
       Package("gamescope"),
@@ -22,7 +22,7 @@ def gaming() -> ConfigGroups: return [
     ]),
 
   ConfigGroup(
-    name = "gaming-settings",
+    description = "gaming-settings",
     provides = [
       *PostHookTriggerScope(
         # https://wiki.cachyos.org/configuration/general_system_tweaks

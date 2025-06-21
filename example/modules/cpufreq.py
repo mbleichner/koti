@@ -5,7 +5,7 @@ from koti import *
 
 def cpufreq(min_freq: int, max_freq: int, governor: str) -> ConfigGroups:
   return ConfigGroup(
-    name = "cpupower",
+    description = "set default cpu frequency range and governor",
     provides = [
       Package("cpupower"),
       File("/etc/default/cpupower", permissions = 0o444, content = cleandoc(f'''
@@ -19,7 +19,7 @@ def cpufreq(min_freq: int, max_freq: int, governor: str) -> ConfigGroups:
 
 def throttle_after_boot(freq: int) -> ConfigGroups:
   return ConfigGroup(
-    name = "throttle_after_boot",
+    description = f"set up cpu throttling to {freq}MHz after boot",
     provides = [
       Package("cpupower"),
 

@@ -5,7 +5,7 @@ from koti import *
 
 def systray(ryzen: bool, nvidia: bool) -> ConfigGroups: return [
   ConfigGroup(
-    name = "systray cpu",
+    description = "systray: CPU items",
     provides = [
       Package("kdialog"),
       File("/opt/systray/cpu/summary", permissions = 0o555, content = cleandoc(r'''
@@ -37,7 +37,7 @@ def systray(ryzen: bool, nvidia: bool) -> ConfigGroups: return [
   ) if ryzen else None,
 
   ConfigGroup(
-    name = "systray gpu",
+    description = "systray: GPU items",
     provides = [
       Package("kdialog"),
       Package("python-pynvml"),

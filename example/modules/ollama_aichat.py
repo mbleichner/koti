@@ -5,7 +5,7 @@ from koti import *
 
 def ollama_aichat(cuda: bool) -> ConfigGroups:
   return ConfigGroup(
-    name = "ollama_aichat",
+    description = "ollama + aichat",
     provides = [
       Package("aichat"),
       Package("ollama-cuda" if cuda else "ollama"),

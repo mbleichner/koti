@@ -30,7 +30,7 @@ mserver: list[ConfigGroups] = [
   fish(),
 
   ConfigGroup(
-    name = "fstab",
+    description = "fstab",
     confirm_mode = "paranoid",
     requires = [
       Swapfile("/swapfile"),
@@ -47,7 +47,7 @@ mserver: list[ConfigGroups] = [
   ),
 
   ConfigGroup(
-    name = "networking",
+    description = "networking via systemd-networkd",
     confirm_mode = "paranoid",
     provides = [
       SystemdUnit("systemd-networkd.service"),
@@ -70,7 +70,13 @@ mserver: list[ConfigGroups] = [
         search fritz.box
         options timeout:3
       ''')),
+    ]
+  ),
 
+  ConfigGroup(
+    description = "system update script",
+    confirm_mode = "yolo",
+    provides = [
       File("/home/manuel/system-update", permissions = 0o555, content = cleandoc('''
         #!/bin/bash -e
         arch-update
@@ -79,43 +85,42 @@ mserver: list[ConfigGroups] = [
           cd /opt/$DIR && sudo docker compose pull && sudo docker compose up -d
         done
       ''')),
-
     ]
   ),
 
   ConfigGroup(
-    name = "docker",
+    description = "docker and services",
     confirm_mode = "paranoid",
     provides = [
       Package("docker"),
       Package("docker-compose"),
       Package("containerd"),
       SystemdUnit("docker.service"),
+
+      *DockerComposeService(
+        File("/opt/traefik/docker-compose.yml", permissions = 0o444, content_from_file = "docker/traefik/docker-compose.yml"),
+      ),
+
+      *DockerComposeService(
+        File("/opt/nextcloud/docker-compose.yml", permissions = 0o444, content_from_file = "docker/nextcloud/docker-compose.yml"),
+      ),
+
+      *DockerComposeService(
+        File("/opt/homeassistant/docker-compose.yml", permissions = 0o444, content_from_file = "docker/homeassistant/docker-compose.yml"),
+      ),
+
+      *DockerComposeService(
+        File("/opt/pihole/docker-compose.yml", permissions = 0o444, content_from_file = "docker/pihole/docker-compose.yml"),
+      ),
+
+      *DockerComposeService(
+        File("/opt/pyanodon-mapshot/docker-compose.yml", permissions = 0o444, content_from_file = "docker/pyanodon-mapshot/docker-compose.yml"),
+      ),
+
+      *DockerComposeService(
+        File("/opt/pacoloco/docker-compose.yml", permissions = 0o444, content_from_file = "docker/pacoloco/docker-compose.yml"),
+        File("/opt/pacoloco/pacoloco.yaml", permissions = 0o444, content_from_file = "docker/pacoloco/pacoloco.yaml"),
+      ),
     ]
-  ),
-
-  *DockerComposeService(
-    File("/opt/traefik/docker-compose.yml", permissions = 0o444, content_from_file = "docker/traefik/docker-compose.yml"),
-  ),
-
-  *DockerComposeService(
-    File("/opt/nextcloud/docker-compose.yml", permissions = 0o444, content_from_file = "docker/nextcloud/docker-compose.yml"),
-  ),
-
-  *DockerComposeService(
-    File("/opt/homeassistant/docker-compose.yml", permissions = 0o444, content_from_file = "docker/homeassistant/docker-compose.yml"),
-  ),
-
-  *DockerComposeService(
-    File("/opt/pihole/docker-compose.yml", permissions = 0o444, content_from_file = "docker/pihole/docker-compose.yml"),
-  ),
-
-  *DockerComposeService(
-    File("/opt/pyanodon-mapshot/docker-compose.yml", permissions = 0o444, content_from_file = "docker/pyanodon-mapshot/docker-compose.yml"),
-  ),
-
-  *DockerComposeService(
-    File("/opt/pacoloco/docker-compose.yml", permissions = 0o444, content_from_file = "docker/pacoloco/docker-compose.yml"),
-    File("/opt/pacoloco/pacoloco.yaml", permissions = 0o444, content_from_file = "docker/pacoloco/pacoloco.yaml"),
   ),
 ]

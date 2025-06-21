@@ -5,7 +5,7 @@ from koti import *
 
 def ryzen_undervolting() -> ConfigGroups:
   return ConfigGroup(
-    name = "ryzen_undervolting",
+    description = "Ryzen 5800X3D undervolting",
     provides = [
       Package("ryzen_smu-dkms-git"),
       SystemdUnit("ryzen-undervolting.service"),

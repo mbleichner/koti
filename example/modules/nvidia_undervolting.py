@@ -5,7 +5,7 @@ from koti import *
 
 def nvidia_undervolting() -> ConfigGroups:
   return ConfigGroup(
-    name = "nvidia_undervolting",
+    description = "NVIDIA 3080 undervolting + clock tuning",
     provides = [
       Package("python-pynvml"),
       SystemdUnit("nvidia-undervolting.service"),

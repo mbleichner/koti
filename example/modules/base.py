@@ -6,7 +6,7 @@ from koti.utils import *
 
 def base() -> ConfigGroups: return [
   ConfigGroup(
-    name = "base-packages",
+    description = "base packages needed on every system",
     provides = [
       Package("linux-firmware"),
       Package("efibootmgr"),
@@ -70,7 +70,7 @@ def base() -> ConfigGroups: return [
   ),
 
   ConfigGroup(
-    name = "cachyos-mirrors",
+    description = "cachyos keyring and mirrorlist",
     confirm_mode = "paranoid",
     provides = [
       PacmanKey("cachyos", key_id = "F3B607488DB35A47"),
@@ -81,7 +81,7 @@ def base() -> ConfigGroups: return [
   ),
 
   ConfigGroup(
-    name = "pacman",
+    description = "pacman.conf and related utilities",
     confirm_mode = "paranoid",
     requires = [
       Package("cachyos-mirrorlist"),
@@ -194,7 +194,7 @@ def base() -> ConfigGroups: return [
   ),
 
   ConfigGroup(
-    name = "sudo",
+    description = "sudo + /etc/sudoers",
     provides = [
       Package("sudo"),
       File("/etc/sudoers", permissions = 0o444, content = cleandoc('''
@@ -235,7 +235,7 @@ def base() -> ConfigGroups: return [
   ),
 
   ConfigGroup(
-    name = "arch-update",
+    description = "arch-update (for user manuel)",
     confirm_mode = "yolo",
     provides = [
       Package("arch-update"),
@@ -256,7 +256,7 @@ def base() -> ConfigGroups: return [
   ),
 
   ConfigGroup(
-    name = "system-config-files",
+    description = "various system config files",
     confirm_mode = "paranoid",
     provides = [
       File("/etc/environment", permissions = 0o444, content = cleandoc(f'''
@@ -327,7 +327,7 @@ def base() -> ConfigGroups: return [
   ),
 
   ConfigGroup(
-    name = "ssh daemon",
+    description = "ssh daemon + config",
     provides = [
       Package("openssh"),
       SystemdUnit("sshd.service"),
@@ -345,7 +345,7 @@ def base() -> ConfigGroups: return [
 
 def swapfile(swapfile_gb: int) -> ConfigGroups: return [
   ConfigGroup(
-    name = "swapfile",
+    description = f"swapfile ({swapfile_gb} GByte)",
     provides = [
       Swapfile("/swapfile", swapfile_gb * 1024 ** 3),  # 8GB
     ]

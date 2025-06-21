@@ -7,6 +7,7 @@ from modules.desktop import desktop
 from modules.fish import fish
 from modules.gaming import gaming
 from modules.kernel import kernel_cachyos, kernel_stock
+from modules.networking import network_manager
 from modules.nvidia_undervolting import nvidia_undervolting
 from modules.nvme_thermal_throttling import nvme_thermal_throttling
 from modules.ollama_aichat import ollama_aichat
@@ -29,18 +30,10 @@ dan: list[ConfigGroups] = [
   nvidia_undervolting(),
   ryzen_undervolting(),
   ollama_aichat(cuda = True),
+  network_manager(),
 
   ConfigGroup(
-    name = "networking",
-    provides = [
-      Package("networkmanager"),
-      SystemdUnit("wpa_supplicant.service"),
-      SystemdUnit("NetworkManager.service"),
-    ]
-  ),
-
-  ConfigGroup(
-    name = "fstab",
+    description = "fstab (dan)",
     confirm_mode = "paranoid",
     requires = [
       Swapfile("/swapfile"),

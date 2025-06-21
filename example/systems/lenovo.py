@@ -7,6 +7,7 @@ from modules.desktop import desktop
 from modules.fish import fish
 from modules.gaming import gaming
 from modules.kernel import kernel_cachyos, kernel_stock
+from modules.networking import network_manager
 from modules.ollama_aichat import ollama_aichat
 from modules.ryzen_undervolting import ryzen_undervolting
 from modules.systray import systray
@@ -25,18 +26,10 @@ lenovo: list[ConfigGroups] = [
   gaming(),
   ryzen_undervolting(),
   ollama_aichat(cuda = False),
+  network_manager(),
 
   ConfigGroup(
-    name = "networking",
-    provides = [
-      Package("networkmanager"),
-      SystemdUnit("wpa_supplicant.service"),
-      SystemdUnit("NetworkManager.service"),
-    ]
-  ),
-
-  ConfigGroup(
-    name = "fstab",
+    description = "fstab",
     confirm_mode = "paranoid",
     requires = [
       Swapfile("/swapfile"),

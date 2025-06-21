@@ -6,7 +6,7 @@ from koti.utils import shell
 
 def fish() -> ConfigGroups:
   return ConfigGroup(
-    name = "fish (+fastfetch)",
+    description = "fish (+fastfetch)",
     provides = [
       Package("fish"),
       Package("pyenv"),

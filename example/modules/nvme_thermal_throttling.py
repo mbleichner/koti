@@ -5,7 +5,7 @@ from koti import *
 
 def nvme_thermal_throttling() -> ConfigGroups:
   return ConfigGroup(
-    name = "nvme_thermal_throttling",
+    description = "NVMe thermal throttling (Kingston KC3000)",
     provides = [
       Package("nvme-cli"),
       SystemdUnit("nvme-thermal-throttling.service"),
