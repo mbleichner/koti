@@ -233,12 +233,6 @@ class ConfigManager[T: ConfigItem]:
   def checksums(self, core: Koti) -> Checksums[T]:
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.checksums()")
 
-  def checksum_current(self, items: list[T], core: Koti) -> str | None:
-    raise AssertionError(f"method not implemented: {self.__class__.__name__}.checksum_current()")
-
-  def checksum_target(self, items: list[T], core: Koti) -> str | None:
-    raise AssertionError(f"method not implemented: {self.__class__.__name__}.checksum_target()")
-
   def apply_phase(self, items: list[T], core: Koti):
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.apply_phase()")
 
@@ -257,26 +251,6 @@ class Checksums[T:ConfigItem]:
 
 class ConfigMetadata:
   pass
-
-
-# class Requires(ConfigMetadata):
-#   items: list[ConfigItem]
-#
-#   def __init__(self, *items: ConfigItem):
-#     self.items = list(items)
-#
-#   def __str__(self):
-#     return f"Requires({", ".join([str(item) for item in self.items])})"
-#
-#
-# class ConfirmMode(ConfigMetadata):
-#   mode: ConfirmModeValues
-#
-#   def __init__(self, mode: ConfirmModeValues):
-#     self.mode = mode
-#
-#   def __str__(self):
-#     return f"ConfirmMode({self.mode})"
 
 
 class ExecutionPhase:
