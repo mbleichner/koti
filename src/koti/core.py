@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Iterator, Literal, Sequence, Type
+from typing import Literal, Sequence, Type
 
 type ConfirmModeValues = Literal["paranoid", "cautious", "yolo"]
 
@@ -18,7 +18,7 @@ class Koti:
     Koti.check_manager_consistency(self.managers, self.configs)
     self.default_confirm_mode = default_confirm_mode
     self.execution_phases = Koti.build_execution_phases(self.managers, self.configs)
-    # Koti.check_config_item_consistency(self.managers, self.configs, self)
+    Koti.check_config_item_consistency(self.managers, self.configs, self)
 
   def plan(self, groups: bool = True, items: bool = True, summary: bool = True) -> int:
     items_total: list[ConfigItem] = []
@@ -50,7 +50,7 @@ class Koti:
         for item in items_to_update: print(f"- {item}")
         print()
       else:
-        print(f"{len(items_total)} items total, everything up to date")
+        print(f"{len(items_total)} items total, no outdates items found - only cleanup will be executed")
         print()
 
     return len(items_to_update)
@@ -63,7 +63,7 @@ class Koti:
       for manager, items in phase.execution_order:
         checksums = manager.checksums(self)
         items_to_update = [item for item in items if checksums.current(item) != checksums.target(item)]
-        self.print_phase_log(phase_idx, manager, items, items_to_update)
+        self.print_phase_log(phase_idx, manager, items_to_update)
         manager.apply_phase(items_to_update, self) or []
 
     for manager in reversed(self.managers):
@@ -74,15 +74,17 @@ class Koti:
         if phase_manager is manager
       ]
       if len(all_items_for_manager):
-        self.print_phase_log(None, manager, all_items_for_manager, [])
+        self.print_phase_log(None, manager, [])
         manager.cleanup(all_items_for_manager, self)
 
-  def print_phase_log(self, phase_idx: int | None, manager: ConfigManager, items: list[ConfigItem], items_to_update: list[ConfigItem]):
+  def print_phase_log(self, phase_idx: int | None, manager: ConfigManager, items_to_update: list[ConfigItem]):
     phase = f"Phase {phase_idx + 1}" if phase_idx is not None else "Cleanup"
     max_manager_name_len = max([len(m.__class__.__name__) for m in self.managers])
 
-    if len(items_to_update) == 0:
-      details = "all items up to date"
+    if phase_idx is None:
+      details = "cleaning up leftover items"
+    elif len(items_to_update) == 0:
+      details = "no outdated items found"
     else:
       details = f"items to update: {", ".join([str(item) for item in items_to_update])}"
 
@@ -95,16 +97,24 @@ class Koti:
           return group
     raise AssertionError(f"group not found for {item}")
 
-  def get_confirm_mode_for_item(self, *items: ConfigItem) -> ConfirmModeValues:
-    groups = [self.get_group_for_item(item) for item in items]
-    confirm_modes = [group.confirm_mode for group in groups]
-    return self.get_effective_confirm_mode(confirm_modes)
+  def _get_confirm_mode_single(self, item: ConfigItem) -> ConfirmModeValues:
+    if item.confirm_mode is not None:
+      return item.confirm_mode
+    group = self.get_group_for_item(item)
+    if group.confirm_mode is not None:
+      return group.confirm_mode
+    return self.default_confirm_mode
 
-  def get_effective_confirm_mode(self, modes: list[ConfirmModeValues]) -> ConfirmModeValues:
+  def _merge_confirm_modes(self, modes: Sequence[ConfirmModeValues]) -> ConfirmModeValues:
     modes_in_order: list[ConfirmModeValues] = ["paranoid", "cautious", "yolo"]
     for mode in modes_in_order:
       if mode in modes: return mode
-    return "cautious"
+    return self.default_confirm_mode
+
+  def get_confirm_mode(self, *items: ConfigItem | ConfirmModeValues) -> ConfirmModeValues:
+    confirm_modes_from_items = [self._get_confirm_mode_single(item) for item in items if isinstance(item, ConfigItem)]
+    confirm_modes_from_strings = [item for item in items if isinstance(item, str)]
+    return self._merge_confirm_modes(confirm_modes_from_items + confirm_modes_from_strings)
 
   def get_manager_for_item(self, item: ConfigItem):
     for manager in self.managers:
@@ -131,17 +141,17 @@ class Koti:
         if len(matching_managers) > 1:
           raise AssertionError(f"multiple managers found for class {item.__class__.__name__}")
 
-  # @staticmethod
-  # def check_config_item_consistency(managers: Sequence[ConfigManager], configs: Sequence[ConfigGroup], koti: Koti):
-  #   for group in Koti.get_all_provided_groups(configs):
-  #     for item in filter(lambda x: x is not None, group.provides):
-  #       if not isinstance(item, ConfigItem): continue
-  #       matching_managers = [manager for manager in managers if item.__class__ in manager.managed_classes]
-  #       manager = matching_managers[0]
-  #       try:
-  #         manager.check_configuration(item, koti)
-  #       except Exception as e:
-  #         raise AssertionError(f"{manager.__class__.__name__}: {e}")
+  @staticmethod
+  def check_config_item_consistency(managers: Sequence[ConfigManager], configs: Sequence[ConfigGroup], koti: Koti):
+    for group in Koti.get_all_provided_groups(configs):
+      for item in filter(lambda x: x is not None, group.provides):
+        if not isinstance(item, ConfigItem): continue
+        matching_managers = [manager for manager in managers if item.__class__ in manager.managed_classes]
+        manager = matching_managers[0]
+        try:
+          manager.check_configuration(item, koti)
+        except Exception as e:
+          raise AssertionError(f"{manager.__class__.__name__}: {e}")
 
   @staticmethod
   def reorder_into_phases(groups: Sequence[ConfigGroup]) -> list[list[ConfigGroup]]:
@@ -203,27 +213,24 @@ class Koti:
 
 class ConfigItem:
   identifier: str
-  confirm_mode: ConfirmModeValues
+  confirm_mode: ConfirmModeValues | None
 
-  def __init__(self, identifier: str, confirm_mode: ConfirmModeValues = "cautious"):
+  def __init__(self, identifier: str, confirm_mode: ConfirmModeValues | None = None):
     self.confirm_mode = confirm_mode
     self.identifier = identifier
 
 
 class ConfigGroup:
   description: str
-  confirm_mode: ConfirmModeValues
+  confirm_mode: ConfirmModeValues | None
   requires: Sequence[ConfigItem]
   provides: Sequence[ConfigItem]
 
-  def __init__(self, description: str, provides: Sequence[ConfigItem | None], requires: Sequence[ConfigItem | None] | None = None, confirm_mode: ConfirmModeValues = "cautious"):
+  def __init__(self, description: str, provides: Sequence[ConfigItem | None], requires: Sequence[ConfigItem | None] | None = None, confirm_mode: ConfirmModeValues | None = None):
     self.description = description
     self.confirm_mode = confirm_mode
     self.requires = [item for item in (requires or []) if item is not None]
     self.provides = [item for item in (provides or []) if item is not None]
-    if confirm_mode is not None:
-      for item in [item for item in self.provides if isinstance(item, ConfigItem)]:
-        item.confirm_mode = item.confirm_mode or confirm_mode
 
   def __str__(self):
     return f"ConfigGroup('{self.description}')"
@@ -232,8 +239,8 @@ class ConfigGroup:
 class ConfigManager[T: ConfigItem]:
   managed_classes: list[Type] = []
 
-  # def check_configuration(self, item: T, core: Koti):
-  #   raise AssertionError(f"method not implemented: {self.__class__.__name__}.check_configuration()")
+  def check_configuration(self, item: T, core: Koti):
+    raise AssertionError(f"method not implemented: {self.__class__.__name__}.check_configuration()")
 
   def checksums(self, core: Koti) -> Checksums[T]:
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.checksums()")

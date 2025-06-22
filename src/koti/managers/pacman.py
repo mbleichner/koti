@@ -83,25 +83,25 @@ class PacmanPackageManager(ConfigManager[Package]):
     additional_items_from_urls = [item for item in url_items if item.identifier not in installed_packages]
     self.delegate.install_from_url(
       urls = [item.url for item in additional_items_from_urls if item.url is not None],
-      confirm_mode = core.get_confirm_mode_for_item(*additional_items_from_urls)
+      confirm_mode = core.get_confirm_mode(*additional_items_from_urls)
     )
 
     additional_items_from_repo = [item for item in repo_items if item.identifier not in installed_packages]
     self.delegate.install(
       packages = [item.identifier for item in additional_items_from_repo],
-      confirm_mode = core.get_confirm_mode_for_item(*additional_items_from_repo)
+      confirm_mode = core.get_confirm_mode(*additional_items_from_repo)
     )
 
     additional_explicit_items = [item for item in items if item.identifier not in explicit_packages]
     self.delegate.mark_as_explicit(
       packages = [item.identifier for item in additional_explicit_items],
-      confirm_mode = core.get_confirm_mode_for_item(*additional_explicit_items)
+      confirm_mode = core.get_confirm_mode(*additional_explicit_items)
     )
 
   def cleanup(self, items: list[Package], core: Koti):
     desired = [pkg.identifier for pkg in items]
     explicit = self.delegate.list_explicit_packages()
-    confirm_mode = core.get_confirm_mode_for_item(*items)
+    confirm_mode = core.get_confirm_mode(*items)
     self.delegate.mark_as_dependency([pkg for pkg in explicit if pkg not in desired], confirm_mode = confirm_mode)
     self.delegate.prune_unneeded(confirm_mode = confirm_mode)
 
@@ -120,7 +120,7 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
       confirm(
         message = f"confirm installing pacman key {item.identifier}",
         destructive = False,
-        mode = core.get_confirm_mode_for_item(item),
+        mode = core.get_confirm_mode(item),
       )
       print(f"installing pacman-key {item.key_id} from {item.key_server}")
       shell(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")

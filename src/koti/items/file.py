@@ -17,8 +17,12 @@ class File(ConfigItem):
     owner: str = "root",
   ):
     super().__init__(identifier)
-    if content is not None: self.content = content.encode("utf-8")
-    if content_from_file is not None: self.content = Path(content_from_file).read_bytes()
+    if content is not None:
+      self.content = content.encode("utf-8")
+    elif content_from_file is not None:
+      self.content = Path(content_from_file).read_bytes()
+    else:
+      self.content = None
     self.permissions = permissions
     self.owner = owner
 

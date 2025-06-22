@@ -22,21 +22,21 @@ class SwapfileManager(ConfigManager[Swapfile]):
     self.managed_files_store = store.mapping("managed_files")
 
   def check_configuration(self, item: Swapfile, core: Koti):
-    if item.size_bytes is None:
-      raise AssertionError("missing size_bytes parameter")
+    assert item.size_bytes is not None, "missing size_bytes parameter"
 
   def checksums(self, core: Koti) -> Checksums[Swapfile]:
     return SwapfileChecksums()
 
   def apply_phase(self, items: list[Swapfile], core: Koti):
     for item in items:
+      assert item.size_bytes is not None
       exists = os.path.isfile(item.identifier)
       current_size = os.stat(item.identifier).st_size if exists else 0
       if not exists:
         confirm(
           message = f"confirm to create swapfile {item.identifier}",
           destructive = False,
-          mode = core.get_confirm_mode_for_item(item),
+          mode = core.get_confirm_mode(item),
         )
         self.create_swapfile(item)
       elif current_size != item.size_bytes:
@@ -44,7 +44,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
           confirm(
             message = f"confirm resize of mounted swapfile {item.identifier}",
             destructive = True,
-            mode = core.get_confirm_mode_for_item(item),
+            mode = core.get_confirm_mode(item),
           )
           shell(f"swapoff {item.identifier}")
           os.unlink(item.identifier)
@@ -54,14 +54,14 @@ class SwapfileManager(ConfigManager[Swapfile]):
           confirm(
             message = f"confirm resize of swapfile {item.identifier}",
             destructive = True,
-            mode = core.get_confirm_mode_for_item(item),
+            mode = core.get_confirm_mode(item),
           )
           shell(f"rm -f {item.identifier}")
           self.create_swapfile(item)
 
   def cleanup(self, items: list[Swapfile], core: Koti):
     for item in items:
-      self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode_for_item(item)})
+      self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode(item)})
 
     currently_managed_files = [item.identifier for item in items]
     previously_managed_files = self.managed_files_store.keys()

@@ -22,8 +22,7 @@ class FileManager(ConfigManager[File]):
     self.managed_files_store = store.mapping("managed_files")
 
   def check_configuration(self, item: File, core: Koti):
-    if item.content is None:
-      raise AssertionError("missing either content or content_from_file")
+    assert item.content is not None, "missing either content or content_from_file"
 
   def checksums(self, core: Koti) -> Checksums[File]:
     return FileChecksums()
@@ -38,6 +37,7 @@ class FileManager(ConfigManager[File]):
 
   def apply_phase(self, items: list[File], core: Koti):
     for item in items:
+      assert item.content is not None
       getpwnam = pwd.getpwnam(item.owner)
       uid = getpwnam.pw_uid
       gid = getpwnam.pw_gid
@@ -50,7 +50,7 @@ class FileManager(ConfigManager[File]):
       confirm(
         message = f"confirm {"changed" if exists else "new"} file {item.identifier}",
         destructive = exists,
-        mode = core.get_confirm_mode_for_item(item),
+        mode = core.get_confirm_mode(item),
       )
 
       with open(item.identifier, 'wb+') as fh:
@@ -64,7 +64,7 @@ class FileManager(ConfigManager[File]):
 
   def cleanup(self, items: list[File], core: Koti):
     for item in items:
-      self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode_for_item(item)})
+      self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode(item)})
 
     currently_managed_files = [item.identifier for item in items]
     previously_managed_files = self.managed_files_store.keys()

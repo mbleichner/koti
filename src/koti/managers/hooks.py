@@ -18,16 +18,14 @@ class PostHookManager(ConfigManager[PostHook]):
     self.checksum_store = store.mapping("checksums")
 
   def check_configuration(self, hook: PostHook, core: Koti):
-    if hook.execute is None:
-      raise AssertionError("missing execute parameter")
-    if len(hook.trigger) == 0:
-      raise AssertionError(f"{hook} has no trigger(s)")
+    assert hook.execute is not None, "missing execute parameter"
+    assert len(hook.trigger) > 0, f"{hook} has no trigger(s)"
     for item in hook.trigger:
       exec_order_item = PostHookManager.index_in_execution_order(core, item)  # can be None in case the item isn't set up by koti (i.e. files created by pacman hooks or such)
       exec_order_hook = PostHookManager.index_in_execution_order(core, hook)
-      if exec_order_hook is None: raise AssertionError("illegal state")
-      if exec_order_item is not None and not exec_order_item < exec_order_hook:
-        raise AssertionError(f"{hook} has trigger that is evaluated too late: {item}")
+      assert exec_order_hook is not None, f"{hook} not found in execution order"
+      assert exec_order_item is None or exec_order_item < exec_order_hook
+      if exec_order_item is not None and not exec_order_item < exec_order_hook: f"{hook} has trigger that is evaluated too late: {item}"
 
   def checksums(self, core: Koti) -> PostHookChecksums:
     return PostHookChecksums(self, core, self.checksum_store)
@@ -38,11 +36,10 @@ class PostHookManager(ConfigManager[PostHook]):
       confirm(
         message = f"confirm executing {hook}",
         destructive = False,
-        mode = core.get_confirm_mode_for_item(hook),
+        mode = core.get_confirm_mode(hook),
       )
+      assert hook.execute is not None
       target_checksum = checksums.target(hook)
-      if hook.execute is None:
-        raise AssertionError(f"{hook} has no execute method")
       hook.execute()
       self.checksum_store.put(hook.identifier, str(target_checksum))
 
@@ -80,11 +77,9 @@ class PostHookChecksums(Checksums[PostHook]):
 
   def target(self, hook: PostHook) -> str | None:
     checksums = self.get_current_checksums_for_items(hook.trigger)
-    # print(hook)
     sha256_hash = sha256()
     for idx, trigger in enumerate(hook.trigger):
       checksum = checksums[idx]
-      # print(f"- {trigger} {checksum}")
       sha256_hash.update(str(trigger).encode())
       sha256_hash.update(str(checksum).encode())
     return sha256_hash.hexdigest()

@@ -7,6 +7,7 @@ from koti import *
 def systray(ryzen: bool, nvidia: bool) -> Generator[ConfigGroup | None]:
   yield ConfigGroup(
     description = "systray: CPU items",
+    confirm_mode = "yolo",
     provides = [
       Package("kdialog"),
       File("/opt/systray/cpu/summary", permissions = 0o555, content = cleandoc(r'''
@@ -39,6 +40,7 @@ def systray(ryzen: bool, nvidia: bool) -> Generator[ConfigGroup | None]:
 
   yield ConfigGroup(
     description = "systray: GPU items",
+    confirm_mode = "yolo",
     provides = [
       Package("kdialog"),
       Package("python-pynvml"),
