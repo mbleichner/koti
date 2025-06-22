@@ -50,7 +50,7 @@ class Koti:
         for item in items_to_update: print(f"- {item}")
         print()
       else:
-        print(f"{len(items_total)} items total, no outdates items found - only cleanup will be executed")
+        print(f"{len(items_total)} items total, no outdated items found - only cleanup will be performed")
         print()
 
     return len(items_to_update)
