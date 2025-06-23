@@ -75,13 +75,11 @@ def mserver() -> Generator[ConfigGroup | None]:
   )
 
   yield ConfigGroup(
-    description = "system update script",
+    description = "docker-update script",
     confirm_mode = "yolo",
     provides = [
-      File("/home/manuel/system-update", permissions = 0o555, content = cleandoc('''
+      File("/usr/local/bin/docker-update", permissions = 0o555, content = cleandoc('''
         #!/bin/bash -e
-        arch-update
-        echo
         for DIR in homeassistant nextcloud pihole pyanodon-mapshot pacoloco traefik; do
           cd /opt/$DIR && sudo docker compose pull && sudo docker compose up -d
         done

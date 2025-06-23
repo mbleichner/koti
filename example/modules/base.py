@@ -186,12 +186,6 @@ def base() -> Generator[ConfigGroup]:
       PostHook("reflector", execute = lambda: shell("systemctl start reflector"), trigger = [
         File("/etc/xdg/reflector/reflector.conf"),
       ]),
-
-      PostHook("update-package-database", execute = lambda: shell("pacman -Sy"), trigger = [
-        File("/etc/pacman.d/mirrorlist"),
-        File("/etc/pacman.conf"),
-        File("/etc/paru.conf"),
-      ]),
     ]
   )
 

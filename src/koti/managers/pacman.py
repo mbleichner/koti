@@ -33,7 +33,7 @@ class PacmanAdapter:
   def install(self, packages: list[str], confirm_mode: ConfirmModeValues):
     if packages:
       confirm_args = self.confirm_args(destructive = False, confirm_mode = confirm_mode)
-      shell(f"{self.pacman} -S {confirm_args} {" ".join(packages)}")
+      shell(f"{self.pacman} -Syu {confirm_args} {" ".join(packages)}")
 
   def install_from_url(self, urls: list[str], confirm_mode: ConfirmModeValues):
     if urls:
