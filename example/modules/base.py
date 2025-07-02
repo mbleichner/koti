@@ -9,7 +9,6 @@ def base() -> Generator[ConfigGroup]:
   yield ConfigGroup(
     description = "base packages needed on every system",
     provides = [
-      Package("linux-firmware"),
       Package("efibootmgr"),
       Package("base"),
       Package("terminus-font"),
@@ -68,6 +67,8 @@ def base() -> Generator[ConfigGroup]:
       SystemdUnit("systemd-timesyncd.service"),
       SystemdUnit("systemd-boot-update.service"),
       SystemdUnit("fstrim.timer"),
+
+      PostHook("moep", lambda: print("moep moep"), trigger = [Package("bat"), Package("jq")])
     ]
   )
 

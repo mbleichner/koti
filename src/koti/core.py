@@ -58,13 +58,12 @@ class Koti:
   def apply(self):
     if os.getuid() != 0:
       raise AssertionError("this program must be run as root (or through sudo)")
-
     for phase_idx, phase in enumerate(self.execution_phases):
       for manager, items in phase.execution_order:
         checksums = manager.checksums(self)
         items_to_update = [item for item in items if checksums.current(item) != checksums.target(item)]
         self.print_phase_log(phase_idx, manager, items_to_update)
-        manager.apply_phase(items_to_update, self) or []
+        manager.install(items_to_update, self) or []
 
     for manager in reversed(self.managers):
       all_items_for_manager = [
@@ -74,11 +73,24 @@ class Koti:
         if phase_manager is manager
       ]
       if len(all_items_for_manager):
-        self.print_phase_log(None, manager, [])
-        manager.cleanup(all_items_for_manager, self)
+        self.print_phase_log("cleanup", manager, [])
+        manager.uninstall(all_items_for_manager, self)
 
-  def print_phase_log(self, phase_idx: int | None, manager: ConfigManager, items_to_update: list[ConfigItem]):
-    phase = f"Phase {phase_idx + 1}" if phase_idx is not None else "Cleanup"
+    for manager in self.managers:
+      all_items_for_manager = [
+        item for phase in self.execution_phases
+        for phase_manager, phase_items in phase.execution_order
+        for item in phase_items
+        if phase_manager is manager
+      ]
+      if len(all_items_for_manager):
+        checksums = manager.checksums(self)
+        items_to_update = [item for item in all_items_for_manager if checksums.current(item) != checksums.target(item)]
+        self.print_phase_log("finalize", manager, items_to_update)
+        manager.install(items_to_update, self)
+
+  def print_phase_log(self, phase_idx: int | Literal['cleanup', 'finalize'], manager: ConfigManager, items_to_update: list[ConfigItem]):
+    phase = f"Phase {phase_idx + 1}" if isinstance(phase_idx, int) else phase_idx
     max_manager_name_len = max([len(m.__class__.__name__) for m in self.managers])
 
     if phase_idx is None:
@@ -245,11 +257,11 @@ class ConfigManager[T: ConfigItem]:
   def checksums(self, core: Koti) -> Checksums[T]:
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.checksums()")
 
-  def apply_phase(self, items: list[T], core: Koti):
-    raise AssertionError(f"method not implemented: {self.__class__.__name__}.apply_phase()")
+  def install(self, items: list[T], core: Koti):
+    raise AssertionError(f"method not implemented: {self.__class__.__name__}.install()")
 
-  def cleanup(self, items: list[T], core: Koti):
-    raise AssertionError(f"method not implemented: {self.__class__.__name__}.cleanup()")
+  def uninstall(self, items_to_keep: list[T], core: Koti):
+    raise AssertionError(f"method not implemented: {self.__class__.__name__}.uninstall()")
 
 
 class Checksums[T:ConfigItem]:

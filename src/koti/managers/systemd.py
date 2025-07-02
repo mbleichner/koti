@@ -28,7 +28,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
   def checksums(self, core: Koti) -> Checksums[SystemdUnit]:
     return SystemdUnitChecksums()
 
-  def apply_phase(self, items: list[SystemdUnit], core: Koti):
+  def install(self, items: list[SystemdUnit], core: Koti):
     if len(items) > 0: shell(f"systemctl daemon-reload")
     users = set([item.user for item in items])
     for user in users:
@@ -41,10 +41,10 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
       )
       shell(f"{systemctl_for_user(user)} enable --now {" ".join([item.identifier for item in items_for_user])}")
 
-  def cleanup(self, items: list[SystemdUnit], core: Koti):
+  def uninstall(self, items_to_keep: list[SystemdUnit], core: Koti):
     shell(f"systemctl daemon-reload")
-    self.store_all_seen_units(core, items)
-    self.deactivate_removed_units(core, items)
+    self.store_all_seen_units(core, items_to_keep)
+    self.deactivate_removed_units(core, items_to_keep)
 
   def deactivate_removed_units(self, core: Koti, items: list[SystemdUnit]):
     previously_seen_users = self.user_list_store.elements()

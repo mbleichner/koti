@@ -27,7 +27,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
   def checksums(self, core: Koti) -> Checksums[Swapfile]:
     return SwapfileChecksums()
 
-  def apply_phase(self, items: list[Swapfile], core: Koti):
+  def install(self, items: list[Swapfile], core: Koti):
     for item in items:
       assert item.size_bytes is not None
       exists = os.path.isfile(item.identifier)
@@ -59,11 +59,11 @@ class SwapfileManager(ConfigManager[Swapfile]):
           shell(f"rm -f {item.identifier}")
           self.create_swapfile(item)
 
-  def cleanup(self, items: list[Swapfile], core: Koti):
-    for item in items:
+  def uninstall(self, items_to_keep: list[Swapfile], core: Koti):
+    for item in items_to_keep:
       self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode(item)})
 
-    currently_managed_files = [item.identifier for item in items]
+    currently_managed_files = [item.identifier for item in items_to_keep]
     previously_managed_files = self.managed_files_store.keys()
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]
     for swapfile in files_to_delete:

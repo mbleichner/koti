@@ -35,6 +35,15 @@ def dan() -> Generator[ConfigGroup | None]:
   yield from network_manager()
 
   yield ConfigGroup(
+    description = "firmware",
+    provides = [
+      Package("linux-firmware-other"),
+      Package("linux-firmware-intel"),
+      Package("linux-firmware-nvidia"),
+    ]
+  )
+
+  yield ConfigGroup(
     description = "fstab (dan)",
     confirm_mode = "paranoid",
     requires = [

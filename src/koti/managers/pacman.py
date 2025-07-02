@@ -74,7 +74,7 @@ class PacmanPackageManager(ConfigManager[Package]):
   def checksums(self, core: Koti) -> Checksums[Package]:
     return PackageChecksums(self.delegate)
 
-  def apply_phase(self, items: list[Package], core: Koti):
+  def install(self, items: list[Package], core: Koti):
     url_items = [item for item in items if item.url is not None]
     repo_items = [item for item in items if item.url is None]
     installed_packages = self.delegate.list_installed_packages()
@@ -98,10 +98,10 @@ class PacmanPackageManager(ConfigManager[Package]):
       confirm_mode = core.get_confirm_mode(*additional_explicit_items)
     )
 
-  def cleanup(self, items: list[Package], core: Koti):
-    desired = [pkg.identifier for pkg in items]
+  def uninstall(self, items_to_keep: list[Package], core: Koti):
+    desired = [pkg.identifier for pkg in items_to_keep]
     explicit = self.delegate.list_explicit_packages()
-    confirm_mode = core.get_confirm_mode(*items)
+    confirm_mode = core.get_confirm_mode(*items_to_keep)
     self.delegate.mark_as_dependency([pkg for pkg in explicit if pkg not in desired], confirm_mode = confirm_mode)
     self.delegate.prune_unneeded(confirm_mode = confirm_mode)
 
@@ -115,7 +115,7 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
   def checksums(self, core: Koti) -> Checksums[PacmanKey]:
     return PacmanKeyChecksums()
 
-  def apply_phase(self, items: list[PacmanKey], core: Koti):
+  def install(self, items: list[PacmanKey], core: Koti):
     for item in items:
       confirm(
         message = f"confirm installing pacman key {item.identifier}",
@@ -126,7 +126,7 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
       shell(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
       shell(f"sudo pacman-key --lsign-key {item.key_id}")
 
-  def cleanup(self, items: list[PacmanKey], core: Koti):
+  def uninstall(self, items_to_keep: list[PacmanKey], core: Koti):
     pass
 
 

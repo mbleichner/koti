@@ -31,6 +31,15 @@ def mserver() -> Generator[ConfigGroup | None]:
   yield from fish()
 
   yield ConfigGroup(
+    description = "firmware",
+    provides = [
+      Package("linux-firmware-other"),
+      Package("linux-firmware-intel"),
+      Package("linux-firmware-realtek"),
+    ]
+  )
+
+  yield ConfigGroup(
     description = "fstab",
     confirm_mode = "paranoid",
     requires = [

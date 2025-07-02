@@ -12,10 +12,10 @@ class CheckpointManager(ConfigManager[Checkpoint]):
   def checksums(self, core: Koti) -> Checksums[Checkpoint]:
     return CheckpointChecksums()
 
-  def apply_phase(self, items: list[Checkpoint], core: Koti):
+  def install(self, items: list[Checkpoint], core: Koti):
     pass
 
-  def cleanup(self, items: list[Checkpoint], core: Koti):
+  def uninstall(self, items_to_keep: list[Checkpoint], core: Koti):
     pass
 
 

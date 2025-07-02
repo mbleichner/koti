@@ -31,6 +31,15 @@ def lenovo() -> Generator[ConfigGroup | None]:
   yield from network_manager()
 
   yield ConfigGroup(
+    description = "firmware",
+    provides = [
+      Package("linux-firmware-other"),
+      Package("linux-firmware-intel"),
+      Package("linux-firmware-radeon"),
+    ]
+  )
+
+  yield ConfigGroup(
     description = "fstab",
     confirm_mode = "paranoid",
     requires = [
