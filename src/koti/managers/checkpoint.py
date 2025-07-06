@@ -15,9 +15,6 @@ class CheckpointManager(ConfigManager[Checkpoint]):
   def install(self, items: list[Checkpoint], core: Koti):
     pass
 
-  def uninstall(self, items_to_keep: list[Checkpoint], core: Koti):
-    pass
-
 
 class CheckpointChecksums(Checksums[Checkpoint]):
 

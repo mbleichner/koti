@@ -65,7 +65,7 @@ class Koti:
         self.print_phase_log(phase_idx, manager, items_to_update)
         manager.install(items_to_update, self) or []
 
-    for manager in reversed(self.managers):
+    for manager in reversed([manager for manager in self.managers if manager.__class__.uninstall is not ConfigManager.uninstall]):
       all_items_for_manager = [
         item for phase in self.execution_phases
         for phase_manager, phase_items in phase.execution_order
@@ -76,7 +76,7 @@ class Koti:
         self.print_phase_log("cleanup", manager, [])
         manager.uninstall(all_items_for_manager, self)
 
-    for manager in [manager for manager in self.managers if manager.rerun_after_cleanup]:
+    for manager in [manager for manager in self.managers if manager.__class__.finalize is not ConfigManager.finalize]:
       all_items_for_manager = [
         item for phase in self.execution_phases
         for phase_manager, phase_items in phase.execution_order
@@ -250,7 +250,6 @@ class ConfigGroup:
 
 class ConfigManager[T: ConfigItem]:
   managed_classes: list[Type] = []
-  rerun_after_cleanup = False
 
   def check_configuration(self, item: T, core: Koti):
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.check_configuration()")
@@ -262,7 +261,10 @@ class ConfigManager[T: ConfigItem]:
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.install()")
 
   def uninstall(self, items_to_keep: list[T], core: Koti):
-    raise AssertionError(f"method not implemented: {self.__class__.__name__}.uninstall()")
+    pass
+
+  def finalize(self, all_items: list[T], core: Koti):
+    pass
 
 
 class Checksums[T:ConfigItem]:
