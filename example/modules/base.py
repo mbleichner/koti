@@ -278,11 +278,6 @@ def base() -> Generator[ConfigGroup]:
         blacklist sp5100_tco
       ''')),
 
-      File("/etc/udev/rules.d/50-disable-usb-wakeup.rules", permissions = 0o444, content = cleandoc('''
-        # managed by koti
-        ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="usb", ATTR{power/wakeup}="disabled"
-      ''')),
-
       File("/home/manuel/.gitconfig", owner = "manuel", permissions = 0o444, content = cleandoc('''
         # managed by koti
         [user]

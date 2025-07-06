@@ -34,8 +34,8 @@ def lenovo() -> Generator[ConfigGroup | None]:
     description = "firmware",
     provides = [
       Package("linux-firmware-other"),
-      Package("linux-firmware-intel"),
-      Package("linux-firmware-radeon"),
+      Package("linux-firmware-amdgpu"),
+      Package("linux-firmware-realtek"),
     ]
   )
 
@@ -51,6 +51,17 @@ def lenovo() -> Generator[ConfigGroup | None]:
         UUID=79969cb9-9b6e-48e2-a672-4aee50f04c56  /      ext4  rw,noatime 0 1
         UUID=1CA6-490D                             /boot  vfat  rw,defaults 0 2
         /swapfile                                  swap   swap  defaults 0 0
+      '''))
+    ]
+  )
+
+  yield ConfigGroup(
+    description = "acpi wakeup",
+    provides = [
+      File("/etc/udev/rules.d/50-disable-touchpad-wakeup.rules", permissions=0o444, content=cleandoc('''
+        # managed by koti
+        # Einstellung testen per udevadm info -q all -a /sys/devices/platform/AMDI0010:02/i2c-2/i2c-ELAN0678:00
+        ACTION=="add|change", SUBSYSTEM=="i2c", DRIVER=="i2c_hid_acpi", ATTR{name}=="ELAN0678:00", ATTR{power/wakeup}="disabled"
       '''))
     ]
   )
