@@ -126,9 +126,6 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
       shell(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
       shell(f"sudo pacman-key --lsign-key {item.key_id}")
 
-  def uninstall(self, items_to_keep: list[PacmanKey], core: Koti):
-    pass
-
 
 class PackageChecksums(Checksums[Package]):
 
