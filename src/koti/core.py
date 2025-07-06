@@ -76,7 +76,7 @@ class Koti:
         self.print_phase_log("cleanup", manager, [])
         manager.uninstall(all_items_for_manager, self)
 
-    for manager in self.managers:
+    for manager in [manager for manager in self.managers if manager.rerun_after_cleanup]:
       all_items_for_manager = [
         item for phase in self.execution_phases
         for phase_manager, phase_items in phase.execution_order
@@ -250,6 +250,7 @@ class ConfigGroup:
 
 class ConfigManager[T: ConfigItem]:
   managed_classes: list[Type] = []
+  rerun_after_cleanup = False
 
   def check_configuration(self, item: T, core: Koti):
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.check_configuration()")

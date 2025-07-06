@@ -12,6 +12,7 @@ from koti.utils.confirm import confirm
 class PostHookManager(ConfigManager[PostHook]):
   managed_classes = [PostHook]
   checksum_store: JsonMapping[str, str]
+  rerun_after_cleanup = True
 
   def __init__(self):
     store = JsonStore("/var/cache/koti/PostHookManager.json")
