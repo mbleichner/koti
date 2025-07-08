@@ -12,6 +12,7 @@ from koti.utils.confirm import confirm
 class PostHookManager(ConfigManager[PostHook]):
   managed_classes = [PostHook]
   checksum_store: JsonMapping[str, str]
+  order_in_cleanup_phase = "last"
 
   def __init__(self):
     store = JsonStore("/var/cache/koti/PostHookManager.json")
@@ -43,7 +44,7 @@ class PostHookManager(ConfigManager[PostHook]):
       hook.execute()
       self.checksum_store.put(hook.identifier, str(target_checksum))
 
-  def uninstall(self, items_to_keep: list[PostHook], core: Koti):
+  def cleanup(self, items_to_keep: list[PostHook], core: Koti):
     currently_managed_hooks = [item.identifier for item in items_to_keep]
     previously_managed_hooks = self.checksum_store.keys()
     hooks_to_delete = [identifier for identifier in previously_managed_hooks if identifier not in currently_managed_hooks]

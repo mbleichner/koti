@@ -59,7 +59,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
           shell(f"rm -f {item.identifier}")
           self.create_swapfile(item)
 
-  def uninstall(self, items_to_keep: list[Swapfile], core: Koti):
+  def cleanup(self, items_to_keep: list[Swapfile], core: Koti):
     for item in items_to_keep:
       self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode(item)})
 

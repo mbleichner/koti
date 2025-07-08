@@ -65,7 +65,7 @@ class Koti:
         self.print_phase_log(phase_idx, manager, items_to_update)
         manager.install(items_to_update, self) or []
 
-    for manager in reversed([manager for manager in self.managers if manager.__class__.uninstall is not ConfigManager.uninstall]):
+    for manager in self.get_cleanup_phase_manager_order():
       all_items_for_manager = [
         item for phase in self.execution_phases
         for phase_manager, phase_items in phase.execution_order
@@ -74,20 +74,7 @@ class Koti:
       ]
       if len(all_items_for_manager):
         self.print_phase_log("cleanup", manager, [])
-        manager.uninstall(all_items_for_manager, self)
-
-    for manager in [manager for manager in self.managers if manager.__class__.finalize is not ConfigManager.finalize]:
-      all_items_for_manager = [
-        item for phase in self.execution_phases
-        for phase_manager, phase_items in phase.execution_order
-        for item in phase_items
-        if phase_manager is manager
-      ]
-      if len(all_items_for_manager):
-        checksums = manager.checksums(self)
-        items_to_update = [item for item in all_items_for_manager if checksums.current(item) != checksums.target(item)]
-        self.print_phase_log("finalize", manager, items_to_update)
-        manager.install(items_to_update, self)
+        manager.cleanup(all_items_for_manager, self)
 
   def print_phase_log(self, phase_idx: int | Literal['cleanup', 'finalize'], manager: ConfigManager, items_to_update: list[ConfigItem]):
     phase = f"Phase {phase_idx + 1}" if isinstance(phase_idx, int) else phase_idx
@@ -101,6 +88,13 @@ class Koti:
       details = f"items to update: {", ".join([str(item) for item in items_to_update])}"
 
     print(f"{phase}  {manager.__class__.__name__.ljust(max_manager_name_len)}  {details}")
+
+  def get_cleanup_phase_manager_order(self):
+    return [
+      *[manager for manager in self.managers if manager.order_in_cleanup_phase == "first"],
+      *reversed([manager for manager in self.managers if manager.order_in_cleanup_phase == "reverse_install_order"]),
+      *[manager for manager in self.managers if manager.order_in_cleanup_phase == "last"],
+    ]
 
   def get_group_for_item(self, item: ConfigItem) -> ConfigGroup:
     for phase in self.execution_phases:
@@ -250,6 +244,7 @@ class ConfigGroup:
 
 class ConfigManager[T: ConfigItem]:
   managed_classes: list[Type] = []
+  order_in_cleanup_phase: Literal["reverse_install_order", "first", "last"] = "reverse_install_order"
 
   def check_configuration(self, item: T, core: Koti):
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.check_configuration()")
@@ -260,11 +255,8 @@ class ConfigManager[T: ConfigItem]:
   def install(self, items: list[T], core: Koti):
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.install()")
 
-  def uninstall(self, items_to_keep: list[T], core: Koti):
-    pass
-
-  def finalize(self, all_items: list[T], core: Koti):
-    pass
+  def cleanup(self, items_to_keep: list[T], core: Koti):
+    raise AssertionError(f"method not implemented: {self.__class__.__name__}.cleanup()")
 
 
 class Checksums[T:ConfigItem]:

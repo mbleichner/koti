@@ -41,7 +41,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
       )
       shell(f"{systemctl_for_user(user)} enable --now {" ".join([item.identifier for item in items_for_user])}")
 
-  def uninstall(self, items_to_keep: list[SystemdUnit], core: Koti):
+  def cleanup(self, items_to_keep: list[SystemdUnit], core: Koti):
     shell(f"systemctl daemon-reload")
     self.store_all_seen_units(core, items_to_keep)
     self.deactivate_removed_units(core, items_to_keep)

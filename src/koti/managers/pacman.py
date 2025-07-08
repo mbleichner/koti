@@ -98,7 +98,7 @@ class PacmanPackageManager(ConfigManager[Package]):
       confirm_mode = core.get_confirm_mode(*additional_explicit_items)
     )
 
-  def uninstall(self, items_to_keep: list[Package], core: Koti):
+  def cleanup(self, items_to_keep: list[Package], core: Koti):
     desired = [pkg.identifier for pkg in items_to_keep]
     explicit = self.delegate.list_explicit_packages()
     confirm_mode = core.get_confirm_mode(*items_to_keep)
@@ -125,6 +125,9 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
       print(f"installing pacman-key {item.key_id} from {item.key_server}")
       shell(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
       shell(f"sudo pacman-key --lsign-key {item.key_id}")
+
+  def cleanup(self, items_to_keep: list[PacmanKey], core: Koti):
+    pass
 
 
 class PackageChecksums(Checksums[Package]):

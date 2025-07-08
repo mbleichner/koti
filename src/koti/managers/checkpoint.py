@@ -1,6 +1,5 @@
 from koti import Checkpoint
 from koti.core import Checksums, ConfigManager, Koti
-from koti.items.file import File
 
 
 class CheckpointManager(ConfigManager[Checkpoint]):
@@ -13,6 +12,9 @@ class CheckpointManager(ConfigManager[Checkpoint]):
     return CheckpointChecksums()
 
   def install(self, items: list[Checkpoint], core: Koti):
+    pass
+
+  def cleanup(self, items_to_keep: list[Checkpoint], core: Koti):
     pass
 
 

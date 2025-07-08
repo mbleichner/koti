@@ -62,7 +62,7 @@ class FileManager(ConfigManager[File]):
       if mode != new_mode:
         raise AssertionError("cannot apply file permissions (incompatible file system?)")
 
-  def uninstall(self, items_to_keep: list[File], core: Koti):
+  def cleanup(self, items_to_keep: list[File], core: Koti):
     for item in items_to_keep:
       self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode(item)})
 
