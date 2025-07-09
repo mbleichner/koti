@@ -34,6 +34,7 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
       Package("dolphin"),
       Package("firefox"),
       Package("gimp"),
+      Package("vlc"),
       Package("gwenview"),
       Package("kate"),
       Package("kcalc"),
