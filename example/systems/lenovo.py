@@ -31,7 +31,7 @@ def lenovo() -> Generator[ConfigGroup | None]:
   yield from network_manager()
 
   yield ConfigGroup(
-    description = "firmware",
+    description = "firmware (lenovo)",
     provides = [
       Package("linux-firmware-other"),
       Package("linux-firmware-amdgpu"),
@@ -40,7 +40,7 @@ def lenovo() -> Generator[ConfigGroup | None]:
   )
 
   yield ConfigGroup(
-    description = "fstab",
+    description = "fstab (lenovo)",
     confirm_mode = "paranoid",
     requires = [
       Swapfile("/swapfile"),
@@ -56,7 +56,7 @@ def lenovo() -> Generator[ConfigGroup | None]:
   )
 
   yield ConfigGroup(
-    description = "acpi wakeup",
+    description = "disable wakeup from touchpad",
     provides = [
       File("/etc/udev/rules.d/50-disable-touchpad-wakeup.rules", permissions=0o444, content=cleandoc('''
         # managed by koti

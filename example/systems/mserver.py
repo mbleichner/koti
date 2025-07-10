@@ -40,7 +40,7 @@ def mserver() -> Generator[ConfigGroup | None]:
   )
 
   yield ConfigGroup(
-    description = "fstab",
+    description = "fstab (mserver)",
     confirm_mode = "paranoid",
     requires = [
       Swapfile("/swapfile"),

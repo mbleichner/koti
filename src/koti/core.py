@@ -73,11 +73,11 @@ class Koti:
         if phase_manager is manager
       ]
       if len(all_items_for_manager):
-        self.print_phase_log("cleanup", manager, [])
+        self.print_phase_log(None, manager, [])
         manager.cleanup(all_items_for_manager, self)
 
-  def print_phase_log(self, phase_idx: int | Literal['cleanup', 'finalize'], manager: ConfigManager, items_to_update: list[ConfigItem]):
-    phase = f"Phase {phase_idx + 1}" if isinstance(phase_idx, int) else phase_idx
+  def print_phase_log(self, phase_idx: int | None, manager: ConfigManager, items_to_update: list[ConfigItem]):
+    phase = f"Phase {phase_idx + 1}" if phase_idx is not None else "Cleanup"
     max_manager_name_len = max([len(m.__class__.__name__) for m in self.managers])
 
     if phase_idx is None:
