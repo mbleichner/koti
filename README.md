@@ -2,7 +2,7 @@
 
 Declarative configuration manager
 
-(koti = "home" in Finnish)
+(koti = home in Finnish)
 
 (also coincidentally; Kot = shit in German 💩)
 
