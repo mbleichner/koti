@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Literal, Sequence, Type
+from typing import Literal, Sequence, Type, Iterator, Iterable
 
 type ConfirmModeValues = Literal["paranoid", "cautious", "yolo"]
 
@@ -12,7 +12,12 @@ class Koti:
   execution_phases: Sequence[ExecutionPhase]
   default_confirm_mode: ConfirmModeValues
 
-  def __init__(self, managers: Sequence[ConfigManager], configs: Sequence[ConfigGroup], default_confirm_mode: ConfirmModeValues = "cautious"):
+  def __init__(
+          self,
+          managers: Iterator[ConfigManager | None] | Iterable[ConfigManager | None],
+          configs: Iterator[ConfigGroup | None] | Iterable[ConfigGroup | None],
+          default_confirm_mode: ConfirmModeValues = "cautious"
+  ):
     self.configs = [c for c in configs if c is not None]
     self.managers = [m for m in managers if m is not None]
     Koti.check_manager_consistency(self.managers, self.configs)
