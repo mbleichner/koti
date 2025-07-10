@@ -2,9 +2,9 @@
 
 Declarative configuration manager
 
-_(koti = "home" in Finnish)_
+(koti = "home" in Finnish)
 
-_(also coincidentally; Kot = shit in German 💩)_
+(also coincidentally; Kot = shit in German 💩)
 
 ## Project State
 

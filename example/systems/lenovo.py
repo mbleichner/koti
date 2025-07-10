@@ -10,7 +10,6 @@ from modules.gaming import gaming
 from modules.kernel import kernel_cachyos, kernel_stock
 from modules.networking import network_manager
 from modules.ollama_aichat import ollama_aichat
-from modules.ryzen_undervolting import ryzen_undervolting
 from modules.systray import systray
 
 
@@ -26,7 +25,6 @@ def lenovo() -> Generator[ConfigGroup | None]:
   yield from desktop(nvidia = False, autologin = True)
   yield from systray(ryzen = True, nvidia = False)
   yield from gaming()
-  yield from ryzen_undervolting()
   yield from ollama_aichat(cuda = False)
   yield from network_manager()
 
