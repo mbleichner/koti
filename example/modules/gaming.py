@@ -22,6 +22,7 @@ def gaming() -> Generator[ConfigGroup]:
       Package("mangohud"),
     ]
   )
+
   yield ConfigGroup(
     description = "gaming-settings",
     provides = [
@@ -33,5 +34,15 @@ def gaming() -> Generator[ConfigGroup]:
         ''')),
         PostHook("apply-splitlock-sysctl", execute = lambda: shell("sysctl --system")),
       )
+    ]
+  )
+
+  yield ConfigGroup(
+    description = "ntsync kernel module",
+    provides = [
+      File("/etc/modules-load.d/ntsync.conf", permissions = 0o444, content = cleandoc(f'''
+        # managed by koti
+        ntsync
+      ''')),
     ]
   )

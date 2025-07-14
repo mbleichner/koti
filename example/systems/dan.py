@@ -44,6 +44,13 @@ def dan() -> Generator[ConfigGroup | None]:
   )
 
   yield ConfigGroup(
+    description = "dan specific packages",
+    provides = [
+      Package("microsoft-edge-stable-bin"),
+    ]
+  )
+
+  yield ConfigGroup(
     description = "fstab (dan)",
     confirm_mode = "paranoid",
     requires = [

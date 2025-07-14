@@ -54,7 +54,6 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
       Package("spectacle"),
       Package("wine"),
       Package("google-chrome"),
-      Package("microsoft-edge-stable-bin"),
       Package("linphone-desktop-appimage"),
       Package("ttf-ms-win10-auto"),  # Das win11 Package war zuletzt broken
       Package("noto-fonts"),
