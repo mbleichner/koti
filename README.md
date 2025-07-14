@@ -98,5 +98,4 @@ system that is no longer present in the configs:
 - User anlegen und Gruppen zuordnen
 - Directory() item => gamma-icc-profiles
 - File(content_from_file) für große Dateien
-- Environment("PROTON_USE_NTSYNC", value = "1")
-- Inkompatibilitäten, z.B. Environment("...") + File("/etc/environment")
+- SystemdUnit() für mehrere User

@@ -256,12 +256,9 @@ def base() -> Generator[ConfigGroup]:
     description = "various system config files",
     confirm_mode = "paranoid",
     provides = [
-      File("/etc/environment", permissions = 0o444, content = cleandoc(f'''
+      File("/etc/environment.d/editor.conf", permissions = 0o444, content = cleandoc(f'''
         # managed by koti
         EDITOR=nano
-        PROTON_USE_WAYLAND=1
-        PROTON_USE_NTSYNC=1
-        PROTON_USE_WOW64=1
       ''')),
 
       File("/boot/loader/loader.conf", permissions = 0o555, content = cleandoc(f'''
