@@ -30,40 +30,40 @@ class SwapfileManager(ConfigManager[Swapfile]):
   def install(self, items: list[Swapfile], core: Koti):
     for item in items:
       assert item.size_bytes is not None
-      exists = os.path.isfile(item.identifier)
-      current_size = os.stat(item.identifier).st_size if exists else 0
+      exists = os.path.isfile(item.filename)
+      current_size = os.stat(item.filename).st_size if exists else 0
       if not exists:
         confirm(
-          message = f"confirm to create swapfile {item.identifier}",
+          message = f"confirm to create swapfile {item.filename}",
           destructive = False,
           mode = core.get_confirm_mode(item),
         )
         self.create_swapfile(item)
       elif current_size != item.size_bytes:
-        if self.is_mounted(item.identifier):
+        if self.is_mounted(item.filename):
           confirm(
-            message = f"confirm resize of mounted swapfile {item.identifier}",
+            message = f"confirm resize of mounted swapfile {item.filename}",
             destructive = True,
             mode = core.get_confirm_mode(item),
           )
-          shell(f"swapoff {item.identifier}")
-          os.unlink(item.identifier)
+          shell(f"swapoff {item.filename}")
+          os.unlink(item.filename)
           self.create_swapfile(item)
-          shell(f"swapon {item.identifier}")
+          shell(f"swapon {item.filename}")
         else:
           confirm(
-            message = f"confirm resize of swapfile {item.identifier}",
+            message = f"confirm resize of swapfile {item.filename}",
             destructive = True,
             mode = core.get_confirm_mode(item),
           )
-          shell(f"rm -f {item.identifier}")
+          shell(f"rm -f {item.filename}")
           self.create_swapfile(item)
 
   def cleanup(self, items_to_keep: list[Swapfile], core: Koti):
     for item in items_to_keep:
-      self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode(item)})
+      self.managed_files_store.put(item.filename, {"confirm_mode": core.get_confirm_mode(item)})
 
-    currently_managed_files = [item.identifier for item in items_to_keep]
+    currently_managed_files = [item.filename for item in items_to_keep]
     previously_managed_files = self.managed_files_store.keys()
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]
     for swapfile in files_to_delete:
@@ -90,8 +90,8 @@ class SwapfileManager(ConfigManager[Swapfile]):
 class SwapfileChecksums(Checksums[Swapfile]):
 
   def current(self, item: Swapfile) -> str | None:
-    exists = os.path.isfile(item.identifier)
-    current_size = os.stat(item.identifier).st_size if exists else 0
+    exists = os.path.isfile(item.filename)
+    current_size = os.stat(item.filename).st_size if exists else 0
     sha256_hash = sha256()
     sha256_hash.update(str(exists).encode())
     sha256_hash.update(str(current_size).encode())

@@ -1,12 +1,14 @@
-from koti.core import ConfigItem
+from koti.core import ConfigItem, ConfirmModeValues
 
 
 class Swapfile(ConfigItem):
   size_bytes: int | None
+  filename: str
 
-  def __init__(self, identifier: str, size_bytes: int | None = None):
-    super().__init__(identifier)
+  def __init__(self, filename: str, size_bytes: int | None = None, confirm_mode: ConfirmModeValues | None = None):
+    self.filename = filename
     self.size_bytes = size_bytes
+    self.confirm_mode = confirm_mode
 
-  def __str__(self):
-    return f"Swapfile('{self.identifier}')"
+  def identifier(self):
+    return f"Swapfile('{self.filename}')"

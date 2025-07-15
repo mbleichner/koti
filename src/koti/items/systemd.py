@@ -1,15 +1,20 @@
-from koti.core import ConfigItem
+from koti.core import ConfigItem, ConfirmModeValues
 
 
 class SystemdUnit(ConfigItem):
+  name: str
   user: str | None = None
 
-  def __init__(self, identifier: str, user: str | None = None):
-    super().__init__(identifier)
+  def __init__(self, name: str, user: str | None = None, confirm_mode: ConfirmModeValues | None = None):
+    self.name = name
     self.user = user
+    self.confirm_mode = confirm_mode
 
-  def __str__(self):
-    return f"SystemdUnit('{self.identifier}')"
+  def identifier(self):
+    if self.user is not None:
+      return f"SystemdUnit('{self.name}', user = '{self.user}')"
+    else:
+      return f"SystemdUnit('{self.name}')"
 
 
 # noinspection PyPep8Naming

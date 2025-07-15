@@ -44,29 +44,29 @@ class FileManager(ConfigManager[File]):
       mode = item.permissions
       content = item.content
 
-      directory = os.path.dirname(item.identifier)
+      directory = os.path.dirname(item.filename)
       self.create_dir(directory, item)
-      exists = os.path.exists(item.identifier)
+      exists = os.path.exists(item.filename)
       confirm(
-        message = f"confirm {"changed" if exists else "new"} file {item.identifier}",
+        message = f"confirm {"changed" if exists else "new"} file {item.filename}",
         destructive = exists,
         mode = core.get_confirm_mode(item),
       )
 
-      with open(item.identifier, 'wb+') as fh:
+      with open(item.filename, 'wb+') as fh:
         fh.write(content)  # type: ignore
-      os.chown(item.identifier, uid = uid, gid = gid)
-      os.chmod(item.identifier, mode)
+      os.chown(item.filename, uid = uid, gid = gid)
+      os.chmod(item.filename, mode)
 
-      new_mode = os.stat(item.identifier).st_mode & 0o777
+      new_mode = os.stat(item.filename).st_mode & 0o777
       if mode != new_mode:
         raise AssertionError("cannot apply file permissions (incompatible file system?)")
 
   def cleanup(self, items_to_keep: list[File], core: Koti):
     for item in items_to_keep:
-      self.managed_files_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode(item)})
+      self.managed_files_store.put(item.filename, {"confirm_mode": core.get_confirm_mode(item)})
 
-    currently_managed_files = [item.identifier for item in items_to_keep]
+    currently_managed_files = [item.filename for item in items_to_keep]
     previously_managed_files = self.managed_files_store.keys()
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]
     for file in files_to_delete:
@@ -84,14 +84,14 @@ class FileManager(ConfigManager[File]):
 class FileChecksums(Checksums[File]):
 
   def current(self, item: File) -> str | None:
-    if not os.path.isfile(item.identifier):
+    if not os.path.isfile(item.filename):
       return None
-    stat = os.stat(item.identifier)
+    stat = os.stat(item.filename)
     sha256_hash = sha256()
     sha256_hash.update(str(stat.st_uid).encode())
     sha256_hash.update(str(stat.st_gid).encode())
     sha256_hash.update(str(stat.st_mode & 0o777).encode())
-    with open(item.identifier, "rb") as f:
+    with open(item.filename, "rb") as f:
       for byte_block in iter(lambda: f.read(4096), b""):
         sha256_hash.update(byte_block)
     return sha256_hash.hexdigest()

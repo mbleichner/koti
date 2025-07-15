@@ -34,12 +34,12 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
     for user in users:
       items_for_user = [item for item in items if item.user == user]
       confirm(
-        message = f"confirm to activate units: {", ".join([item.identifier for item in items_for_user])}" if user is None
-        else f"confirm to deactivate units for user {user}: {", ".join([item.identifier for item in items_for_user])}",
+        message = f"confirm to activate units: {", ".join([item.name for item in items_for_user])}" if user is None
+        else f"confirm to deactivate units for user {user}: {", ".join([item.name for item in items_for_user])}",
         destructive = True,
         mode = core.get_confirm_mode(*items_for_user),
       )
-      shell(f"{systemctl_for_user(user)} enable --now {" ".join([item.identifier for item in items_for_user])}")
+      shell(f"{systemctl_for_user(user)} enable --now {" ".join([item.name for item in items_for_user])}")
 
   def cleanup(self, items_to_keep: list[SystemdUnit], core: Koti):
     shell(f"systemctl daemon-reload")
@@ -52,7 +52,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
     for user in users:
       items_for_user = [item for item in items if item.user == user]
       units_store: JsonMapping[str, SystemdUnitStoreEntry] = self.store.mapping(store_key_for_user(user))
-      currently_managed_units = [item.identifier for item in items_for_user]
+      currently_managed_units = [item.name for item in items_for_user]
       previously_managed_units = units_store.keys()
       units_to_deactivate = [file for file in previously_managed_units if file not in currently_managed_units]
       if len(units_to_deactivate) > 0:
@@ -74,7 +74,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
       items_for_user = [item for item in items if item.user == user]
       units_store: JsonMapping[str, SystemdUnitStoreEntry] = self.store.mapping(store_key_for_user(user))
       for item in items_for_user:
-        units_store.put(item.identifier, {"confirm_mode": core.get_confirm_mode(item)})
+        units_store.put(item.name, {"confirm_mode": core.get_confirm_mode(item)})
         if user is not None: self.user_list_store.add(user)
 
 
@@ -89,7 +89,7 @@ def store_key_for_user(user):
 class SystemdUnitChecksums(Checksums[SystemdUnit]):
 
   def current(self, item: SystemdUnit) -> str | None:
-    enabled: bool = shell_success(f"{systemctl_for_user(item.user)} is-enabled {item.identifier}")
+    enabled: bool = shell_success(f"{systemctl_for_user(item.user)} is-enabled {item.name}")
     return sha256(str(enabled).encode()).hexdigest()
 
   def target(self, item: SystemdUnit) -> str | None:

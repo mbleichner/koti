@@ -1,21 +1,21 @@
 from typing import Callable, Sequence
 
-from koti.core import ConfigItem
+from koti.core import ConfigItem, ConfirmModeValues
 
 
 class PostHook(ConfigItem):
-  identifier: str
+  name: str
   execute: None | Callable
   trigger: list[ConfigItem]
 
-  def __init__(self, identifier: str, execute: Callable | None = None, trigger: Sequence[ConfigItem] | None = None):
-    super().__init__(identifier)
-    self.identifier = identifier
+  def __init__(self, name: str, execute: Callable | None = None, trigger: Sequence[ConfigItem] | None = None, confirm_mode: ConfirmModeValues | None = None):
+    self.name = name
     self.execute = execute
     self.trigger = [item for item in (trigger or []) if item is not None]
+    self.confirm_mode = confirm_mode
 
-  def __str__(self):
-    return f"PostHook('{self.identifier}')"
+  def identifier(self):
+    return f"PostHook('{self.name}')"
 
 
 def PostHookTriggerScope(*items: ConfigItem) -> list[ConfigItem]:

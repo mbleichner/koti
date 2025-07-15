@@ -80,26 +80,26 @@ class PacmanPackageManager(ConfigManager[Package]):
     installed_packages = self.delegate.list_installed_packages()
     explicit_packages = self.delegate.list_explicit_packages()
 
-    additional_items_from_urls = [item for item in url_items if item.identifier not in installed_packages]
+    additional_items_from_urls = [item for item in url_items if item.name not in installed_packages]
     self.delegate.install_from_url(
       urls = [item.url for item in additional_items_from_urls if item.url is not None],
       confirm_mode = core.get_confirm_mode(*additional_items_from_urls)
     )
 
-    additional_items_from_repo = [item for item in repo_items if item.identifier not in installed_packages]
+    additional_items_from_repo = [item for item in repo_items if item.name not in installed_packages]
     self.delegate.install(
-      packages = [item.identifier for item in additional_items_from_repo],
+      packages = [item.name for item in additional_items_from_repo],
       confirm_mode = core.get_confirm_mode(*additional_items_from_repo)
     )
 
-    additional_explicit_items = [item for item in items if item.identifier not in explicit_packages]
+    additional_explicit_items = [item for item in items if item.name not in explicit_packages]
     self.delegate.mark_as_explicit(
-      packages = [item.identifier for item in additional_explicit_items],
+      packages = [item.name for item in additional_explicit_items],
       confirm_mode = core.get_confirm_mode(*additional_explicit_items)
     )
 
   def cleanup(self, items_to_keep: list[Package], core: Koti):
-    desired = [pkg.identifier for pkg in items_to_keep]
+    desired = [pkg.name for pkg in items_to_keep]
     explicit = self.delegate.list_explicit_packages()
     confirm_mode = core.get_confirm_mode(*items_to_keep)
     self.delegate.mark_as_dependency([pkg for pkg in explicit if pkg not in desired], confirm_mode = confirm_mode)
@@ -118,7 +118,7 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
   def install(self, items: list[PacmanKey], core: Koti):
     for item in items:
       confirm(
-        message = f"confirm installing pacman key {item.identifier}",
+        message = f"confirm installing pacman key {item.key_id}",
         destructive = False,
         mode = core.get_confirm_mode(item),
       )
@@ -136,7 +136,7 @@ class PackageChecksums(Checksums[Package]):
     self.explicit_packages = delegate.list_explicit_packages()
 
   def current(self, item: Package) -> str | None:
-    installed: bool = item.identifier in self.explicit_packages
+    installed: bool = item.name in self.explicit_packages
     return sha256(str(installed).encode()).hexdigest()
 
   def target(self, item: Package) -> str | None:

@@ -35,21 +35,21 @@ class PostHookManager(ConfigManager[PostHook]):
     checksums = self.checksums(core)
     for hook in items:
       confirm(
-        message = f"confirm executing {hook}",
+        message = f"confirm executing {hook.description()}",
         destructive = False,
         mode = core.get_confirm_mode(hook),
       )
       assert hook.execute is not None
       target_checksum = checksums.target(hook)
       hook.execute()
-      self.checksum_store.put(hook.identifier, str(target_checksum))
+      self.checksum_store.put(hook.name, str(target_checksum))
 
   def cleanup(self, items_to_keep: list[PostHook], core: Koti):
-    currently_managed_hooks = [item.identifier for item in items_to_keep]
+    currently_managed_hooks = [item.name for item in items_to_keep]
     previously_managed_hooks = self.checksum_store.keys()
-    hooks_to_delete = [identifier for identifier in previously_managed_hooks if identifier not in currently_managed_hooks]
-    for hook_identifier in hooks_to_delete:
-      self.checksum_store.remove(hook_identifier)
+    hooks_to_delete = [name for name in previously_managed_hooks if name not in currently_managed_hooks]
+    for hook_name in hooks_to_delete:
+      self.checksum_store.remove(hook_name)
 
   def finalize(self, all_items: list[PostHook], core: Koti):
     self.install(all_items, core)
@@ -60,7 +60,7 @@ class PostHookManager(ConfigManager[PostHook]):
     for phase in core.execution_phases:
       for manager, items_for_manager in phase.execution_order:
         for item in items_for_manager:
-          if item.__class__ == needle.__class__ and item.identifier == needle.identifier:
+          if item.identifier() == needle.identifier():
             return result
           result += 1
     return None
@@ -77,14 +77,14 @@ class PostHookChecksums(Checksums[PostHook]):
     self.core = core
 
   def current(self, hook: PostHook) -> str | None:
-    return self.checksum_store.get(hook.identifier, None)
+    return self.checksum_store.get(hook.name, None)
 
   def target(self, hook: PostHook) -> str | None:
     checksums = self.get_current_checksums_for_items(hook.trigger)
     sha256_hash = sha256()
     for idx, trigger in enumerate(hook.trigger):
       checksum = checksums[idx]
-      sha256_hash.update(str(trigger).encode())
+      sha256_hash.update(trigger.identifier().encode())
       sha256_hash.update(str(checksum).encode())
     return sha256_hash.hexdigest()
 

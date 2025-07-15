@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Literal, Sequence, Type, Iterator, Iterable
+from typing import Iterable, Iterator, Literal, Sequence, Type
 
 type ConfirmModeValues = Literal["paranoid", "cautious", "yolo"]
 
@@ -13,10 +13,10 @@ class Koti:
   default_confirm_mode: ConfirmModeValues
 
   def __init__(
-          self,
-          managers: Iterator[ConfigManager | None] | Iterable[ConfigManager | None],
-          configs: Iterator[ConfigGroup | None] | Iterable[ConfigGroup | None],
-          default_confirm_mode: ConfirmModeValues = "cautious"
+    self,
+    managers: Iterator[ConfigManager | None] | Iterable[ConfigManager | None],
+    configs: Iterator[ConfigGroup | None] | Iterable[ConfigGroup | None],
+    default_confirm_mode: ConfirmModeValues = "cautious"
   ):
     self.configs = [c for c in configs if c is not None]
     self.managers = [m for m in managers if m is not None]
@@ -35,7 +35,8 @@ class Koti:
         for item in items_in_phase:
           items_total.append(item)
           needs_update = checksums.current(item) != checksums.target(item)
-          if needs_update: items_to_update.append(item)
+          if needs_update:
+            items_to_update.append(item)
 
       print(f"Phase {phase_idx + 1}:")
       if groups:
@@ -46,13 +47,13 @@ class Koti:
         for manager, items_in_phase in phase.execution_order:
           for item in items_in_phase:
             needs_update = item in items_to_update
-            print(f"{"*" if needs_update else "-"} {item}")
+            print(f"{"*" if needs_update else "-"} {item.description()}")
       print()
 
     if summary:
       if len(items_to_update) > 0:
         print(f"{len(items_total)} items total, {len(items_to_update)} items to update:")
-        for item in items_to_update: print(f"- {item}")
+        for item in items_to_update: print(f"- {item.description()}")
         print()
       else:
         print(f"{len(items_total)} items total, no outdated items found - only cleanup will be performed")
@@ -90,7 +91,7 @@ class Koti:
     elif len(items_to_update) == 0:
       details = "no outdated items found"
     else:
-      details = f"items to update: {", ".join([str(item) for item in items_to_update])}"
+      details = f"items to update: {", ".join([item.description() for item in items_to_update])}"
 
     print(f"{phase}  {manager.__class__.__name__.ljust(max_manager_name_len)}  {details}")
 
@@ -106,7 +107,7 @@ class Koti:
       for group in phase.groups_in_phase:
         if item in group.provides:
           return group
-    raise AssertionError(f"group not found for {item}")
+    raise AssertionError(f"group not found for {item.identifier()}")
 
   def _get_confirm_mode_single(self, item: ConfigItem) -> ConfirmModeValues:
     if item.confirm_mode is not None:
@@ -205,7 +206,7 @@ class Koti:
         for required_item in group.requires:
           required_phase_and_group = Koti.find_required_group(required_item, phases)
           if required_phase_and_group is None:
-            raise AssertionError(f"required item not found: {required_item}")
+            raise AssertionError(f"required item not found: {required_item.identifier()}")
           required_phase_idx, required_group = required_phase_and_group
           if required_phase_idx >= phase_idx:
             if group == required_group: raise AssertionError(f"group with dependency to itself")
@@ -217,18 +218,19 @@ class Koti:
     for idx_phase, phase in enumerate(phases):
       for group in phase:
         for group_item in group.provides:
-          if group_item.__class__ == required_item.__class__ and group_item.identifier == required_item.identifier:
+          if group_item.identifier() == required_item.identifier():
             return idx_phase, group
     return None
 
 
 class ConfigItem:
-  identifier: str
   confirm_mode: ConfirmModeValues | None
 
-  def __init__(self, identifier: str, confirm_mode: ConfirmModeValues | None = None):
-    self.confirm_mode = confirm_mode
-    self.identifier = identifier
+  def identifier(self) -> str:
+    raise AssertionError(f"method not implemented: {self.__class__.__name__}.identifier()")
+
+  def description(self) -> str:
+    return self.identifier()
 
 
 class ConfigGroup:
