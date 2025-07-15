@@ -14,6 +14,12 @@ class Package(ConfigItem):
   def identifier(self):
     return f"Package('{self.name}')"
 
+  def description(self):
+    if self.url is not None:
+      return f"Package('{self.name}', url = '{self.url}')"
+    else:
+      return f"Package('{self.name}')"
+
 
 # noinspection PyPep8Naming
 def Packages(*names: str) -> list[Package]:
