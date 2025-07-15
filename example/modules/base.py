@@ -76,7 +76,7 @@ def base() -> Generator[ConfigGroup]:
     description = "cachyos keyring and mirrorlist",
     confirm_mode = "paranoid",
     provides = [
-      PacmanKey("F3B607488DB35A47"),
+      PacmanKey("F3B607488DB35A47", comment = "cachyos"),
       Package("cachyos-keyring", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst"),
       Package("cachyos-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst"),
       Package("cachyos-v3-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst"),
