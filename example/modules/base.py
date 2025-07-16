@@ -97,6 +97,7 @@ def base() -> Generator[ConfigGroup]:
         HoldPkg = pacman glibc
         Architecture = auto x86_64_v3
         NoExtract = etc/xdg/autostart/org.kde.discover.notifier.desktop
+        NoUpgrade = usr/bin/steam
         Color
         CheckSpace
         VerbosePkgLists

@@ -39,19 +39,31 @@ def gaming() -> Generator[ConfigGroup]:
   )
 
   yield ConfigGroup(
-    description = "proton + ntsync configs",
+    description = "proton configs (wayland + ntsync)",
+    requires = [
+      File("/etc/pacman.conf"), # wg. NoUpgrade = usr/bin/steam
+    ],
     provides = [
       File("/etc/modules-load.d/ntsync.conf", permissions = 0o444, content = cleandoc(f'''
         # managed by koti
         ntsync
       ''')),
+
       File("/etc/environment.d/proton.conf", permissions = 0o444, content = cleandoc(f'''
         # managed by koti
         PROTON_ENABLE_WAYLAND = 1
         PROTON_USE_NTSYNC = 1
         PROTON_USE_WOW64 = 1
       ''')),
+
+      File("/usr/bin/steam", permissions = 0o555, content = cleandoc(f'''
+        #!/bin/sh
+        
+        # Workaround für Wine/Wayland Keyboard Layout Bug
+        # https://bugs.winehq.org/show_bug.cgi?id=57097#c7
+        export LC_ALL=de_DE.UTF-8
+        
+        exec /usr/lib/steam/steam "$@"
+      ''')),
     ]
   )
-
-
