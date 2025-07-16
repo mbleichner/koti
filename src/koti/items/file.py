@@ -5,11 +5,12 @@ from koti.core import ConfigItem, ConfirmModeValues, Koti
 
 
 class FileOption(ConfigItem):
-  value: str
-  option: str
+  managed = False
   filename: str
+  option: str
+  value: str | None
 
-  def __init__(self, filename: str, option: str, value: str):
+  def __init__(self, filename: str, option: str, value: str | None = None):
     self.filename = filename
     self.option = option
     self.value = value
@@ -29,7 +30,7 @@ class File(ConfigItem):
     filename: str,
     content: str | None = None,
     content_from_file: str | None = None,
-    content_from_function: Callable[[list[FileOption]], str] | None = None,
+    content_from_function: Callable[[Koti], str] | None = None,
     permissions: int = 0o444,
     owner: str = "root",
     confirm_mode: ConfirmModeValues | None = None
@@ -38,16 +39,7 @@ class File(ConfigItem):
     if content is not None:
       self.content = lambda core: content.encode("utf-8")
     elif content_from_function is not None:
-      def gen_content(core: Koti):
-        options = [
-            item
-            for phase in core.execution_phases
-            for group in phase.groups_in_phase
-            for item in group.provides
-            if isinstance(item, FileOption) and item.filename == self.filename
-        ]
-        return content_from_function(options).encode("utf-8")
-      self.content = lambda core: gen_content(core)
+      self.content = lambda core: content_from_function(core).encode("utf-8")
     elif content_from_file is not None:
       self.content = lambda core: Path(content_from_file).read_bytes()
     else:

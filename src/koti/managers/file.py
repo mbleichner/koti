@@ -111,27 +111,3 @@ class FileChecksums(Checksums[File]):
     sha256_hash.update(str(item.permissions & 0o777).encode())
     sha256_hash.update(item.content(self.core))
     return sha256_hash.hexdigest()
-
-
-class FileOptionManager(ConfigManager[FileOption]):
-  managed_classes = [FileOption]
-
-  def check_configuration(self, item: FileOption, core: Koti):
-    pass
-
-  def checksums(self, core: Koti) -> Checksums[FileOption]:
-    return FileOptionChecksums()
-
-  def install(self, items: list[File], core: Koti):
-    pass
-  def cleanup(self, items_to_keep: list[File], core: Koti):
-    pass
-
-
-class FileOptionChecksums(Checksums[FileOption]):
-
-  def current(self, item: FileOption) -> str | None:
-    pass
-
-  def target(self, item: FileOption) -> str | None:
-    pass

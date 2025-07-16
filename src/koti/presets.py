@@ -1,6 +1,4 @@
 from koti import *
-from koti.managers.file import FileOptionManager
-
 
 class KotiManagerPresets:
 
@@ -10,11 +8,9 @@ class KotiManagerPresets:
       PacmanKeyManager(),
       PacmanPackageManager(pacman_adapter),
       SwapfileManager(),
-      FileOptionManager(),
       FileManager(),
       SystemdUnitManager(),
       PostHookManager(),
-      CheckpointManager(),
     ]
 
   # @staticmethod

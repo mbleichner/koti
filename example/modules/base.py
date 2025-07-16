@@ -91,13 +91,13 @@ def base() -> Generator[ConfigGroup]:
       Package("cachyos-v3-mirrorlist"),
     ],
     provides = [
-      File("/etc/pacman.conf", permissions = 0o444, content_from_function = lambda options: cleandoc(f'''
+      File("/etc/pacman.conf", permissions = 0o444, content_from_function = lambda k: cleandoc(f'''
         # managed by koti
         [options]
         HoldPkg = pacman glibc
         Architecture = auto x86_64_v3
-        NoExtract = {" ".join([o.value for o in options if o.option == "NoExtract"])}
-        NoUpgrade = {" ".join([o.value for o in options if o.option == "NoUpgrade"])}
+        NoExtract = {" ".join([o.value for o in k.get_items_by_identifier(FileOption('/etc/pacman.conf', "NoExtract")) if o.value])}
+        NoUpgrade = {" ".join([o.value for o in k.get_items_by_identifier(FileOption('/etc/pacman.conf', "NoUpgrade")) if o.value])}
         Color
         CheckSpace
         VerbosePkgLists

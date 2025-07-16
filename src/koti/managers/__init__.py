@@ -1,4 +1,3 @@
-from koti.managers.checkpoint import CheckpointManager
 from koti.managers.file import FileManager
 from koti.managers.hooks import PostHookManager
 from koti.managers.pacman import PacmanAdapter, PacmanKeyManager, PacmanPackageManager

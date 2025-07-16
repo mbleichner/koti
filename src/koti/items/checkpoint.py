@@ -3,6 +3,7 @@ from koti.core import ConfigItem
 
 class Checkpoint(ConfigItem):
   name: str
+  managed = False
 
   def __init__(self, name: str):
     self.name = name

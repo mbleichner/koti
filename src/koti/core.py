@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Iterable, Iterator, Literal, Sequence, Type
+from typing import Iterable, Iterator, Literal, Sequence, Type, cast
 
 type ConfirmModeValues = Literal["paranoid", "cautious", "yolo"]
 
@@ -134,6 +134,24 @@ class Koti:
         return manager
     raise AssertionError(f"manager not found for item: {str(item)}")
 
+  def get_items_by_type[T](self, cls: Type[T]) -> list[T]:
+    return [
+      item
+      for phase in self.execution_phases
+      for group in phase.groups_in_phase
+      for item in group.provides
+      if isinstance(item, cls)
+    ]
+
+  def get_items_by_identifier[T : ConfigItem](self, reference: T) -> list[T]:
+    return [
+      cast(T, item)
+      for phase in self.execution_phases
+      for group in phase.groups_in_phase
+      for item in group.provides
+      if item.identifier() == reference.identifier()
+    ]
+
   @staticmethod
   def build_execution_phases(managers: Sequence[ConfigManager], configs: Sequence[ConfigGroup]) -> list[ExecutionPhase]:
     groups = Koti.get_all_provided_groups(configs)
@@ -146,7 +164,8 @@ class Koti:
   @staticmethod
   def check_manager_consistency(managers: Sequence[ConfigManager], configs: Sequence[ConfigGroup]):
     for group in Koti.get_all_provided_groups(configs):
-      for item in filter(lambda x: x is not None, group.provides):
+      for item in (x for x in group.provides if x is not None):
+        if not item.managed: continue
         matching_managers = [manager for manager in managers if item.__class__ in manager.managed_classes]
         if len(matching_managers) == 0:
           raise AssertionError(f"no manager found for class {item.__class__.__name__}")
@@ -156,8 +175,8 @@ class Koti:
   @staticmethod
   def check_config_item_consistency(managers: Sequence[ConfigManager], configs: Sequence[ConfigGroup], koti: Koti):
     for group in Koti.get_all_provided_groups(configs):
-      for item in filter(lambda x: x is not None, group.provides):
-        if not isinstance(item, ConfigItem): continue
+      for item in (x for x in group.provides if x is not None):
+        if not item.managed: continue
         matching_managers = [manager for manager in managers if item.__class__ in manager.managed_classes]
         manager = matching_managers[0]
         try:
@@ -225,6 +244,7 @@ class Koti:
 
 class ConfigItem:
   confirm_mode: ConfirmModeValues | None
+  managed: bool = True
 
   def identifier(self) -> str:
     raise AssertionError(f"method not implemented: {self.__class__.__name__}.identifier()")
