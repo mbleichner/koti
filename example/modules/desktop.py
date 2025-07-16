@@ -24,9 +24,11 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
     description = "desktop packages",
     requires = [
       Checkpoint("desktop-optional-dependencies"),  # avoid pacman asking for possible alternatives
-      File("/etc/pacman.conf"),  # wg. NoExtract = etc/xdg/autostart/org.kde.discover.notifier.desktop
+      File("/etc/pacman.conf"),
     ],
     provides = [
+      FileOption("/etc/pacman.conf", "NoExtract", "etc/xdg/autostart/org.kde.discover.notifier.desktop"),
+
       Package("archlinux-wallpaper"),
       Package("ark"),
       Package("code"),

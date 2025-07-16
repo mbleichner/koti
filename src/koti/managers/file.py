@@ -4,7 +4,7 @@ from hashlib import sha256
 from typing import TypedDict
 
 from koti.core import Checksums, ConfigManager, ConfirmModeValues, Koti
-from koti.items.file import File
+from koti.items.file import File, FileOption
 from koti.utils.confirm import confirm
 from koti.utils.json_store import JsonMapping, JsonStore
 
@@ -25,7 +25,7 @@ class FileManager(ConfigManager[File]):
     assert item.content is not None, "missing either content or content_from_file"
 
   def checksums(self, core: Koti) -> Checksums[File]:
-    return FileChecksums()
+    return FileChecksums(core)
 
   def create_dir(self, dir: str, item: File):
     if os.path.exists(dir): return
@@ -42,7 +42,7 @@ class FileManager(ConfigManager[File]):
       uid = getpwnam.pw_uid
       gid = getpwnam.pw_gid
       mode = item.permissions
-      content = item.content
+      content = item.content(core)
 
       directory = os.path.dirname(item.filename)
       self.create_dir(directory, item)
@@ -82,6 +82,10 @@ class FileManager(ConfigManager[File]):
 
 
 class FileChecksums(Checksums[File]):
+  core: Koti
+
+  def __init__(self, core:Koti):
+    self.core = core
 
   def current(self, item: File) -> str | None:
     if not os.path.isfile(item.filename):
@@ -105,5 +109,29 @@ class FileChecksums(Checksums[File]):
     sha256_hash.update(str(uid).encode())
     sha256_hash.update(str(gid).encode())
     sha256_hash.update(str(item.permissions & 0o777).encode())
-    sha256_hash.update(item.content)
+    sha256_hash.update(item.content(self.core))
     return sha256_hash.hexdigest()
+
+
+class FileOptionManager(ConfigManager[FileOption]):
+  managed_classes = [FileOption]
+
+  def check_configuration(self, item: FileOption, core: Koti):
+    pass
+
+  def checksums(self, core: Koti) -> Checksums[FileOption]:
+    return FileOptionChecksums()
+
+  def install(self, items: list[File], core: Koti):
+    pass
+  def cleanup(self, items_to_keep: list[File], core: Koti):
+    pass
+
+
+class FileOptionChecksums(Checksums[FileOption]):
+
+  def current(self, item: FileOption) -> str | None:
+    pass
+
+  def target(self, item: FileOption) -> str | None:
+    pass

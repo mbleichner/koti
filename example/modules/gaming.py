@@ -2,6 +2,7 @@ from inspect import cleandoc
 from typing import Generator
 
 from koti import *
+from koti.items import *
 from koti.items.hooks import PostHookTriggerScope
 from koti.utils import shell
 
@@ -40,9 +41,6 @@ def gaming() -> Generator[ConfigGroup]:
 
   yield ConfigGroup(
     description = "proton configs (wayland + ntsync)",
-    requires = [
-      File("/etc/pacman.conf"), # wg. NoUpgrade = usr/bin/steam
-    ],
     provides = [
       File("/etc/modules-load.d/ntsync.conf", permissions = 0o444, content = cleandoc(f'''
         # managed by koti
@@ -65,5 +63,7 @@ def gaming() -> Generator[ConfigGroup]:
         
         exec /usr/lib/steam/steam "$@"
       ''')),
+
+      FileOption("/etc/pacman.conf", "NoUpgrade", "usr/bin/steam"),
     ]
   )

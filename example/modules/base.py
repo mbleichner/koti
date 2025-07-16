@@ -91,13 +91,13 @@ def base() -> Generator[ConfigGroup]:
       Package("cachyos-v3-mirrorlist"),
     ],
     provides = [
-      File("/etc/pacman.conf", permissions = 0o444, content = cleandoc(f'''
+      File("/etc/pacman.conf", permissions = 0o444, content_from_function = lambda options: cleandoc(f'''
         # managed by koti
         [options]
         HoldPkg = pacman glibc
         Architecture = auto x86_64_v3
-        NoExtract = etc/xdg/autostart/org.kde.discover.notifier.desktop
-        NoUpgrade = usr/bin/steam
+        NoExtract = {" ".join([o.value for o in options if o.option == "NoExtract"])}
+        NoUpgrade = {" ".join([o.value for o in options if o.option == "NoUpgrade"])}
         Color
         CheckSpace
         VerbosePkgLists
