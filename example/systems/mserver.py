@@ -15,8 +15,8 @@ def DockerComposeService(composefile: File, *other: ConfigItem) -> list[ConfigIt
     composefile,
     *other,
     PostHook(
-      name = f"docker compose {composefile.identifier}",
-      execute = lambda: shell(f"docker compose -f {composefile.identifier} up -d --force-recreate --remove-orphans")
+      name = f"docker compose {composefile.filename}",
+      execute = lambda: shell(f"docker compose -f {composefile.filename} up -d --force-recreate --remove-orphans")
     ),
   )
 
