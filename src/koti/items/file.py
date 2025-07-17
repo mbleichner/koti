@@ -16,7 +16,7 @@ class File(ManagedConfigItem):
     self,
     filename: str,
     content: str | Callable[[Koti], str] | None = None,
-    path: str | None = None,
+    source: str | None = None,
     permissions: int = 0o444,
     owner: str = "root"
   ):
@@ -25,8 +25,8 @@ class File(ManagedConfigItem):
       self.content = lambda core: content(core).encode("utf-8")
     elif isinstance(content, str):
       self.content = lambda core: content.encode("utf-8")
-    elif path is not None:
-      self.content = lambda core: Path(path).read_bytes()
+    elif source is not None:
+      self.content = lambda core: Path(source).read_bytes()
     else:
       self.content = lambda core: "".encode("utf-8")
     self.permissions = permissions
