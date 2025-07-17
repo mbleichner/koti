@@ -7,7 +7,7 @@ from koti import ConfigItem, Koti, ManagedConfigItem, UnmanagedConfigItem
 
 
 class File(ManagedConfigItem):
-  content: Callable[[Koti], bytes]
+  content: Callable[[Koti], bytes] | None
   permissions: int = 0o755
   owner: str = "root"
   filename: str
@@ -28,7 +28,7 @@ class File(ManagedConfigItem):
     elif source is not None:
       self.content = lambda core: Path(source).read_bytes()
     else:
-      self.content = lambda core: "".encode("utf-8")
+      self.content = None
     self.permissions = permissions
     self.owner = owner
 
