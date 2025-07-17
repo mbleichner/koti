@@ -59,7 +59,7 @@ See the `examples` folder, specifically `main.py` and all the stuff in the `modu
 - **config managers** are responsible for applying config items to your system. They are largely part of koti itself and are not meant to be implemented by the user (although it can be done in case
   you need some special behavior)
 - a **config group** consists of multiple config items that belong together (and will be applied together), such as the `Package("cpupower")` and the `File("/etc/default/cpupower")`
-- config groups also allow to declare dependencies to other config groups (e.g. `Requires(Package("cpupower""))`) in order to influence the execution order
+- config groups also allow to declare dependencies to other config groups (e.g. `requires = [Package("cpupower"]`) in order to influence the order of execution
 
 ## Dependencies and Phases
 
