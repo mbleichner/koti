@@ -4,7 +4,7 @@ from hashlib import sha256
 from typing import TypedDict
 
 from koti.core import Checksums, ConfigManager, ConfirmModeValues, Koti
-from koti.items.file import File, FileOption
+from koti.items.file import File
 from koti.utils.confirm import confirm
 from koti.utils.json_store import JsonMapping, JsonStore
 

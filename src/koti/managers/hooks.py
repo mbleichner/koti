@@ -3,7 +3,7 @@ from __future__ import annotations
 from hashlib import sha256
 
 from koti import ConfigItem
-from koti.core import Checksums, ConfigManager, Koti
+from koti.core import Checksums, ConfigManager, Koti, ManagedConfigItem
 from koti.items.hooks import PostHook
 from koti.utils import JsonMapping, JsonStore
 from koti.utils.confirm import confirm
@@ -88,7 +88,7 @@ class PostHookChecksums(Checksums[PostHook]):
       sha256_hash.update(str(checksum).encode())
     return sha256_hash.hexdigest()
 
-  def get_current_checksums_for_items(self, dependent_items: list[ConfigItem]) -> list[str | None]:
+  def get_current_checksums_for_items(self, dependent_items: list[ManagedConfigItem]) -> list[str | None]:
     result = []
     for manager in self.core.managers:
       managed_items = [item for item in dependent_items if item.__class__ in manager.managed_classes]

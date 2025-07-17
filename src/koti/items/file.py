@@ -1,10 +1,46 @@
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Callable
 
-from koti.core import ConfigItem, ConfirmModeValues, Koti
+from koti import ConfigItem, Koti, ManagedConfigItem, UnmanagedConfigItem
 
 
-class FileOption(ConfigItem):
+class File(ManagedConfigItem):
+  content: Callable[[Koti], bytes]
+  permissions: int = 0o755
+  owner: str = "root"
+  filename: str
+
+  def __init__(
+    self,
+    filename: str,
+    content: str | Callable[[Koti], str] | None = None,
+    path: str | None = None,
+    permissions: int = 0o444,
+    owner: str = "root"
+  ):
+    self.filename = filename
+    if callable(content):
+      self.content = lambda core: content(core).encode("utf-8")
+    elif isinstance(content, str):
+      self.content = lambda core: content.encode("utf-8")
+    elif path is not None:
+      self.content = lambda core: Path(path).read_bytes()
+    else:
+      self.content = lambda core: "".encode("utf-8")
+    self.permissions = permissions
+    self.owner = owner
+
+  def identifier(self):
+    return f"File('{self.filename}')"
+
+  def merge(self, other: ConfigItem):
+    assert isinstance(other, File)
+    raise AssertionError(f"File('{self.filename}') may not be declared twice")
+
+
+class FileSingleOption(UnmanagedConfigItem):
   managed = False
   filename: str
   option: str
@@ -16,37 +52,36 @@ class FileOption(ConfigItem):
     self.value = value
 
   def identifier(self):
-    return f"FileOption('{self.filename}', '{self.option}')"
+    return f"FileSingleOption('{self.filename}', '{self.option}')"
+
+  def merge(self, other: ConfigItem) -> FileSingleOption:
+    assert isinstance(other, FileSingleOption)
+    assert other.identifier() == self.identifier()
+    assert other.value == self.value, "Conflicting FileSingleOption"
+    return self
 
 
-class File(ConfigItem):
-  content: Callable[[Koti], bytes] | None
-  permissions: int = 0o755
-  owner: str = "root"
+class FileMultiOption(UnmanagedConfigItem):
+  managed = False
   filename: str
+  option: str
+  values: list[str]
 
-  def __init__(
-    self,
-    filename: str,
-    content: str | None = None,
-    content_from_file: str | None = None,
-    content_from_function: Callable[[Koti], str] | None = None,
-    permissions: int = 0o444,
-    owner: str = "root",
-    confirm_mode: ConfirmModeValues | None = None
-  ):
+  def __init__(self, filename: str, option: str, value: list[str] | str | None = None):
     self.filename = filename
-    if content is not None:
-      self.content = lambda core: content.encode("utf-8")
-    elif content_from_function is not None:
-      self.content = lambda core: content_from_function(core).encode("utf-8")
-    elif content_from_file is not None:
-      self.content = lambda core: Path(content_from_file).read_bytes()
+    self.option = option
+    if isinstance(value, list):
+      self.values = value
+    elif isinstance(value, str):
+      self.values = [value]
     else:
-      self.content = None
-    self.permissions = permissions
-    self.owner = owner
-    self.confirm_mode = confirm_mode
+      self.values = []
 
   def identifier(self):
-    return f"File('{self.filename}')"
+    return f"FileMultiOption('{self.filename}', '{self.option}')"
+
+  def merge(self, other: ConfigItem) -> FileMultiOption:
+    assert isinstance(other, FileMultiOption)
+    assert other.identifier() == self.identifier()
+    merged_values = list({*self.values, *other.values})
+    return FileMultiOption(self.filename, self.option, merged_values)

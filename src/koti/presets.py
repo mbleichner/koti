@@ -1,5 +1,6 @@
 from koti import *
 
+
 class KotiManagerPresets:
 
   @staticmethod

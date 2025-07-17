@@ -1,15 +1,16 @@
-from koti.core import ConfigItem, ConfirmModeValues
+from __future__ import annotations
+
+from koti.core import ConfigItem, ManagedConfigItem
 
 
-class PacmanKey(ConfigItem):
-  key_id: str | None
+class PacmanKey(ManagedConfigItem):
+  key_id: str
   comment: str | None
 
-  def __init__(self, key_id: str, key_server = "keyserver.ubuntu.com", comment: str | None = None, confirm_mode: ConfirmModeValues | None = None):
+  def __init__(self, key_id: str, key_server = "keyserver.ubuntu.com", comment: str | None = None):
     self.key_id = key_id
     self.key_server = key_server
     self.comment = comment
-    self.confirm_mode = confirm_mode
 
   def identifier(self):
     return f"PacmanKey('{self.key_id}')"
@@ -19,3 +20,13 @@ class PacmanKey(ConfigItem):
       return f"PacmanKey('{self.key_id}', comment = '{self.comment}')"
     else:
       return f"PacmanKey('{self.key_id}')"
+
+  def merge(self, other: ConfigItem) -> PacmanKey:
+    assert isinstance(other, PacmanKey)
+    assert other.identifier() == self.identifier()
+    assert other.key_server == self.key_server, f"Conflicting key_server in {self.identifier()}"
+    return PacmanKey(
+      key_id = self.key_id,
+      key_server = self.key_server,
+      comment = " / ".join((x for x in {self.comment, other.comment} if x is not None)),
+    )

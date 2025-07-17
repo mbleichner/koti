@@ -18,15 +18,15 @@ from systems.mserver import mserver
 from socket import gethostname
 
 koti = Koti(
-    managers = KotiManagerPresets.arch(PacmanAdapter("sudo -u manuel paru")),
-    configs = {
-        "dan": dan(),
-        "lenovo": lenovo(),
-        "mserver": mserver(),
-    }[gethostname()],
+  managers = KotiManagerPresets.arch(PacmanAdapter("sudo -u manuel paru")),
+  configs = {
+    "dan": dan(),
+    "lenovo": lenovo(),
+    "mserver": mserver(),
+  }[gethostname()],
 )
 
-koti.plan(groups=True, items=False, summary=True)
+koti.plan(groups = True, items = False, summary = True)
 confirm("confirm execution")
 koti.apply()
 print("execution finished.")

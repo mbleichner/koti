@@ -27,7 +27,7 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
       File("/etc/pacman.conf"),  # Damit NoExtract bei der ersten Ausführung angewendet wird
     ],
     provides = [
-      FileOption("/etc/pacman.conf", "NoExtract", "etc/xdg/autostart/org.kde.discover.notifier.desktop"),
+      FileMultiOption("/etc/pacman.conf", "NoExtract", "etc/xdg/autostart/org.kde.discover.notifier.desktop"),
       Package("archlinux-wallpaper"),
       Package("ark"),
       Package("code"),

@@ -2,6 +2,7 @@ from inspect import cleandoc
 from typing import Generator
 
 from koti import *
+from koti.items.file import FileMultiOption
 from koti.utils import *
 
 
@@ -91,13 +92,13 @@ def base() -> Generator[ConfigGroup]:
       Package("cachyos-v3-mirrorlist"),
     ],
     provides = [
-      File("/etc/pacman.conf", permissions = 0o444, content_from_function = lambda k: cleandoc(f'''
+      File("/etc/pacman.conf", permissions = 0o444, content = lambda core: cleandoc(f'''
         # managed by koti
         [options]
         HoldPkg = pacman glibc
         Architecture = auto x86_64_v3
-        NoExtract = {" ".join([o.value for o in k.get_items_by_identifier(FileOption('/etc/pacman.conf', "NoExtract")) if o.value])}
-        NoUpgrade = {" ".join([o.value for o in k.get_items_by_identifier(FileOption('/etc/pacman.conf', "NoUpgrade")) if o.value])}
+        NoExtract = {" ".join(core.get_item(FileMultiOption('/etc/pacman.conf', "NoExtract")).values)}
+        NoUpgrade = {" ".join(core.get_item(FileMultiOption('/etc/pacman.conf', "NoUpgrade")).values)}
         Color
         CheckSpace
         VerbosePkgLists

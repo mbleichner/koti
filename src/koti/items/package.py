@@ -1,13 +1,13 @@
-from koti import ConfirmModeValues
-from koti.core import ConfigItem
+from __future__ import annotations
+
+from koti.core import ConfigItem, ManagedConfigItem
 
 
-class Package(ConfigItem):
+class Package(ManagedConfigItem):
   name: str
   url: str | None
 
-  def __init__(self, name: str, url: str | None = None, confirm_mode: ConfirmModeValues | None = None):
-    self.confirm_mode = confirm_mode
+  def __init__(self, name: str, url: str | None = None):
     self.name = name
     self.url = url
 
@@ -19,6 +19,12 @@ class Package(ConfigItem):
       return f"Package('{self.name}', url = '{self.url}')"
     else:
       return f"Package('{self.name}')"
+
+  def merge(self, other: ConfigItem) -> Package:
+    assert isinstance(other, Package)
+    assert other.identifier() == self.identifier()
+    assert self.url == other.url, f"Package('{self.name}') has conflicting url parameter"
+    return self
 
 
 # noinspection PyPep8Naming

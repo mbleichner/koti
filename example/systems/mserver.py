@@ -106,28 +106,28 @@ def mserver() -> Generator[ConfigGroup | None]:
       SystemdUnit("docker.service"),
 
       *DockerComposeService(
-        File("/opt/traefik/docker-compose.yml", permissions = 0o444, content_from_file = "docker/traefik/docker-compose.yml"),
+        File("/opt/traefik/docker-compose.yml", permissions = 0o444, path = "docker/traefik/docker-compose.yml"),
       ),
 
       *DockerComposeService(
-        File("/opt/nextcloud/docker-compose.yml", permissions = 0o444, content_from_file = "docker/nextcloud/docker-compose.yml"),
+        File("/opt/nextcloud/docker-compose.yml", permissions = 0o444, path = "docker/nextcloud/docker-compose.yml"),
       ),
 
       *DockerComposeService(
-        File("/opt/homeassistant/docker-compose.yml", permissions = 0o444, content_from_file = "docker/homeassistant/docker-compose.yml"),
+        File("/opt/homeassistant/docker-compose.yml", permissions = 0o444, path = "docker/homeassistant/docker-compose.yml"),
       ),
 
       *DockerComposeService(
-        File("/opt/pihole/docker-compose.yml", permissions = 0o444, content_from_file = "docker/pihole/docker-compose.yml"),
+        File("/opt/pihole/docker-compose.yml", permissions = 0o444, path = "docker/pihole/docker-compose.yml"),
       ),
 
       *DockerComposeService(
-        File("/opt/pyanodon-mapshot/docker-compose.yml", permissions = 0o444, content_from_file = "docker/pyanodon-mapshot/docker-compose.yml"),
+        File("/opt/pyanodon-mapshot/docker-compose.yml", permissions = 0o444, path = "docker/pyanodon-mapshot/docker-compose.yml"),
       ),
 
       *DockerComposeService(
-        File("/opt/pacoloco/docker-compose.yml", permissions = 0o444, content_from_file = "docker/pacoloco/docker-compose.yml"),
-        File("/opt/pacoloco/pacoloco.yaml", permissions = 0o444, content_from_file = "docker/pacoloco/pacoloco.yaml"),
+        File("/opt/pacoloco/docker-compose.yml", permissions = 0o444, path = "docker/pacoloco/docker-compose.yml"),
+        File("/opt/pacoloco/pacoloco.yaml", permissions = 0o444, path = "docker/pacoloco/pacoloco.yaml"),
       ),
     ]
   )
