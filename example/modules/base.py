@@ -2,7 +2,7 @@ from inspect import cleandoc
 from typing import Generator
 
 from koti import *
-from koti.items.file import FileMultiOption
+from koti.items.file import FileOptionList
 from koti.utils import *
 
 
@@ -97,8 +97,8 @@ def base() -> Generator[ConfigGroup]:
         [options]
         HoldPkg = pacman glibc
         Architecture = auto x86_64_v3
-        NoExtract = {" ".join(core.map_item(FileMultiOption('/etc/pacman.conf', "NoExtract"), lambda x: x.values, []))}
-        NoUpgrade = {" ".join(core.map_item(FileMultiOption('/etc/pacman.conf', "NoUpgrade"), lambda x: x.values, []))}
+        NoExtract = {" ".join(core.map_item(FileOptionList('/etc/pacman.conf', "NoExtract"), lambda x: x.values, []))}
+        NoUpgrade = {" ".join(core.map_item(FileOptionList('/etc/pacman.conf', "NoUpgrade"), lambda x: x.values, []))}
         Color
         CheckSpace
         VerbosePkgLists

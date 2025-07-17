@@ -40,7 +40,7 @@ class File(ManagedConfigItem):
     raise AssertionError(f"File('{self.filename}') may not be declared twice")
 
 
-class FileSingleOption(UnmanagedConfigItem):
+class FileOption(UnmanagedConfigItem):
   managed = False
   filename: str
   option: str
@@ -52,16 +52,16 @@ class FileSingleOption(UnmanagedConfigItem):
     self.value = value
 
   def identifier(self):
-    return f"FileSingleOption('{self.filename}', '{self.option}')"
+    return f"FileOption('{self.filename}', '{self.option}')"
 
-  def merge(self, other: ConfigItem) -> FileSingleOption:
-    assert isinstance(other, FileSingleOption)
+  def merge(self, other: ConfigItem) -> FileOption:
+    assert isinstance(other, FileOption)
     assert other.identifier() == self.identifier()
-    assert other.value == self.value, "Conflicting FileSingleOption"
+    assert other.value == self.value, f"Conflicting {self.identifier()}"
     return self
 
 
-class FileMultiOption(UnmanagedConfigItem):
+class FileOptionList(UnmanagedConfigItem):
   managed = False
   filename: str
   option: str
@@ -78,10 +78,10 @@ class FileMultiOption(UnmanagedConfigItem):
       self.values = []
 
   def identifier(self):
-    return f"FileMultiOption('{self.filename}', '{self.option}')"
+    return f"FileOptionList('{self.filename}', '{self.option}')"
 
-  def merge(self, other: ConfigItem) -> FileMultiOption:
-    assert isinstance(other, FileMultiOption)
+  def merge(self, other: ConfigItem) -> FileOptionList:
+    assert isinstance(other, FileOptionList)
     assert other.identifier() == self.identifier()
     merged_values = list({*self.values, *other.values})
-    return FileMultiOption(self.filename, self.option, merged_values)
+    return FileOptionList(self.filename, self.option, merged_values)
