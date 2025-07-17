@@ -97,8 +97,8 @@ def base() -> Generator[ConfigGroup]:
         [options]
         HoldPkg = pacman glibc
         Architecture = auto x86_64_v3
-        NoExtract = {" ".join(core.get_item(FileMultiOption('/etc/pacman.conf', "NoExtract")).values)}
-        NoUpgrade = {" ".join(core.get_item(FileMultiOption('/etc/pacman.conf', "NoUpgrade")).values)}
+        NoExtract = {" ".join(core.map_item(FileMultiOption('/etc/pacman.conf', "NoExtract"), lambda x: x.values, []))}
+        NoUpgrade = {" ".join(core.map_item(FileMultiOption('/etc/pacman.conf', "NoUpgrade"), lambda x: x.values, []))}
         Color
         CheckSpace
         VerbosePkgLists

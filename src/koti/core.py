@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
 from os import getuid
-from typing import Iterable, Iterator, Literal, Sequence, Type, cast
+from typing import Callable, Iterable, Iterator, Literal, Sequence, Type, cast
 
 from koti.utils import highest_confirm_mode
 
@@ -134,13 +134,17 @@ class Koti:
         return manager
     raise AssertionError(f"manager not found for item: {str(item)}")
 
-  def get_item[T: ConfigItem](self, reference: T) -> T:
+  def get_item[T: ConfigItem](self, reference: T) -> T | None:
     return next((
       cast(T, item)
       for phase in self.execution_phases
       for item in phase.merged_items_in_phase
       if item.identifier() == reference.identifier()
-    ))
+    ), None)
+
+  def map_item[T: ConfigItem, R](self, reference: T, map: Callable[[T], R], fallback: R) -> R:
+    item = next((cast(T, item) for phase in self.execution_phases for item in phase.merged_items_in_phase if item.identifier() == reference.identifier()), None)
+    return map(item) if item is not None else fallback
 
   @staticmethod
   def build_execution_phases(managers: Sequence[ConfigManager], configs: Sequence[ConfigGroup]) -> list[ExecutionPhase]:
