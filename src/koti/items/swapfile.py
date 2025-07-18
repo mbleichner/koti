@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-from koti.core import ConfigItem, ManagedConfigItem
+from koti import highest_confirm_mode
+from koti.core import ConfigItem, ManagedConfigItem, ConfirmModeValues
 
 
 class Swapfile(ManagedConfigItem):
   size_bytes: int | None
   filename: str
 
-  def __init__(self, filename: str, size_bytes: int | None = None):
+  def __init__(self, filename: str, size_bytes: int | None = None, confirm_mode: ConfirmModeValues | None = None):
+    self.confirm_mode = confirm_mode
     self.filename = filename
     self.size_bytes = size_bytes
 
@@ -18,4 +20,8 @@ class Swapfile(ManagedConfigItem):
     assert isinstance(other, Swapfile)
     assert other.identifier() == self.identifier()
     assert other.size_bytes == self.size_bytes, f"Conflicting size_bytes in {self.identifier()}"
-    return self
+    return Swapfile(
+      filename = self.filename,
+      size_bytes = self.size_bytes,
+      confirm_mode = highest_confirm_mode(self.confirm_mode, other.confirm_mode),
+    )

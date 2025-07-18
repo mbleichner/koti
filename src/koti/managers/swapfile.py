@@ -2,7 +2,7 @@ import os.path
 from hashlib import sha256
 from typing import TypedDict
 
-from koti.core import Checksums, ConfigManager, ConfirmModeValues, Koti
+from koti.core import Checksums, ConfigManager, ConfirmModeValues, ExecutionModel
 from koti.items.swapfile import Swapfile
 from koti.utils.confirm import confirm
 from koti.utils.json_store import JsonMapping, JsonStore
@@ -21,13 +21,13 @@ class SwapfileManager(ConfigManager[Swapfile]):
     store = JsonStore("/var/cache/koti/SwapfileManager.json")
     self.managed_files_store = store.mapping("managed_files")
 
-  def check_configuration(self, item: Swapfile, core: Koti):
+  def check_configuration(self, item: Swapfile, model: ExecutionModel):
     assert item.size_bytes is not None, "missing size_bytes parameter"
 
-  def checksums(self, core: Koti) -> Checksums[Swapfile]:
+  def checksums(self, model: ExecutionModel) -> Checksums[Swapfile]:
     return SwapfileChecksums()
 
-  def install(self, items: list[Swapfile], core: Koti):
+  def install(self, items: list[Swapfile], model: ExecutionModel):
     for item in items:
       assert item.size_bytes is not None
       exists = os.path.isfile(item.filename)
@@ -36,7 +36,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
         confirm(
           message = f"confirm to create swapfile {item.filename}",
           destructive = False,
-          mode = core.get_confirm_mode(item),
+          mode = model.get_confirm_mode(item),
         )
         self.create_swapfile(item)
       elif current_size != item.size_bytes:
@@ -44,7 +44,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
           confirm(
             message = f"confirm resize of mounted swapfile {item.filename}",
             destructive = True,
-            mode = core.get_confirm_mode(item),
+            mode = model.get_confirm_mode(item),
           )
           shell(f"swapoff {item.filename}")
           os.unlink(item.filename)
@@ -54,21 +54,21 @@ class SwapfileManager(ConfigManager[Swapfile]):
           confirm(
             message = f"confirm resize of swapfile {item.filename}",
             destructive = True,
-            mode = core.get_confirm_mode(item),
+            mode = model.get_confirm_mode(item),
           )
           shell(f"rm -f {item.filename}")
           self.create_swapfile(item)
 
-  def cleanup(self, items_to_keep: list[Swapfile], core: Koti):
+  def cleanup(self, items_to_keep: list[Swapfile], model: ExecutionModel):
     for item in items_to_keep:
-      self.managed_files_store.put(item.filename, {"confirm_mode": core.get_confirm_mode(item)})
+      self.managed_files_store.put(item.filename, {"confirm_mode": model.get_confirm_mode(item)})
 
     currently_managed_files = [item.filename for item in items_to_keep]
     previously_managed_files = self.managed_files_store.keys()
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]
     for swapfile in files_to_delete:
       if os.path.isfile(swapfile):
-        store_entry: SwapfileStoreEntry = self.managed_files_store.get(swapfile, {"confirm_mode": core.default_confirm_mode})
+        store_entry: SwapfileStoreEntry = self.managed_files_store.get(swapfile, {"confirm_mode": model.default_confirm_mode})
         confirm(
           message = f"confirm to delete swapfile {swapfile}",
           destructive = True,

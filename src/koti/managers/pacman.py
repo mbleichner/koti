@@ -1,7 +1,7 @@
 from hashlib import sha256
 
 from koti import Checksums
-from koti.core import ConfigManager, ConfirmModeValues, Koti
+from koti.core import ConfigManager, ConfirmModeValues, ExecutionModel
 from koti.items.package import Package
 from koti.items.pacman_key import PacmanKey
 from koti.utils import confirm
@@ -68,13 +68,13 @@ class PacmanPackageManager(ConfigManager[Package]):
   def __init__(self, delegate: PacmanAdapter):
     self.delegate = delegate
 
-  def check_configuration(self, item: Package, core: Koti):
+  def check_configuration(self, item: Package, model: ExecutionModel):
     pass
 
-  def checksums(self, core: Koti) -> Checksums[Package]:
+  def checksums(self, model: ExecutionModel) -> Checksums[Package]:
     return PackageChecksums(self.delegate)
 
-  def install(self, items: list[Package], core: Koti):
+  def install(self, items: list[Package], model: ExecutionModel):
     url_items = [item for item in items if item.url is not None]
     repo_items = [item for item in items if item.url is None]
     installed_packages = self.delegate.list_installed_packages()
@@ -83,25 +83,25 @@ class PacmanPackageManager(ConfigManager[Package]):
     additional_items_from_urls = [item for item in url_items if item.name not in installed_packages]
     self.delegate.install_from_url(
       urls = [item.url for item in additional_items_from_urls if item.url is not None],
-      confirm_mode = core.get_confirm_mode(*additional_items_from_urls)
+      confirm_mode = model.get_confirm_mode(*additional_items_from_urls)
     )
 
     additional_items_from_repo = [item for item in repo_items if item.name not in installed_packages]
     self.delegate.install(
       packages = [item.name for item in additional_items_from_repo],
-      confirm_mode = core.get_confirm_mode(*additional_items_from_repo)
+      confirm_mode = model.get_confirm_mode(*additional_items_from_repo)
     )
 
     additional_explicit_items = [item for item in items if item.name not in explicit_packages]
     self.delegate.mark_as_explicit(
       packages = [item.name for item in additional_explicit_items],
-      confirm_mode = core.get_confirm_mode(*additional_explicit_items)
+      confirm_mode = model.get_confirm_mode(*additional_explicit_items)
     )
 
-  def cleanup(self, items_to_keep: list[Package], core: Koti):
+  def cleanup(self, items_to_keep: list[Package], model: ExecutionModel):
     desired = [pkg.name for pkg in items_to_keep]
     explicit = self.delegate.list_explicit_packages()
-    confirm_mode = core.get_confirm_mode(*items_to_keep)
+    confirm_mode = model.get_confirm_mode(*items_to_keep)
     self.delegate.mark_as_dependency([pkg for pkg in explicit if pkg not in desired], confirm_mode = confirm_mode)
     self.delegate.prune_unneeded(confirm_mode = confirm_mode)
 
@@ -109,24 +109,24 @@ class PacmanPackageManager(ConfigManager[Package]):
 class PacmanKeyManager(ConfigManager[PacmanKey]):
   managed_classes = [PacmanKey]
 
-  def check_configuration(self, item: PacmanKey, core: Koti):
+  def check_configuration(self, item: PacmanKey, model: ExecutionModel):
     pass
 
-  def checksums(self, core: Koti) -> Checksums[PacmanKey]:
+  def checksums(self, model: ExecutionModel) -> Checksums[PacmanKey]:
     return PacmanKeyChecksums()
 
-  def install(self, items: list[PacmanKey], core: Koti):
+  def install(self, items: list[PacmanKey], model: ExecutionModel):
     for item in items:
       confirm(
         message = f"confirm installing pacman key {item.key_id}",
         destructive = False,
-        mode = core.get_confirm_mode(item),
+        mode = model.get_confirm_mode(item),
       )
       print(f"installing pacman-key {item.key_id} from {item.key_server}")
       shell(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
       shell(f"sudo pacman-key --lsign-key {item.key_id}")
 
-  def cleanup(self, items_to_keep: list[PacmanKey], core: Koti):
+  def cleanup(self, items_to_keep: list[PacmanKey], model: ExecutionModel):
     pass
 
 

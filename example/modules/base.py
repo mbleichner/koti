@@ -5,7 +5,6 @@ from koti import *
 from koti.items.file import FileOptionList
 from koti.utils import *
 
-
 def base() -> Generator[ConfigGroup]:
   yield ConfigGroup(
     description = "base packages needed on every system",
@@ -92,13 +91,13 @@ def base() -> Generator[ConfigGroup]:
       Package("cachyos-v3-mirrorlist"),
     ],
     provides = [
-      File("/etc/pacman.conf", permissions = 0o444, content = lambda core: cleandoc(f'''
+      File("/etc/pacman.conf", permissions = 0o444, content = lambda model: cleandoc(f'''
         # managed by koti
         [options]
         HoldPkg = pacman glibc
         Architecture = auto x86_64_v3
-        NoExtract = {" ".join(core.map_item(FileOptionList('/etc/pacman.conf', "NoExtract"), lambda x: x.values, []))}
-        NoUpgrade = {" ".join(core.map_item(FileOptionList('/etc/pacman.conf', "NoUpgrade"), lambda x: x.values, []))}
+        NoExtract = {" ".join([v for fol in model.iter(FileOptionList("/etc/pacman.conf", "NoExtract")) for v in fol.values])}
+        NoUpgrade = {" ".join([v for fol in model.iter(FileOptionList("/etc/pacman.conf", "NoUpgrade")) for v in fol.values])}
         Color
         CheckSpace
         VerbosePkgLists

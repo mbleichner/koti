@@ -3,7 +3,7 @@ import pwd
 from hashlib import sha256
 from typing import TypedDict
 
-from koti.core import Checksums, ConfigManager, ConfirmModeValues, Koti
+from koti.core import Checksums, ConfigManager, ConfirmModeValues, ExecutionModel
 from koti.items.file import File
 from koti.utils.confirm import confirm
 from koti.utils.json_store import JsonMapping, JsonStore
@@ -21,11 +21,11 @@ class FileManager(ConfigManager[File]):
     store = JsonStore("/var/cache/koti/FileManager.json")
     self.managed_files_store = store.mapping("managed_files")
 
-  def check_configuration(self, item: File, core: Koti):
+  def check_configuration(self, item: File, model: ExecutionModel):
     assert item.content is not None, "missing either content or content_from_file"
 
-  def checksums(self, core: Koti) -> Checksums[File]:
-    return FileChecksums(core)
+  def checksums(self, model: ExecutionModel) -> Checksums[File]:
+    return FileChecksums(model)
 
   def create_dir(self, dir: str, item: File):
     if os.path.exists(dir): return
@@ -35,14 +35,14 @@ class FileManager(ConfigManager[File]):
     getpwnam = pwd.getpwnam(item.owner)
     os.chown(dir, uid = getpwnam.pw_uid, gid = getpwnam.pw_gid)
 
-  def install(self, items: list[File], core: Koti):
+  def install(self, items: list[File], model: ExecutionModel):
     for item in items:
       assert item.content is not None
       getpwnam = pwd.getpwnam(item.owner)
       uid = getpwnam.pw_uid
       gid = getpwnam.pw_gid
       mode = item.permissions
-      content = item.content(core)
+      content = item.content(model)
 
       directory = os.path.dirname(item.filename)
       self.create_dir(directory, item)
@@ -50,7 +50,7 @@ class FileManager(ConfigManager[File]):
       confirm(
         message = f"confirm {"changed" if exists else "new"} file {item.filename}",
         destructive = exists,
-        mode = core.get_confirm_mode(item),
+        mode = model.get_confirm_mode(item),
       )
 
       with open(item.filename, 'wb+') as fh:
@@ -62,16 +62,16 @@ class FileManager(ConfigManager[File]):
       if mode != new_mode:
         raise AssertionError("cannot apply file permissions (incompatible file system?)")
 
-  def cleanup(self, items_to_keep: list[File], core: Koti):
+  def cleanup(self, items_to_keep: list[File], model: ExecutionModel):
     for item in items_to_keep:
-      self.managed_files_store.put(item.filename, {"confirm_mode": core.get_confirm_mode(item)})
+      self.managed_files_store.put(item.filename, {"confirm_mode": model.get_confirm_mode(item)})
 
     currently_managed_files = [item.filename for item in items_to_keep]
     previously_managed_files = self.managed_files_store.keys()
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]
     for file in files_to_delete:
       if os.path.isfile(file):
-        store_entry: FileStoreEntry = self.managed_files_store.get(file, {"confirm_mode": core.default_confirm_mode})
+        store_entry: FileStoreEntry = self.managed_files_store.get(file, {"confirm_mode": model.default_confirm_mode})
         confirm(
           message = f"confirm to delete file: {file}",
           destructive = True,
@@ -82,10 +82,10 @@ class FileManager(ConfigManager[File]):
 
 
 class FileChecksums(Checksums[File]):
-  core: Koti
+  model: ExecutionModel
 
-  def __init__(self, core:Koti):
-    self.core = core
+  def __init__(self, model:ExecutionModel):
+    self.model = model
 
   def current(self, item: File) -> str | None:
     if not os.path.isfile(item.filename):
@@ -109,5 +109,5 @@ class FileChecksums(Checksums[File]):
     sha256_hash.update(str(uid).encode())
     sha256_hash.update(str(gid).encode())
     sha256_hash.update(str(item.permissions & 0o777).encode())
-    sha256_hash.update(item.content(self.core))
+    sha256_hash.update(item.content(self.model))
     return sha256_hash.hexdigest()

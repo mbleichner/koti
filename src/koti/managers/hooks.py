@@ -3,7 +3,7 @@ from __future__ import annotations
 from hashlib import sha256
 
 from koti import ConfigItem
-from koti.core import Checksums, ConfigManager, Koti, ManagedConfigItem
+from koti.core import Checksums, ConfigManager, ExecutionModel, ManagedConfigItem
 from koti.items.hooks import PostHook
 from koti.utils import JsonMapping, JsonStore
 from koti.utils.confirm import confirm
@@ -18,47 +18,47 @@ class PostHookManager(ConfigManager[PostHook]):
     store = JsonStore("/var/cache/koti/PostHookManager.json")
     self.checksum_store = store.mapping("checksums")
 
-  def check_configuration(self, hook: PostHook, core: Koti):
+  def check_configuration(self, hook: PostHook, model: ExecutionModel):
     assert hook.execute is not None, "missing execute parameter"
     assert len(hook.trigger) > 0, f"{hook} has no trigger(s)"
     for item in hook.trigger:
-      exec_order_item = PostHookManager.index_in_execution_order(core, item)  # can be None in case the item isn't set up by koti (i.e. files created by pacman hooks or such)
-      exec_order_hook = PostHookManager.index_in_execution_order(core, hook)
+      exec_order_item = PostHookManager.index_in_execution_order(model, item)  # can be None in case the item isn't set up by koti (i.e. files created by pacman hooks or such)
+      exec_order_hook = PostHookManager.index_in_execution_order(model, hook)
       assert exec_order_hook is not None, f"{hook} not found in execution order"
       assert exec_order_item is None or exec_order_item < exec_order_hook
       if exec_order_item is not None and not exec_order_item < exec_order_hook: f"{hook} has trigger that is evaluated too late: {item}"
 
-  def checksums(self, core: Koti) -> PostHookChecksums:
-    return PostHookChecksums(self, core, self.checksum_store)
+  def checksums(self, model: ExecutionModel) -> PostHookChecksums:
+    return PostHookChecksums(self, model, self.checksum_store)
 
-  def install(self, items: list[PostHook], core: Koti):
-    checksums = self.checksums(core)
+  def install(self, items: list[PostHook], model: ExecutionModel):
+    checksums = self.checksums(model)
     for hook in items:
       confirm(
         message = f"confirm executing {hook.description()}",
         destructive = False,
-        mode = core.get_confirm_mode(hook),
+        mode = model.get_confirm_mode(hook),
       )
       assert hook.execute is not None
       target_checksum = checksums.target(hook)
       hook.execute()
       self.checksum_store.put(hook.name, str(target_checksum))
 
-  def cleanup(self, items_to_keep: list[PostHook], core: Koti):
+  def cleanup(self, items_to_keep: list[PostHook], model: ExecutionModel):
     currently_managed_hooks = [item.name for item in items_to_keep]
     previously_managed_hooks = self.checksum_store.keys()
     hooks_to_delete = [name for name in previously_managed_hooks if name not in currently_managed_hooks]
     for hook_name in hooks_to_delete:
       self.checksum_store.remove(hook_name)
 
-  def finalize(self, all_items: list[PostHook], core: Koti):
-    self.install(all_items, core)
+  def finalize(self, all_items: list[PostHook], model: ExecutionModel):
+    self.install(all_items, model)
 
   @staticmethod
-  def index_in_execution_order(core: Koti, needle: ConfigItem) -> int | None:
+  def index_in_execution_order(model: ExecutionModel, needle: ConfigItem) -> int | None:
     result = 0
-    for phase in core.execution_phases:
-      for manager, items_for_manager in phase.execution_order:
+    for phase in model.install_phases:
+      for manager, items_for_manager in phase.order:
         for item in items_for_manager:
           if item.identifier() == needle.identifier():
             return result
@@ -68,13 +68,13 @@ class PostHookManager(ConfigManager[PostHook]):
 
 class PostHookChecksums(Checksums[PostHook]):
   manager: PostHookManager
-  core: Koti
+  model: ExecutionModel
   checksum_store: JsonMapping[str, str]
 
-  def __init__(self, manager: PostHookManager, core: Koti, checksum_store: JsonMapping[str, str]):
+  def __init__(self, manager: PostHookManager, model: ExecutionModel, checksum_store: JsonMapping[str, str]):
     self.manager = manager
     self.checksum_store = checksum_store
-    self.core = core
+    self.model = model
 
   def current(self, hook: PostHook) -> str | None:
     return self.checksum_store.get(hook.name, None)
@@ -90,10 +90,10 @@ class PostHookChecksums(Checksums[PostHook]):
 
   def get_current_checksums_for_items(self, dependent_items: list[ManagedConfigItem]) -> list[str | None]:
     result = []
-    for manager in self.core.managers:
+    for manager in self.model.managers:
       managed_items = [item for item in dependent_items if item.__class__ in manager.managed_classes]
       if len(managed_items) == 0: continue
-      manager_checksums = manager.checksums(self.core)
+      manager_checksums = manager.checksums(self.model)
       for item in managed_items:
         result.append(manager_checksums.current(item))
     return result
