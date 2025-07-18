@@ -30,7 +30,6 @@ class Koti:
     items_total: list[ConfigItem] = []
     items_to_update: list[ManagedConfigItem] = []
     for phase_idx, phase in enumerate(self.model.install_phases):
-
       for manager, items_in_phase in phase.order:
         checksums = manager.checksums(self.model)
         for item in items_in_phase:
@@ -39,6 +38,7 @@ class Koti:
           if needs_update:
             items_to_update.append(item)
 
+    for phase_idx, phase in enumerate(self.model.install_phases):
       print(f"Phase {phase_idx + 1}:")
       if groups:
         for group in phase.groups:
