@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from sys import exit
 
 from koti import ConfirmModeValues

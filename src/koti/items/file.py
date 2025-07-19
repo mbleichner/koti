@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable
 
-from koti import ConfigItem, ManagedConfigItem, UnmanagedConfigItem, ExecutionModel
+from koti import ConfigItem, ExecutionModel, ManagedConfigItem
 
 
 class File(ManagedConfigItem):
@@ -38,50 +38,3 @@ class File(ManagedConfigItem):
   def merge(self, other: ConfigItem):
     assert isinstance(other, File)
     raise AssertionError(f"File('{self.filename}') may not be declared twice")
-
-
-class FileOption(UnmanagedConfigItem):
-  managed = False
-  filename: str
-  option: str
-  value: str | None
-
-  def __init__(self, filename: str, option: str, value: str | None = None):
-    self.filename = filename
-    self.option = option
-    self.value = value
-
-  def identifier(self):
-    return f"FileOption('{self.filename}', '{self.option}')"
-
-  def merge(self, other: ConfigItem) -> FileOption:
-    assert isinstance(other, FileOption)
-    assert other.identifier() == self.identifier()
-    assert other.value == self.value, f"Conflicting {self.identifier()}"
-    return self
-
-
-class FileOptionList(UnmanagedConfigItem):
-  managed = False
-  filename: str
-  option: str
-  values: list[str]
-
-  def __init__(self, filename: str, option: str, value: list[str] | str | None = None):
-    self.filename = filename
-    self.option = option
-    if isinstance(value, list):
-      self.values = value
-    elif isinstance(value, str):
-      self.values = [value]
-    else:
-      self.values = []
-
-  def identifier(self):
-    return f"FileOptionList('{self.filename}', '{self.option}')"
-
-  def merge(self, other: ConfigItem) -> FileOptionList:
-    assert isinstance(other, FileOptionList)
-    assert other.identifier() == self.identifier()
-    merged_values = list({*self.values, *other.values})
-    return FileOptionList(self.filename, self.option, merged_values)

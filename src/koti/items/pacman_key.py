@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from koti import highest_confirm_mode
-from koti.core import ConfigItem, ManagedConfigItem, ConfirmModeValues
+from koti.core import ConfigItem, ConfirmModeValues, ManagedConfigItem
 
 
 class PacmanKey(ManagedConfigItem):

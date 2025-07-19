@@ -37,7 +37,7 @@ class PostHookManager(ConfigManager[PostHook]):
       confirm(
         message = f"confirm executing {hook.description()}",
         destructive = False,
-        mode = model.get_confirm_mode(hook),
+        mode = model.confirm_mode(hook),
       )
       assert hook.execute is not None
       target_checksum = checksums.target(hook)

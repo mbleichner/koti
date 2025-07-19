@@ -50,7 +50,7 @@ class FileManager(ConfigManager[File]):
       confirm(
         message = f"confirm {"changed" if exists else "new"} file {item.filename}",
         destructive = exists,
-        mode = model.get_confirm_mode(item),
+        mode = model.confirm_mode(item),
       )
 
       with open(item.filename, 'wb+') as fh:
@@ -64,14 +64,14 @@ class FileManager(ConfigManager[File]):
 
   def cleanup(self, items_to_keep: list[File], model: ExecutionModel):
     for item in items_to_keep:
-      self.managed_files_store.put(item.filename, {"confirm_mode": model.get_confirm_mode(item)})
+      self.managed_files_store.put(item.filename, {"confirm_mode": model.confirm_mode(item)})
 
     currently_managed_files = [item.filename for item in items_to_keep]
     previously_managed_files = self.managed_files_store.keys()
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]
     for file in files_to_delete:
       if os.path.isfile(file):
-        store_entry: FileStoreEntry = self.managed_files_store.get(file, {"confirm_mode": model.default_confirm_mode})
+        store_entry: FileStoreEntry = self.managed_files_store.get(file, {"confirm_mode": model.confirm_mode_fallback})
         confirm(
           message = f"confirm to delete file: {file}",
           destructive = True,
@@ -84,7 +84,7 @@ class FileManager(ConfigManager[File]):
 class FileChecksums(Checksums[File]):
   model: ExecutionModel
 
-  def __init__(self, model:ExecutionModel):
+  def __init__(self, model: ExecutionModel):
     self.model = model
 
   def current(self, item: File) -> str | None:

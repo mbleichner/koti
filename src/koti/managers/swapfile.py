@@ -36,7 +36,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
         confirm(
           message = f"confirm to create swapfile {item.filename}",
           destructive = False,
-          mode = model.get_confirm_mode(item),
+          mode = model.confirm_mode(item),
         )
         self.create_swapfile(item)
       elif current_size != item.size_bytes:
@@ -44,7 +44,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
           confirm(
             message = f"confirm resize of mounted swapfile {item.filename}",
             destructive = True,
-            mode = model.get_confirm_mode(item),
+            mode = model.confirm_mode(item),
           )
           shell(f"swapoff {item.filename}")
           os.unlink(item.filename)
@@ -54,21 +54,21 @@ class SwapfileManager(ConfigManager[Swapfile]):
           confirm(
             message = f"confirm resize of swapfile {item.filename}",
             destructive = True,
-            mode = model.get_confirm_mode(item),
+            mode = model.confirm_mode(item),
           )
           shell(f"rm -f {item.filename}")
           self.create_swapfile(item)
 
   def cleanup(self, items_to_keep: list[Swapfile], model: ExecutionModel):
     for item in items_to_keep:
-      self.managed_files_store.put(item.filename, {"confirm_mode": model.get_confirm_mode(item)})
+      self.managed_files_store.put(item.filename, {"confirm_mode": model.confirm_mode(item)})
 
     currently_managed_files = [item.filename for item in items_to_keep]
     previously_managed_files = self.managed_files_store.keys()
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]
     for swapfile in files_to_delete:
       if os.path.isfile(swapfile):
-        store_entry: SwapfileStoreEntry = self.managed_files_store.get(swapfile, {"confirm_mode": model.default_confirm_mode})
+        store_entry: SwapfileStoreEntry = self.managed_files_store.get(swapfile, {"confirm_mode": model.confirm_mode_fallback})
         confirm(
           message = f"confirm to delete swapfile {swapfile}",
           destructive = True,

@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 from os import getuid
 from typing import Iterable, Iterator
+
 from koti.types import *
 
 
@@ -116,10 +118,10 @@ class Koti:
     )
 
     return ExecutionModel(
-      managers=managers,
-      install_phases=install_phases,
-      cleanup_phase=cleanup_phase,
-      default_confirm_mode=default_confirm_mode,
+      managers = managers,
+      install_phases = install_phases,
+      cleanup_phase = cleanup_phase,
+      confirm_mode_fallback = default_confirm_mode,
     )
 
   @staticmethod
@@ -199,7 +201,7 @@ class Koti:
       ]
       if len(managed_items) > 0:
         order.append((manager, managed_items))
-    return InstallPhase(groups=groups_in_phase, order=order, items=merged_items_in_phase)
+    return InstallPhase(groups = groups_in_phase, order = order, items = merged_items_in_phase)
 
   @staticmethod
   def find_dependency_violation(phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup] | None:

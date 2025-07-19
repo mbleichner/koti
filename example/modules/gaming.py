@@ -64,6 +64,6 @@ def gaming() -> Generator[ConfigGroup]:
         exec /usr/lib/steam/steam "$@"
       ''')),
 
-      FileOptionList("/etc/pacman.conf", "NoUpgrade", "usr/bin/steam"),
+      Option("/etc/pacman.conf/NoUpgrade", "usr/bin/steam"),
     ]
   )

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from koti import ConfigItem, highest_confirm_mode
-from koti.core import ManagedConfigItem, ConfirmModeValues
+from koti.core import ConfirmModeValues, ManagedConfigItem
 
 
 class SystemdUnit(ManagedConfigItem):

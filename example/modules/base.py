@@ -2,8 +2,8 @@ from inspect import cleandoc
 from typing import Generator
 
 from koti import *
-from koti.items.file import FileOptionList
 from koti.utils import *
+
 
 def base() -> Generator[ConfigGroup]:
   yield ConfigGroup(
@@ -91,13 +91,18 @@ def base() -> Generator[ConfigGroup]:
       Package("cachyos-v3-mirrorlist"),
     ],
     provides = [
+
+      # Create options for pacman.conf (so i don't have to null-check later)
+      Option[str]("/etc/pacman.conf/NoExtract", value = []),
+      Option[str]("/etc/pacman.conf/NoUpgrade", value = []),
+
       File("/etc/pacman.conf", permissions = 0o444, content = lambda model: cleandoc(f'''
         # managed by koti
         [options]
         HoldPkg = pacman glibc
         Architecture = auto x86_64_v3
-        NoExtract = {" ".join([v for fol in model.iter(FileOptionList("/etc/pacman.conf", "NoExtract")) for v in fol.values])}
-        NoUpgrade = {" ".join([v for fol in model.iter(FileOptionList("/etc/pacman.conf", "NoUpgrade")) for v in fol.values])}
+        NoExtract = {" ".join(model.item(Option[str]("/etc/pacman.conf/NoExtract")).distinct())}
+        NoUpgrade = {" ".join(model.item(Option[str]("/etc/pacman.conf/NoUpgrade")).distinct())}
         Color
         CheckSpace
         VerbosePkgLists

@@ -37,7 +37,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
         message = f"confirm to activate units: {", ".join([item.name for item in items_for_user])}" if user is None
         else f"confirm to deactivate units for user {user}: {", ".join([item.name for item in items_for_user])}",
         destructive = True,
-        mode = model.get_confirm_mode(*items_for_user),
+        mode = model.confirm_mode(*items_for_user),
       )
       shell(f"{systemctl_for_user(user)} enable --now {" ".join([item.name for item in items_for_user])}")
 
@@ -60,8 +60,8 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
           message = f"confirm to deactivate units: {", ".join(units_to_deactivate)}" if user is None
           else f"confirm to deactivate units for user {user}: {", ".join(units_to_deactivate)}",
           destructive = True,
-          mode = model.get_confirm_mode(*(
-            units_store.get(unit, {"confirm_mode": model.default_confirm_mode})["confirm_mode"] for unit in units_to_deactivate
+          mode = model.confirm_mode(*(
+            units_store.get(unit, {"confirm_mode": model.confirm_mode_fallback})["confirm_mode"] for unit in units_to_deactivate
           )),
         )
         shell(f"{systemctl_for_user(user)} disable --now {" ".join(units_to_deactivate)}")
@@ -74,7 +74,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
       items_for_user = [item for item in items if item.user == user]
       units_store: JsonMapping[str, SystemdUnitStoreEntry] = self.store.mapping(store_key_for_user(user))
       for item in items_for_user:
-        units_store.put(item.name, {"confirm_mode": model.get_confirm_mode(item)})
+        units_store.put(item.name, {"confirm_mode": model.confirm_mode(item)})
         if user is not None: self.user_list_store.add(user)
 
 

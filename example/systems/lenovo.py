@@ -56,7 +56,7 @@ def lenovo() -> Generator[ConfigGroup | None]:
   yield ConfigGroup(
     description = "disable wakeup from touchpad",
     provides = [
-      File("/etc/udev/rules.d/50-disable-touchpad-wakeup.rules", permissions=0o444, content=cleandoc('''
+      File("/etc/udev/rules.d/50-disable-touchpad-wakeup.rules", permissions = 0o444, content = cleandoc('''
         # managed by koti
         ACTION=="add|change", SUBSYSTEM=="i2c", DRIVER=="i2c_hid_acpi", ATTR{name}=="ELAN0678:00", ATTR{power/wakeup}="disabled"
         # Einstellung testen per udevadm info -q all -a /sys/devices/platform/AMDI0010:02/i2c-2/i2c-ELAN0678:00
