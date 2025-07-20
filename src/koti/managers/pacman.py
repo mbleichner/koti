@@ -4,7 +4,7 @@ from koti import Checksums
 from koti.core import ConfigManager, ConfirmMode, ExecutionModel
 from koti.items.package import Package
 from koti.items.pacman_key import PacmanKey
-from koti.utils import confirm
+from koti.utils import confirm, JsonCollection, JsonStore
 from koti.utils.shell import shell, shell_output, shell_success
 
 
@@ -62,11 +62,16 @@ class PacmanAdapter:
 
 
 class PacmanPackageManager(ConfigManager[Package]):
+  ignore_externally_installed: bool
   managed_classes = [Package]
   delegate: PacmanAdapter
+  managed_packages_store: JsonCollection[str]
 
-  def __init__(self, delegate: PacmanAdapter):
+  def __init__(self, delegate: PacmanAdapter, ignore_externally_installed: bool):
+    store = JsonStore("/var/cache/koti/PacmanPackageManager.json")
+    self.managed_packages_store = store.collection("managed_packages")
     self.delegate = delegate
+    self.ignore_externally_installed = ignore_externally_installed
 
   def check_configuration(self, item: Package, model: ExecutionModel):
     pass
@@ -98,11 +103,21 @@ class PacmanPackageManager(ConfigManager[Package]):
       confirm_mode = model.confirm_mode(*additional_explicit_items)
     )
 
+    self.managed_packages_store.add_all([item.name for item in items])
+
   def cleanup(self, items_to_keep: list[Package], model: ExecutionModel):
     desired = [pkg.name for pkg in items_to_keep]
-    explicit = self.delegate.list_explicit_packages()
+    explicit: list[str]
+    if self.ignore_externally_installed:
+      installed = self.delegate.list_installed_packages()
+      managed_packages = self.managed_packages_store.elements()
+      explicit = list(set(managed_packages).intersection(installed))
+    else:
+      explicit = self.delegate.list_explicit_packages()
     confirm_mode = model.confirm_mode(*items_to_keep)
-    self.delegate.mark_as_dependency([pkg for pkg in explicit if pkg not in desired], confirm_mode = confirm_mode)
+    packages_to_remove = [pkg for pkg in explicit if pkg not in desired]
+    self.delegate.mark_as_dependency(packages_to_remove, confirm_mode = confirm_mode)
+    self.managed_packages_store.remove_all(packages_to_remove)
     self.delegate.prune_unneeded(confirm_mode = confirm_mode)
 
 

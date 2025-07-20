@@ -7,7 +7,7 @@ class KotiManagerPresets:
   def arch(pacman_adapter: PacmanAdapter = PacmanAdapter()) -> list[ConfigManager]:
     return [
       PacmanKeyManager(),
-      PacmanPackageManager(pacman_adapter),
+      PacmanPackageManager(pacman_adapter, ignore_externally_installed = False),
       SwapfileManager(),
       FileManager(),
       SystemdUnitManager(),

@@ -36,16 +36,16 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
       )
       shell(f"{systemctl_for_user(user)} enable --now {" ".join([item.name for item in items_for_user])}")
 
+      if user is not None: self.user_list_store.add(user)
+      units_store: JsonCollection[str] = self.store.collection(store_key_for_user(user))
+      units_store.add_all([item.name for item in items])
+
   def cleanup(self, items_to_keep: list[SystemdUnit], model: ExecutionModel):
     shell(f"systemctl daemon-reload")
-    self.store_all_seen_units(items_to_keep)
-    self.deactivate_removed_units(model, items_to_keep)
-
-  def deactivate_removed_units(self, model: ExecutionModel, items: list[SystemdUnit]):
     previously_seen_users = self.user_list_store.elements()
-    users = set([item.user for item in items] + previously_seen_users + [None])
+    users = set([item.user for item in items_to_keep] + previously_seen_users + [None])
     for user in users:
-      items_for_user = [item for item in items if item.user == user]
+      items_for_user = [item for item in items_to_keep if item.user == user]
       units_store: JsonCollection[str] = self.store.collection(store_key_for_user(user))
       currently_managed_units = [item.name for item in items_for_user]
       previously_managed_units = units_store.elements()
@@ -58,17 +58,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
           mode = model.confirm_mode(*(SystemdUnit(name, user = user) for name in units_to_deactivate)),
         )
         shell(f"{systemctl_for_user(user)} disable --now {" ".join(units_to_deactivate)}")
-        for identifier in units_to_deactivate:
-          units_store.remove(identifier)
-
-  def store_all_seen_units(self, items: list[SystemdUnit]):
-    users = set([item.user for item in items])
-    for user in users:
-      items_for_user = [item for item in items if item.user == user]
-      units_store: JsonCollection[str] = self.store.collection(store_key_for_user(user))
-      for item in items_for_user:
-        units_store.add(item.name)
-        if user is not None: self.user_list_store.add(user)
+        units_store.remove_all(units_to_deactivate)
 
 
 def systemctl_for_user(user):

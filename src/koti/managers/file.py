@@ -53,15 +53,11 @@ class FileManager(ConfigManager[File]):
         fh.write(content)  # type: ignore
       os.chown(item.filename, uid = uid, gid = gid)
       os.chmod(item.filename, mode)
+      assert mode == (os.stat(item.filename).st_mode & 0o777), "cannot apply file permissions (incompatible file system?)"
 
-      new_mode = os.stat(item.filename).st_mode & 0o777
-      if mode != new_mode:
-        raise AssertionError("cannot apply file permissions (incompatible file system?)")
-
-  def cleanup(self, items_to_keep: list[File], model: ExecutionModel):
-    for item in items_to_keep:
       self.managed_files_store.add(item.filename)
 
+  def cleanup(self, items_to_keep: list[File], model: ExecutionModel):
     currently_managed_files = [item.filename for item in items_to_keep]
     previously_managed_files = self.managed_files_store.elements()
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]

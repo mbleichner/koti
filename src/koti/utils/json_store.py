@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+from typing import Sequence
 
 
 class JsonStore:
@@ -73,6 +74,9 @@ class JsonCollection[T]:
     self.name = name
     self.store = store
 
+  def clear(self):
+    self.store.put(self.name, [])
+
   def elements(self) -> list[T]:
     collection = self.store.get(self.name, [])
     return collection
@@ -80,6 +84,16 @@ class JsonCollection[T]:
   def add(self, value: T):
     collection = self.store.get(self.name, [])
     new_collection = set(collection).union({value})
+    self.store.put(self.name, list(new_collection))
+
+  def add_all(self, values: Sequence[T]):
+    collection = self.store.get(self.name, [])
+    new_collection = set(collection).union({*values})
+    self.store.put(self.name, list(new_collection))
+
+  def remove_all(self, values: Sequence[T]):
+    collection = self.store.get(self.name, [])
+    new_collection = set(collection).difference({*values})
     self.store.put(self.name, list(new_collection))
 
   def remove(self, value: T):
