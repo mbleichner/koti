@@ -1,14 +1,19 @@
 from __future__ import annotations
 
 from koti import ConfigItem, highest_confirm_mode
-from koti.core import ConfirmModeValues, ManagedConfigItem
+from koti.core import ConfirmMode, ManagedConfigItem
 
 
 class SystemdUnit(ManagedConfigItem):
   name: str
   user: str | None = None
 
-  def __init__(self, name: str, user: str | None = None, confirm_mode: ConfirmModeValues | None = None):
+  def __init__(
+    self,
+    name: str,
+    user: str | None = None,
+    confirm_mode: ConfirmMode | None = None,
+  ):
     self.confirm_mode = confirm_mode
     self.name = name
     self.user = user

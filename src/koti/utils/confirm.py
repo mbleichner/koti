@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from sys import exit
 
-from koti import ConfirmModeValues
+from koti import ConfirmMode
 
 
-def confirm(message: str, destructive: bool = True, mode: ConfirmModeValues = "paranoid"):
+def confirm(message: str, destructive: bool = True, mode: ConfirmMode = "paranoid"):
   if not needs_confirmation(destructive, mode):
     print(f"{message}: skipping confirmation of {"destructive" if destructive else "non-destructive"} operation due to confirm_mode = {mode}")
     return None
@@ -17,7 +17,7 @@ def confirm(message: str, destructive: bool = True, mode: ConfirmModeValues = "p
       exit(1)
 
 
-def needs_confirmation(destructive: bool, mode: ConfirmModeValues):
+def needs_confirmation(destructive: bool, mode: ConfirmMode):
   if mode == "paranoid": return True
   if mode == "yolo": return False
   return destructive

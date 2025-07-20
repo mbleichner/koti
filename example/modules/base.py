@@ -104,7 +104,7 @@ def base() -> Generator[ConfigGroup]:
         Color
         CheckSpace
         VerbosePkgLists
-        ParallelDownloads = 5
+        ParallelDownloads = 8
         DownloadUser = alpm
         SigLevel = Required DatabaseOptional
         LocalFileSigLevel = Optional
@@ -188,9 +188,12 @@ def base() -> Generator[ConfigGroup]:
       Package("reflector"),
       Package("lostfiles"),
 
-      PostHook("reflector", execute = lambda: shell("systemctl start reflector"), trigger = [
-        File("/etc/xdg/reflector/reflector.conf"),
-      ]),
+      PostHook(
+        name = "run reflector to update pacman mirrorlist",
+        trigger = File("/etc/xdg/reflector/reflector.conf"),
+        execute = lambda: shell("systemctl start reflector"),
+        confirm_mode = "yolo",
+      ),
     ]
   )
 

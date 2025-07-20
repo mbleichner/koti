@@ -1,14 +1,19 @@
 from __future__ import annotations
 
 from koti import highest_confirm_mode
-from koti.core import ConfigItem, ConfirmModeValues, ManagedConfigItem
+from koti.core import ConfigItem, ConfirmMode, ManagedConfigItem
 
 
 class Swapfile(ManagedConfigItem):
   size_bytes: int | None
   filename: str
 
-  def __init__(self, filename: str, size_bytes: int | None = None, confirm_mode: ConfirmModeValues | None = None):
+  def __init__(
+    self,
+    filename: str,
+    size_bytes: int | None = None,
+    confirm_mode: ConfirmMode | None = None,
+  ):
     self.confirm_mode = confirm_mode
     self.filename = filename
     self.size_bytes = size_bytes

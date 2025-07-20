@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Callable, Sequence
 
-from koti import ManagedConfigItem
+from koti import ConfirmMode, ManagedConfigItem
 from koti.core import ConfigItem
 
 
@@ -13,10 +13,20 @@ class PostHook(ManagedConfigItem):
   execute: None | Callable
   trigger: list[ManagedConfigItem]
 
-  def __init__(self, name: str, execute: Callable | None = None, trigger: Sequence[ManagedConfigItem] | None = None):
+  def __init__(
+    self,
+    name: str,
+    execute: Callable | None = None,
+    trigger: Sequence[ManagedConfigItem] | ManagedConfigItem | None = None,
+    confirm_mode: ConfirmMode | None = None,
+  ):
     self.name = name
     self.execute = execute
-    self.trigger = [item for item in (trigger or []) if item is not None]
+    if isinstance(trigger, ManagedConfigItem):
+      self.trigger = [trigger]
+    else:
+      self.trigger = [item for item in (trigger or []) if item is not None]
+    self.confirm_mode = confirm_mode
 
   def identifier(self):
     return f"PostHook('{self.name}')"

@@ -1,7 +1,7 @@
 from hashlib import sha256
 
 from koti import Checksums
-from koti.core import ConfigManager, ConfirmModeValues, ExecutionModel
+from koti.core import ConfigManager, ConfirmMode, ExecutionModel
 from koti.items.package import Package
 from koti.items.pacman_key import PacmanKey
 from koti.utils import confirm
@@ -14,7 +14,7 @@ class PacmanAdapter:
   def __init__(self, pacman: str = "pacman"):
     self.pacman = pacman
 
-  def confirm_args(self, destructive: bool, confirm_mode: ConfirmModeValues):
+  def confirm_args(self, destructive: bool, confirm_mode: ConfirmMode):
     if confirm_mode == "yolo":
       return "--noconfirm"
     elif confirm_mode == "paranoid":
@@ -30,27 +30,27 @@ class PacmanAdapter:
   def list_installed_packages(self) -> list[str]:
     return self.parse_pkgs(shell_output(f"{self.pacman} -Qq", check = False))
 
-  def install(self, packages: list[str], confirm_mode: ConfirmModeValues):
+  def install(self, packages: list[str], confirm_mode: ConfirmMode):
     if packages:
       confirm_args = self.confirm_args(destructive = False, confirm_mode = confirm_mode)
       shell(f"{self.pacman} -Syu {confirm_args} {" ".join(packages)}")
 
-  def install_from_url(self, urls: list[str], confirm_mode: ConfirmModeValues):
+  def install_from_url(self, urls: list[str], confirm_mode: ConfirmMode):
     if urls:
       confirm_args = self.confirm_args(destructive = False, confirm_mode = confirm_mode)
       shell(f"{self.pacman} -U {confirm_args} {" ".join(urls)}")
 
-  def mark_as_explicit(self, packages: list[str], confirm_mode: ConfirmModeValues):
+  def mark_as_explicit(self, packages: list[str], confirm_mode: ConfirmMode):
     if packages:
       confirm_args = self.confirm_args(destructive = False, confirm_mode = confirm_mode)
       shell(f"{self.pacman} -D --asexplicit {confirm_args} {" ".join(packages)}")
 
-  def mark_as_dependency(self, packages: list[str], confirm_mode: ConfirmModeValues):
+  def mark_as_dependency(self, packages: list[str], confirm_mode: ConfirmMode):
     if packages:
       confirm_args = self.confirm_args(destructive = False, confirm_mode = confirm_mode)
       shell(f"{self.pacman} -D --asdeps {confirm_args} {" ".join(packages)}")
 
-  def prune_unneeded(self, confirm_mode: ConfirmModeValues):
+  def prune_unneeded(self, confirm_mode: ConfirmMode):
     unneeded_packages = self.parse_pkgs(shell_output(f"{self.pacman} -Qdttq", check = False))
     if len(unneeded_packages) > 0:
       confirm_args = self.confirm_args(destructive = True, confirm_mode = confirm_mode)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from koti import ConfirmModeValues, highest_confirm_mode
+from koti import ConfirmMode, highest_confirm_mode
 from koti.core import ConfigItem, ManagedConfigItem
 
 
@@ -8,10 +8,15 @@ class Package(ManagedConfigItem):
   name: str
   url: str | None
 
-  def __init__(self, name: str, url: str | None = None, confirm_mode: ConfirmModeValues | None = None):
-    self.confirm_mode = confirm_mode
+  def __init__(
+    self,
+    name: str,
+    url: str | None = None,
+    confirm_mode: ConfirmMode | None = None
+  ):
     self.name = name
     self.url = url
+    self.confirm_mode = confirm_mode
 
   def identifier(self):
     return f"Package('{self.name}')"

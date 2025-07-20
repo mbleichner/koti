@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from typing import Literal, Optional, Sequence, Type, cast, overload
 
-from koti.confirmmodes import ConfirmModeValues, highest_confirm_mode
+from koti.confirmmode import ConfirmMode, highest_confirm_mode
 
 
 class ConfigGroup:
@@ -11,7 +11,7 @@ class ConfigGroup:
   requires: Sequence[ConfigItem]
   provides: Sequence[ConfigItem]
 
-  def __init__(self, description: str, provides: Sequence[ConfigItem | None], requires: Sequence[ConfigItem | None] | None = None, confirm_mode: ConfirmModeValues | None = None):
+  def __init__(self, description: str, provides: Sequence[ConfigItem | None], requires: Sequence[ConfigItem | None] | None = None, confirm_mode: ConfirmMode | None = None):
     self.description = description
     self.requires = [item for item in (requires or []) if item is not None]
     self.provides = [item for item in (provides or []) if item is not None]
@@ -46,7 +46,7 @@ class ConfigItem(metaclass = ABCMeta):
 class ManagedConfigItem(ConfigItem, metaclass = ABCMeta):
   """ConfigItems that can be installed to the system. ManagedConfigItem require a corresponding
   ConfigManager being registered in koti."""
-  confirm_mode: Optional[ConfirmModeValues] = None
+  confirm_mode: Optional[ConfirmMode] = None
 
 
 class UnmanagedConfigItem(ConfigItem, metaclass = ABCMeta):
@@ -89,16 +89,16 @@ class ExecutionModel:
   managers: Sequence[ConfigManager]
   install_phases: Sequence[InstallPhase]
   cleanup_phase: CleanupPhase
-  confirm_mode_fallback: ConfirmModeValues
-  confirm_mode_archive: dict[str, ConfirmModeValues]
+  confirm_mode_fallback: ConfirmMode
+  confirm_mode_archive: dict[str, ConfirmMode]
 
   def __init__(
     self,
     managers: Sequence[ConfigManager],
     install_phases: Sequence[InstallPhase],
     cleanup_phase: CleanupPhase,
-    confirm_mode_fallback: ConfirmModeValues,
-    confirm_mode_archive: dict[str, ConfirmModeValues],
+    confirm_mode_fallback: ConfirmMode,
+    confirm_mode_archive: dict[str, ConfirmMode],
   ):
     self.managers = managers
     self.install_phases = install_phases
@@ -126,11 +126,11 @@ class ExecutionModel:
     assert result is not None or optional, f"Item not found: {reference.identifier()}"
     return result
 
-  def confirm_mode(self, *args: ManagedConfigItem) -> ConfirmModeValues:
+  def confirm_mode(self, *args: ManagedConfigItem) -> ConfirmMode:
     highest = highest_confirm_mode(*[self._confirm_mode(arg) for arg in args])
     return highest if highest else self.confirm_mode_fallback
 
-  def _confirm_mode(self, arg: ManagedConfigItem) -> ConfirmModeValues:
+  def _confirm_mode(self, arg: ManagedConfigItem) -> ConfirmMode:
     if arg.confirm_mode is not None:
       return arg.confirm_mode
     item = self.item(arg, optional = True)

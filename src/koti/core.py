@@ -10,13 +10,13 @@ from koti.utils import JsonMapping, JsonStore
 class Koti:
   store: JsonStore
   model: ExecutionModel
-  confirm_mode_store: JsonMapping[str, ConfirmModeValues]
+  confirm_mode_store: JsonMapping[str, ConfirmMode]
 
   def __init__(
     self,
     managers: Iterator[ConfigManager | None] | Iterable[ConfigManager | None],
     configs: Iterator[ConfigGroup | None] | Iterable[ConfigGroup | None],
-    default_confirm_mode: ConfirmModeValues = "cautious"
+    default_confirm_mode: ConfirmMode = "cautious"
   ):
     assert getuid() == 0, "this program must be run as root (or through sudo)"
     self.store = JsonStore("/var/cache/koti/Koti.json")
@@ -104,7 +104,7 @@ class Koti:
   def build_execution_model(
     managers: Sequence[ConfigManager],
     configs: Sequence[ConfigGroup],
-    default_confirm_mode: ConfirmModeValues,
+    default_confirm_mode: ConfirmMode,
     store: JsonStore,
   ) -> ExecutionModel:
     groups = Koti.get_all_provided_groups(configs)
@@ -136,13 +136,13 @@ class Koti:
     )
 
   @staticmethod
-  def load_confirm_modes(store: JsonStore) -> dict[str, ConfirmModeValues]:
+  def load_confirm_modes(store: JsonStore) -> dict[str, ConfirmMode]:
     result = store.get("confirm_modes")
     return result if isinstance(result, dict) else {}
 
   @staticmethod
   def save_confirm_modes(store: JsonStore, model: ExecutionModel):
-    result: dict[str, ConfirmModeValues] = {}
+    result: dict[str, ConfirmMode] = {}
     for phase in model.install_phases:
       for manager, items in phase.order:
         for item in items:

@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable
 
-from koti import ConfigItem, ExecutionModel, ManagedConfigItem
+from koti import ConfigItem, ConfirmMode, ExecutionModel, ManagedConfigItem
 
 
 class File(ManagedConfigItem):
@@ -18,7 +18,8 @@ class File(ManagedConfigItem):
     content: str | Callable[[ExecutionModel], str] | None = None,
     source: str | None = None,
     permissions: int = 0o444,
-    owner: str = "root"
+    owner: str = "root",
+    confirm_mode: ConfirmMode | None = None,
   ):
     self.filename = filename
     if callable(content):
@@ -31,6 +32,7 @@ class File(ManagedConfigItem):
       self.content = None
     self.permissions = permissions
     self.owner = owner
+    self.confirm_mode = confirm_mode
 
   def identifier(self):
     return f"File('{self.filename}')"

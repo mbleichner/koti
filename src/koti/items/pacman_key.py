@@ -1,18 +1,24 @@
 from __future__ import annotations
 
 from koti import highest_confirm_mode
-from koti.core import ConfigItem, ConfirmModeValues, ManagedConfigItem
+from koti.core import ConfigItem, ConfirmMode, ManagedConfigItem
 
 
 class PacmanKey(ManagedConfigItem):
   key_id: str
   comment: str | None
 
-  def __init__(self, key_id: str, key_server = "keyserver.ubuntu.com", comment: str | None = None, confirm_mode: ConfirmModeValues | None = None):
-    self.confirm_mode = confirm_mode
+  def __init__(
+    self,
+    key_id: str,
+    key_server = "keyserver.ubuntu.com",
+    comment: str | None = None,
+    confirm_mode: ConfirmMode | None = None,
+  ):
     self.key_id = key_id
     self.key_server = key_server
     self.comment = comment
+    self.confirm_mode = confirm_mode
 
   def identifier(self):
     return f"PacmanKey('{self.key_id}')"
