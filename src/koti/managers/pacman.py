@@ -107,15 +107,16 @@ class PacmanPackageManager(ConfigManager[Package]):
 
   def cleanup(self, items_to_keep: list[Package], model: ExecutionModel):
     desired = [pkg.name for pkg in items_to_keep]
-    explicit: list[str]
+    explicit = self.delegate.list_explicit_packages()
+
+    # in case we want to ignore packages not installed by koti, we only consider
+    # to remove packages that have been recorded by koti before
     if self.ignore_externally_installed:
-      installed = self.delegate.list_installed_packages()
-      managed_packages = self.managed_packages_store.elements()
-      explicit = list(set(managed_packages).intersection(installed))
-    else:
-      explicit = self.delegate.list_explicit_packages()
-    confirm_mode = model.confirm_mode(*items_to_keep)
+      previously_managed_packages = self.managed_packages_store.elements()
+      explicit = [pkg for pkg in explicit if pkg in previously_managed_packages]
+
     packages_to_remove = [pkg for pkg in explicit if pkg not in desired]
+    confirm_mode = model.confirm_mode(*(Package(pkg) for pkg in packages_to_remove))
     self.delegate.mark_as_dependency(packages_to_remove, confirm_mode = confirm_mode)
     self.managed_packages_store.remove_all(packages_to_remove)
     self.delegate.prune_unneeded(confirm_mode = confirm_mode)

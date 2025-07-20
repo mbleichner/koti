@@ -136,7 +136,7 @@ class ExecutionModel:
     item = self.item(arg, optional = True)
     if item is not None:
       return item.confirm_mode if item.confirm_mode is not None else self.confirm_mode_fallback
-    confirm_mode_from_archive = self.confirm_mode_archive[arg.identifier()]
+    confirm_mode_from_archive = self.confirm_mode_archive.get(arg.identifier(), None)
     return confirm_mode_from_archive if confirm_mode_from_archive is not None else self.confirm_mode_fallback
 
 
