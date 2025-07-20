@@ -7,6 +7,8 @@ from koti.core import ConfigItem
 
 
 class PostHook(ManagedConfigItem):
+  """An item that will run an executable whenever its dependencies change state.
+  For example, this can be used to call some rebuild script whenever a config file changes."""
   name: str
   execute: None | Callable
   trigger: list[ManagedConfigItem]
@@ -25,7 +27,9 @@ class PostHook(ManagedConfigItem):
     raise AssertionError(f"PostHook('{self.name}') cannot be declared twice")
 
 
+# noinspection PyPep8Naming
 def PostHookTriggerScope(*items: ConfigItem) -> list[ConfigItem]:
+  """Convenience wrapper to connect PostHooks with their triggers."""
   hooks = [item for item in items if isinstance(item, PostHook)]
   non_hooks = [item for item in items if not isinstance(item, PostHook) and isinstance(item, ManagedConfigItem)]
   for hook in hooks:

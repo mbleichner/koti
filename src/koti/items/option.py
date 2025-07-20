@@ -4,9 +4,10 @@ from typing import Sequence
 
 from koti import ConfigItem, UnmanagedConfigItem
 
+
 class Option[T](UnmanagedConfigItem):
-  """Helper item to specify options that may be used by other ConfigItems, for example being rendered into a config file.
-  Options can contain one or multiple values.
+  """Helper item to specify options that may be used by other ConfigItems; for example
+  being rendered into a config file. Options can contain one or multiple values.
   """
 
   name: str

@@ -67,8 +67,6 @@ def base() -> Generator[ConfigGroup]:
       SystemdUnit("systemd-timesyncd.service"),
       SystemdUnit("systemd-boot-update.service"),
       SystemdUnit("fstrim.timer"),
-
-      PostHook("moep", lambda: print("moep moep"), trigger = [Package("bat"), Package("jq")])
     ]
   )
 
@@ -92,9 +90,9 @@ def base() -> Generator[ConfigGroup]:
     ],
     provides = [
 
-      # Pre-create options for pacman.conf (so I don't have to null-check later)
-      Option[str]("/etc/pacman.conf/NoExtract", value = []),
-      Option[str]("/etc/pacman.conf/NoUpgrade", value = []),
+      # Declare options for pacman.conf (so I don't have to null-check later)
+      Option[str]("/etc/pacman.conf/NoExtract"),
+      Option[str]("/etc/pacman.conf/NoUpgrade"),
 
       File("/etc/pacman.conf", permissions = 0o444, content = lambda model: cleandoc(f'''
         # managed by koti

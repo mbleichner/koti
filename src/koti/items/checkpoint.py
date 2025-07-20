@@ -4,6 +4,8 @@ from koti import ConfigItem, UnmanagedConfigItem
 
 
 class Checkpoint(UnmanagedConfigItem):
+  """Helper item that can be used to declare dependencies."""
+
   name: str
 
   def __init__(self, name: str):
