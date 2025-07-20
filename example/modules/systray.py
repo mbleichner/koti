@@ -10,9 +10,8 @@ def systray(ryzen: bool, nvidia: bool) -> Generator[ConfigGroup | None]:
     confirm_mode = "yolo",
     provides = [
       Package("kdialog"),
-      File("/opt/systray/cpu/summary", permissions = 0o555, content = cleandoc(r'''
+      File("/opt/systray/cpu/summary", permissions = "r-x", content = cleandoc(r'''
         #!/bin/bash
-        # managed by koti
         CPU_MAX=$(( $(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq) / 1000 ))
         SMT="$(cat /sys/devices/system/cpu/smt/control)"
         if [[ "$SMT" == "0" || "$SMT" == "off" ]]; then
@@ -44,9 +43,8 @@ def systray(ryzen: bool, nvidia: bool) -> Generator[ConfigGroup | None]:
     provides = [
       Package("kdialog"),
       Package("python-pynvml"),
-      File("/opt/systray/gpu/summary", permissions = 0o555, content = cleandoc(r'''
+      File("/opt/systray/gpu/summary", permissions = "r-x", content = cleandoc(r'''
         #!/usr/bin/python3
-        # managed by koti
         from pynvml import *
         nvmlInit()
         myGPU = nvmlDeviceGetHandleByIndex(0)
@@ -66,7 +64,7 @@ def systray(ryzen: bool, nvidia: bool) -> Generator[ConfigGroup | None]:
 # Bugs einen Parameter an das Skript übergeben, der überhaupt nicht benötigt wird
 # z.B. /opt/systray/cpu/dialog moep
 def systray_dialog(filename: str, actiondir: str) -> File:
-  return File(filename, permissions = 0o555, content = cleandoc(r'''
+  return File(filename, permissions = "r-x", content = cleandoc(r'''
     #!/bin/bash
     FILES=$(find ACTIONDIR/ -maxdepth 1 -perm -111 -type f -printf "%f\n" | sort)
     OPTIONS=$(echo "$FILES" | awk '{print $1 " " $1;}')
@@ -77,28 +75,28 @@ def systray_dialog(filename: str, actiondir: str) -> File:
 
 
 def systray_cpu_freq(filename: str, freq: str) -> File:
-  return File(filename, permissions = 0o555, content = cleandoc(f'''
+  return File(filename, permissions = "r-x", content = cleandoc(f'''
     #!/bin/bash
     sudo cpupower frequency-set -u {freq}
   '''))
 
 
 def systray_cpu_governor(filename: str, governor: str) -> File:
-  return File(filename, permissions = 0o555, content = cleandoc(f'''
+  return File(filename, permissions = "r-x", content = cleandoc(f'''
     #!/bin/bash
     sudo cpupower frequency-set -g {governor}
   '''))
 
 
 def systray_hyperthreading(filename: str, state: str) -> File:
-  return File(filename, permissions = 0o555, content = cleandoc(f'''
+  return File(filename, permissions = "r-x", content = cleandoc(f'''
     #!/bin/bash
     echo {state} | sudo tee /sys/devices/system/cpu/smt/control
   '''))
 
 
 def systray_gpu_power_limit(filename: str, watt: int) -> File:
-  return File(filename, permissions = 0o555, content = cleandoc(f'''
+  return File(filename, permissions = "r-x", content = cleandoc(f'''
     #!/bin/bash
     sudo nvidia-smi -i 0 -pl {watt}
   '''))

@@ -11,8 +11,7 @@ def nvme_thermal_throttling() -> Generator[ConfigGroup]:
       Package("nvme-cli"),
       SystemdUnit("nvme-thermal-throttling.service"),
 
-      File("/etc/systemd/system/nvme-thermal-throttling.service", permissions = 0o444, content = cleandoc('''
-        # managed by koti
+      File("/etc/systemd/system/nvme-thermal-throttling.service", permissions = "r--", content = cleandoc('''
         [Unit]
         Description=NVMe Thermal Throttling
   

@@ -11,8 +11,7 @@ def nvidia_undervolting() -> Generator[ConfigGroup]:
       Package("python-pynvml"),
       SystemdUnit("nvidia-undervolting.service"),
 
-      File("/opt/undervolting/nvidia-undervolting.py", permissions = 0o444, content = cleandoc('''
-        # managed by koti
+      File("/opt/undervolting/nvidia-undervolting.py", permissions = "r--", content = cleandoc('''
         from pynvml import *
         
         nvmlInit()
@@ -29,8 +28,7 @@ def nvidia_undervolting() -> Generator[ConfigGroup]:
         nvmlDeviceSetGpuLockedClocks(myGPU, 210, 1710)
       ''')),
 
-      File("/etc/systemd/system/nvidia-undervolting.service", permissions = 0o444, content = cleandoc('''
-        # managed by koti
+      File("/etc/systemd/system/nvidia-undervolting.service", permissions = "r--", content = cleandoc('''
         [Unit]
         Description=NVIDIA Undervolting
         

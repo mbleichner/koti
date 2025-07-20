@@ -10,8 +10,7 @@ def ollama_aichat(cuda: bool) -> Generator[ConfigGroup]:
     provides = [
       Package("aichat"),
       Package("ollama-cuda" if cuda else "ollama"),
-      File("/home/manuel/.config/aichat/config.yaml", permissions = 0o444, owner = "manuel", content = cleandoc('''
-        # managed by koti
+      File("/home/manuel/.config/aichat/config.yaml", permissions = "r--", owner = "manuel", content = cleandoc('''
         model: ollama:Godmoded/llama3-lexi-uncensored
         serve_addr: 0.0.0.0:8000
         clients:

@@ -9,29 +9,20 @@ from koti.utils import shell
 
 def gaming() -> Generator[ConfigGroup]:
   yield ConfigGroup(
-    description = "gaming-packages",
+    description = "game launchers and utilities",
     provides = [
       Package("discord"),
       Package("gamescope"),
       Package("gpu-screen-recorder-ui"),
-      Package("proton-ge-custom-bin"),
-      Package("protontricks"),
-      Package("protonplus"),
       Package("ryujinx"),
       Package("steam"),
       Package("nexusmods-app-bin"),
       Package("r2modman-bin"),
       Package("mangohud"),
-    ]
-  )
 
-  yield ConfigGroup(
-    description = "gaming-settings",
-    provides = [
       *PostHookTriggerScope(
         # https://wiki.cachyos.org/configuration/general_system_tweaks
-        File("/etc/sysctl.d/99-splitlock.conf", permissions = 0o444, content = cleandoc('''
-          # managed by koti
+        File("/etc/sysctl.d/99-splitlock.conf", permissions = "r--", content = cleandoc('''
           kernel.split_lock_mitigate=0
         ''')),
         PostHook("apply-splitlock-sysctl", execute = lambda: shell("sysctl --system")),
@@ -40,21 +31,23 @@ def gaming() -> Generator[ConfigGroup]:
   )
 
   yield ConfigGroup(
-    description = "proton configs (wayland + ntsync)",
+    description = "proton/wine + configs",
     provides = [
-      File("/etc/modules-load.d/ntsync.conf", permissions = 0o444, content = cleandoc(f'''
-        # managed by koti
+      Package("proton-ge-custom-bin"),
+      Package("protontricks"),
+      Package("protonplus"),
+
+      File("/etc/modules-load.d/ntsync.conf", permissions = "r--", content = cleandoc(f'''
         ntsync
       ''')),
 
-      File("/etc/environment.d/proton.conf", permissions = 0o444, content = cleandoc(f'''
-        # managed by koti
+      File("/etc/environment.d/proton.conf", permissions = "r--", content = cleandoc(f'''
         PROTON_ENABLE_WAYLAND = 1
         PROTON_USE_NTSYNC = 1
         PROTON_USE_WOW64 = 1
       ''')),
 
-      File("/usr/bin/steam", permissions = 0o555, content = cleandoc(f'''
+      File("/usr/bin/steam", permissions = "r-x", content = cleandoc(f'''
         #!/bin/sh
         
         # Workaround für Wine/Wayland Keyboard Layout Bug

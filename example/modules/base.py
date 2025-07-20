@@ -94,8 +94,7 @@ def base() -> Generator[ConfigGroup]:
       Option[str]("/etc/pacman.conf/NoExtract"),
       Option[str]("/etc/pacman.conf/NoUpgrade"),
 
-      File("/etc/pacman.conf", permissions = 0o444, content = lambda model: cleandoc(f'''
-        # managed by koti
+      File("/etc/pacman.conf", permissions = "r--", content = lambda model: cleandoc(f'''
         [options]
         HoldPkg = pacman glibc
         Architecture = auto x86_64_v3
@@ -142,8 +141,7 @@ def base() -> Generator[ConfigGroup]:
         Include = /etc/pacman.d/cachyos-mirrorlist
       ''')),
 
-      File("/etc/paru.conf", permissions = 0o444, content = cleandoc('''
-        # managed by koti
+      File("/etc/paru.conf", permissions = "r--", content = cleandoc('''
         [options]
         PgpFetch
         Devel
@@ -155,8 +153,7 @@ def base() -> Generator[ConfigGroup]:
         CleanAfter
       ''')),
 
-      File("/etc/pacman.d/hooks/nvidia.hook", permissions = 0o444, content = cleandoc('''
-        # managed by koti
+      File("/etc/pacman.d/hooks/nvidia.hook", permissions = "r--", content = cleandoc('''
         [Trigger]
         Operation=Install
         Operation=Upgrade
@@ -172,8 +169,7 @@ def base() -> Generator[ConfigGroup]:
         Exec=/usr/bin/mkinitcpio -P
       ''')),
 
-      File("/etc/xdg/reflector/reflector.conf", permissions = 0o444, content = cleandoc('''
-        # managed by koti
+      File("/etc/xdg/reflector/reflector.conf", permissions = "r--", content = cleandoc('''
         --save /etc/pacman.d/mirrorlist
         --protocol https
         --country France,Germany,Switzerland
@@ -201,8 +197,7 @@ def base() -> Generator[ConfigGroup]:
     description = "sudo + /etc/sudoers",
     provides = [
       Package("sudo"),
-      File("/etc/sudoers", permissions = 0o444, content = cleandoc('''
-        # managed by koti
+      File("/etc/sudoers", permissions = "r--", content = cleandoc('''
         ## Defaults specification
         ##
         ## Preserve editor environment variables for visudo.
@@ -243,8 +238,7 @@ def base() -> Generator[ConfigGroup]:
     confirm_mode = "yolo",
     provides = [
       Package("arch-update"),
-      File("/home/manuel/.config/arch-update/arch-update.conf", owner = "manuel", permissions = 0o444, content = cleandoc('''
-        # managed by koti
+      File("/home/manuel/.config/arch-update/arch-update.conf", owner = "manuel", permissions = "r--", content = cleandoc('''
         NoNotification
         KeepOldPackages=2
         KeepUninstalledPackages=0
@@ -263,30 +257,25 @@ def base() -> Generator[ConfigGroup]:
     description = "various system config files",
     confirm_mode = "paranoid",
     provides = [
-      File("/etc/environment.d/editor.conf", permissions = 0o444, content = cleandoc(f'''
-        # managed by koti
+      File("/etc/environment.d/editor.conf", permissions = "r--", content = cleandoc(f'''
         EDITOR=nano
       ''')),
 
-      File("/boot/loader/loader.conf", permissions = 0o555, content = cleandoc(f'''
-        # managed by koti
+      File("/boot/loader/loader.conf", permissions = "r-x", content = cleandoc(f'''
         timeout 3
         console-mode 2
       ''')),
 
-      File("/etc/vconsole.conf", permissions = 0o444, content = cleandoc('''
-        # managed by koti
+      File("/etc/vconsole.conf", permissions = "r--", content = cleandoc('''
         KEYMAP=de-latin1
         FONT=ter-124b
       ''')),
 
-      File("/etc/modprobe.d/disable-watchdog-modules.conf", permissions = 0o444, content = cleandoc('''
-        # managed by koti
+      File("/etc/modprobe.d/disable-watchdog-modules.conf", permissions = "r--", content = cleandoc('''
         blacklist sp5100_tco
       ''')),
 
-      File("/home/manuel/.gitconfig", owner = "manuel", permissions = 0o444, content = cleandoc('''
-        # managed by koti
+      File("/home/manuel/.gitconfig", owner = "manuel", permissions = "r--", content = cleandoc('''
         [user]
         email = mbleichner@gmail.com
         name = Manuel Bleichner
@@ -294,13 +283,12 @@ def base() -> Generator[ConfigGroup]:
         rebase = true
       ''')),
 
-      File("/home/manuel/.config/tealdeer/config.toml", owner = "manuel", permissions = 0o444, content = cleandoc('''
-        # managed by koti
+      File("/home/manuel/.config/tealdeer/config.toml", owner = "manuel", permissions = "r--", content = cleandoc('''
         [updates]
         auto_update = true
       ''')),
 
-      File("/etc/locale.conf", permissions = 0o444, content = cleandoc('''
+      File("/etc/locale.conf", permissions = "r--", content = cleandoc('''
         LANG=en_US.UTF-8
         LC_ADDRESS=de_DE.UTF-8
         LC_IDENTIFICATION=de_DE.UTF-8
@@ -313,7 +301,7 @@ def base() -> Generator[ConfigGroup]:
         LC_TIME=de_DE.UTF-8
       ''')),
 
-      File("/etc/locale.gen", permissions = 0o444, content = cleandoc('''
+      File("/etc/locale.gen", permissions = "r--", content = cleandoc('''
         en_US.UTF-8 UTF-8
         de_DE.UTF-8 UTF-8
         # Zeilenumbruch hinter den Locales ist wichtig, sonst werden sie ignoriert
@@ -330,8 +318,7 @@ def base() -> Generator[ConfigGroup]:
     provides = [
       Package("openssh"),
       SystemdUnit("sshd.service"),
-      File("/etc/ssh/sshd_config", owner = "root", permissions = 0o444, content = cleandoc('''
-        # managed by koti
+      File("/etc/ssh/sshd_config", owner = "root", permissions = "r--", content = cleandoc('''
         Include /etc/ssh/sshd_config.d/*.conf
         PermitRootLogin yes
         AuthorizedKeysFile .ssh/authorized_keys

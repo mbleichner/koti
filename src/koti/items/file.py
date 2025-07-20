@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Callable
+from re import match
 
 from koti import ConfigItem, ConfirmMode, ExecutionModel, ManagedConfigItem
 
@@ -17,7 +18,7 @@ class File(ManagedConfigItem):
     filename: str,
     content: str | Callable[[ExecutionModel], str] | None = None,
     source: str | None = None,
-    permissions: int = 0o444,
+    permissions: int | str = "r--",
     owner: str = "root",
     confirm_mode: ConfirmMode | None = None,
   ):
@@ -30,7 +31,10 @@ class File(ManagedConfigItem):
       self.content = lambda model: Path(source).read_bytes()
     else:
       self.content = None
-    self.permissions = permissions
+    if isinstance(permissions, str):
+      self.permissions = File.parse_permissions(permissions)
+    else:
+      self.permissions = permissions
     self.owner = owner
     self.confirm_mode = confirm_mode
 
@@ -40,3 +44,35 @@ class File(ManagedConfigItem):
   def merge(self, other: ConfigItem):
     assert isinstance(other, File)
     raise AssertionError(f"File('{self.filename}') may not be declared twice")
+
+  @staticmethod
+  def parse_permissions(permissions: str) -> int:
+    assert len(permissions) == 3 or len(permissions) == 9, f"permission string must have exactly 3 or 9 digits: {permissions}"
+    if len(permissions) == 9:
+      return File.parse_permissions_9digit(permissions)
+    else:
+      return File.parse_permissions_3digit(permissions)
+
+  @staticmethod
+  def parse_permissions_3digit(permissions: str) -> int:
+    assert match("([r-][w-][x-])", permissions), f"malformed permission string: {permissions}"
+    result = 0
+    result += 0o444 if permissions[0] == "r" else 0
+    result += 0o222 if permissions[1] == "w" else 0
+    result += 0o111 if permissions[2] == "x" else 0
+    return result
+
+  @staticmethod
+  def parse_permissions_9digit(permissions: str) -> int:
+    assert match("([r-][w-][x-]){3}", permissions), f"malformed permission string: {permissions}"
+    result = 0
+    result += 0o400 if permissions[0] == "r" else 0
+    result += 0o200 if permissions[1] == "w" else 0
+    result += 0o100 if permissions[2] == "x" else 0
+    result += 0o040 if permissions[3] == "r" else 0
+    result += 0o020 if permissions[4] == "w" else 0
+    result += 0o010 if permissions[5] == "x" else 0
+    result += 0o004 if permissions[6] == "r" else 0
+    result += 0o002 if permissions[7] == "w" else 0
+    result += 0o001 if permissions[8] == "x" else 0
+    return result

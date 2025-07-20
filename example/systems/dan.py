@@ -57,8 +57,7 @@ def dan() -> Generator[ConfigGroup | None]:
       Swapfile("/swapfile"),
     ],
     provides = [
-      File("/etc/fstab", permissions = 0o444, content = cleandoc('''
-        # managed by koti
+      File("/etc/fstab", permissions = "r--", content = cleandoc('''
         UUID=3409a847-0bd6-43e4-96fd-6e8be4e3c58d  /             ext4  rw,noatime 0 1
         UUID=AF4E-18BD                             /boot         vfat  rw,defaults 0 2
         UUID=CCA2A808A2A7F55C                      /mnt/windows  ntfs  rw,x-systemd.automount 0 0

@@ -46,8 +46,7 @@ def mserver() -> Generator[ConfigGroup | None]:
       Swapfile("/swapfile"),
     ],
     provides = [
-      File("/etc/fstab", permissions = 0o444, content = cleandoc('''
-        # managed by koti
+      File("/etc/fstab", permissions = "r--", content = cleandoc('''
         UUID=77abf8d1-814f-4b0f-b3be-0b5f128f2e34  /      ext4  rw,noatime 0 1
         UUID=b964a65f-8230-4281-8401-d525b48c2a66  /opt   ext4  rw,noatime 0 1
         UUID=41E5-985A                             /boot  vfat  rw,defaults 0 2
@@ -62,7 +61,7 @@ def mserver() -> Generator[ConfigGroup | None]:
     provides = [
       SystemdUnit("systemd-networkd.service"),
 
-      File("/etc/systemd/network/20-wired.network", permissions = 0o444, content = cleandoc('''
+      File("/etc/systemd/network/20-wired.network", permissions = "r--", content = cleandoc('''
         [Match]
         Name=enp0s31f6
         
@@ -74,7 +73,7 @@ def mserver() -> Generator[ConfigGroup | None]:
         DNS=192.168.1.1
       ''')),
 
-      File("/etc/resolv.conf", permissions = 0o444, content = cleandoc('''
+      File("/etc/resolv.conf", permissions = "r--", content = cleandoc('''
         nameserver 192.168.1.100
         nameserver 192.168.1.1
         search fritz.box
@@ -87,7 +86,7 @@ def mserver() -> Generator[ConfigGroup | None]:
     description = "docker-update script",
     confirm_mode = "yolo",
     provides = [
-      File("/usr/local/bin/docker-update", permissions = 0o555, content = cleandoc('''
+      File("/usr/local/bin/docker-update", permissions = "r-x", content = cleandoc('''
         #!/bin/bash -e
         for DIR in homeassistant nextcloud pihole pyanodon-mapshot pacoloco traefik; do
           cd /opt/$DIR && sudo docker compose pull && sudo docker compose up -d
@@ -106,28 +105,28 @@ def mserver() -> Generator[ConfigGroup | None]:
       SystemdUnit("docker.service"),
 
       *DockerComposeService(
-        File("/opt/traefik/docker-compose.yml", permissions = 0o444, source = "docker/traefik/docker-compose.yml"),
+        File("/opt/traefik/docker-compose.yml", permissions = "r--", source = "docker/traefik/docker-compose.yml"),
       ),
 
       *DockerComposeService(
-        File("/opt/nextcloud/docker-compose.yml", permissions = 0o444, source = "docker/nextcloud/docker-compose.yml"),
+        File("/opt/nextcloud/docker-compose.yml", permissions = "r--", source = "docker/nextcloud/docker-compose.yml"),
       ),
 
       *DockerComposeService(
-        File("/opt/homeassistant/docker-compose.yml", permissions = 0o444, source = "docker/homeassistant/docker-compose.yml"),
+        File("/opt/homeassistant/docker-compose.yml", permissions = "r--", source = "docker/homeassistant/docker-compose.yml"),
       ),
 
       *DockerComposeService(
-        File("/opt/pihole/docker-compose.yml", permissions = 0o444, source = "docker/pihole/docker-compose.yml"),
+        File("/opt/pihole/docker-compose.yml", permissions = "r--", source = "docker/pihole/docker-compose.yml"),
       ),
 
       *DockerComposeService(
-        File("/opt/pyanodon-mapshot/docker-compose.yml", permissions = 0o444, source = "docker/pyanodon-mapshot/docker-compose.yml"),
+        File("/opt/pyanodon-mapshot/docker-compose.yml", permissions = "r--", source = "docker/pyanodon-mapshot/docker-compose.yml"),
       ),
 
       *DockerComposeService(
-        File("/opt/pacoloco/docker-compose.yml", permissions = 0o444, source = "docker/pacoloco/docker-compose.yml"),
-        File("/opt/pacoloco/pacoloco.yaml", permissions = 0o444, source = "docker/pacoloco/pacoloco.yaml"),
+        File("/opt/pacoloco/docker-compose.yml", permissions = "r--", source = "docker/pacoloco/docker-compose.yml"),
+        File("/opt/pacoloco/pacoloco.yaml", permissions = "r--", source = "docker/pacoloco/pacoloco.yaml"),
       ),
     ]
   )

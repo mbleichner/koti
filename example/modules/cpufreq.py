@@ -9,7 +9,7 @@ def cpufreq(min_freq: int, max_freq: int, governor: str) -> Generator[ConfigGrou
     description = "set default cpu frequency range and governor",
     provides = [
       Package("cpupower"),
-      File("/etc/default/cpupower", permissions = 0o444, content = cleandoc(f'''
+      File("/etc/default/cpupower", permissions = "r--", content = cleandoc(f'''
         governor="{governor}"
         min_freq="{min_freq}MHz"
         max_freq="{max_freq}MHz"
@@ -24,8 +24,7 @@ def throttle_after_boot(freq: int) -> Generator[ConfigGroup]:
     provides = [
       Package("cpupower"),
 
-      File("/etc/systemd/system/cpu-freq-after-boot.service", permissions = 0o444, content = cleandoc(f'''
-        # managed by koti
+      File("/etc/systemd/system/cpu-freq-after-boot.service", permissions = "r--", content = cleandoc(f'''
         [Unit]
         Description=Throttle CPU after boot
   

@@ -44,8 +44,7 @@ def lenovo() -> Generator[ConfigGroup | None]:
       Swapfile("/swapfile"),
     ],
     provides = [
-      File("/etc/fstab", permissions = 0o444, content = cleandoc('''
-        # managed by koti
+      File("/etc/fstab", permissions = "r--", content = cleandoc('''
         UUID=79969cb9-9b6e-48e2-a672-4aee50f04c56  /      ext4  rw,noatime 0 1
         UUID=1CA6-490D                             /boot  vfat  rw,defaults 0 2
         /swapfile                                  swap   swap  defaults 0 0
@@ -56,8 +55,7 @@ def lenovo() -> Generator[ConfigGroup | None]:
   yield ConfigGroup(
     description = "disable wakeup from touchpad",
     provides = [
-      File("/etc/udev/rules.d/50-disable-touchpad-wakeup.rules", permissions = 0o444, content = cleandoc('''
-        # managed by koti
+      File("/etc/udev/rules.d/50-disable-touchpad-wakeup.rules", permissions = "r--", content = cleandoc('''
         ACTION=="add|change", SUBSYSTEM=="i2c", DRIVER=="i2c_hid_acpi", ATTR{name}=="ELAN0678:00", ATTR{power/wakeup}="disabled"
         # Einstellung testen per udevadm info -q all -a /sys/devices/platform/AMDI0010:02/i2c-2/i2c-ELAN0678:00
       '''))
