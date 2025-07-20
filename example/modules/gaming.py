@@ -37,14 +37,13 @@ def gaming() -> Generator[ConfigGroup]:
       Package("protontricks"),
       Package("protonplus"),
 
-      File("/etc/modules-load.d/ntsync.conf", permissions = "r--", content = cleandoc(f'''
+      File("/etc/modules-load.d/proton-ntsync.conf", permissions = "r--", content = cleandoc(f'''
+        # ntsync module has to be loaded manually in order for proton to be able to use it
         ntsync
       ''')),
 
-      File("/etc/environment.d/proton.conf", permissions = "r--", content = cleandoc(f'''
+      File("/etc/environment.d/proton-wayland.conf", permissions = "r--", content = cleandoc(f'''
         PROTON_ENABLE_WAYLAND = 1
-        PROTON_USE_NTSYNC = 1
-        PROTON_USE_WOW64 = 1
       ''')),
 
       File("/usr/bin/steam", permissions = "r-x", content = cleandoc(f'''
