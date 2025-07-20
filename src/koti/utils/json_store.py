@@ -43,6 +43,9 @@ class JsonMapping[K, V]:
     self.name = name
     self.store = store
 
+  def clear(self):
+    self.store.put(self.name, {})
+
   def get[F](self, key: K, default: F) -> V | F:
     mapping: dict[K, V] = self.store.get(self.name, {})
     return mapping.get(key, default)

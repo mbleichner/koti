@@ -1,25 +1,21 @@
 import os.path
 from hashlib import sha256
-from typing import TypedDict
 
-from koti.core import Checksums, ConfigManager, ConfirmModeValues, ExecutionModel
+from koti.core import Checksums, ConfigManager, ExecutionModel
 from koti.items.swapfile import Swapfile
+from koti.utils import JsonCollection
 from koti.utils.confirm import confirm
-from koti.utils.json_store import JsonMapping, JsonStore
+from koti.utils.json_store import JsonStore
 from koti.utils.shell import shell, shell_success
-
-
-class SwapfileStoreEntry(TypedDict):
-  confirm_mode: ConfirmModeValues
 
 
 class SwapfileManager(ConfigManager[Swapfile]):
   managed_classes = [Swapfile]
-  managed_files_store: JsonMapping[str, SwapfileStoreEntry]
+  managed_files_store: JsonCollection[str]
 
   def __init__(self):
     store = JsonStore("/var/cache/koti/SwapfileManager.json")
-    self.managed_files_store = store.mapping("managed_files")
+    self.managed_files_store = store.collection("managed_files")
 
   def check_configuration(self, item: Swapfile, model: ExecutionModel):
     assert item.size_bytes is not None, "missing size_bytes parameter"
@@ -61,18 +57,17 @@ class SwapfileManager(ConfigManager[Swapfile]):
 
   def cleanup(self, items_to_keep: list[Swapfile], model: ExecutionModel):
     for item in items_to_keep:
-      self.managed_files_store.put(item.filename, {"confirm_mode": model.confirm_mode(item)})
+      self.managed_files_store.add(item.filename)
 
     currently_managed_files = [item.filename for item in items_to_keep]
-    previously_managed_files = self.managed_files_store.keys()
+    previously_managed_files = self.managed_files_store.elements()
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]
     for swapfile in files_to_delete:
       if os.path.isfile(swapfile):
-        store_entry: SwapfileStoreEntry = self.managed_files_store.get(swapfile, {"confirm_mode": model.confirm_mode_fallback})
         confirm(
           message = f"confirm to delete swapfile {swapfile}",
           destructive = True,
-          mode = store_entry["confirm_mode"],
+          mode = model.confirm_mode(Swapfile(swapfile)),
         )
         if self.is_mounted(swapfile):
           shell(f"swapoff {swapfile}")

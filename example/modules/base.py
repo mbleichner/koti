@@ -92,7 +92,7 @@ def base() -> Generator[ConfigGroup]:
     ],
     provides = [
 
-      # Create options for pacman.conf (so i don't have to null-check later)
+      # Pre-create options for pacman.conf (so I don't have to null-check later)
       Option[str]("/etc/pacman.conf/NoExtract", value = []),
       Option[str]("/etc/pacman.conf/NoUpgrade", value = []),
 

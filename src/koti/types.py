@@ -8,17 +8,16 @@ from koti.confirmmodes import ConfirmModeValues, highest_confirm_mode
 
 class ConfigGroup:
   description: str
-  confirm_mode: ConfirmModeValues | None
   requires: Sequence[ConfigItem]
   provides: Sequence[ConfigItem]
 
   def __init__(self, description: str, provides: Sequence[ConfigItem | None], requires: Sequence[ConfigItem | None] | None = None, confirm_mode: ConfirmModeValues | None = None):
     self.description = description
-    self.confirm_mode = confirm_mode
     self.requires = [item for item in (requires or []) if item is not None]
     self.provides = [item for item in (provides or []) if item is not None]
-    for item in [i for i in self.provides if isinstance(i, ManagedConfigItem)]:
-      item.confirm_mode = highest_confirm_mode(item.confirm_mode, confirm_mode)
+    for item in self.provides:
+      if isinstance(item, ManagedConfigItem) and item.confirm_mode is None:
+        item.confirm_mode = confirm_mode
 
   def __str__(self):
     return f"ConfigGroup('{self.description}')"
@@ -91,47 +90,54 @@ class ExecutionModel:
   install_phases: Sequence[InstallPhase]
   cleanup_phase: CleanupPhase
   confirm_mode_fallback: ConfirmModeValues
+  confirm_mode_archive: dict[str, ConfirmModeValues]
 
   def __init__(
     self,
     managers: Sequence[ConfigManager],
-    confirm_mode_fallback: ConfirmModeValues,
     install_phases: Sequence[InstallPhase],
     cleanup_phase: CleanupPhase,
+    confirm_mode_fallback: ConfirmModeValues,
+    confirm_mode_archive: dict[str, ConfirmModeValues],
   ):
     self.managers = managers
     self.install_phases = install_phases
     self.cleanup_phase = cleanup_phase
     self.confirm_mode_fallback = confirm_mode_fallback
+    self.confirm_mode_archive = confirm_mode_archive
 
   @overload
-  def item[T: ConfigItem, F](self, reference: T) -> T:
+  def item[T: ConfigItem](self, reference: T) -> T:
     pass
 
   @overload
-  def item[T: ConfigItem, F](self, reference: T, optional: Literal[False]) -> T:
+  def item[T: ConfigItem](self, reference: T, optional: Literal[False]) -> T:
     pass
 
   @overload
-  def item[T: ConfigItem, F](self, reference: T, optional: Literal[True]) -> T | None:
+  def item[T: ConfigItem](self, reference: T, optional: Literal[True]) -> T | None:
     pass
 
-  def item[T: ConfigItem, F](self, reference: T, optional: bool = False) -> T | None:
+  def item[T: ConfigItem](self, reference: T, optional: bool = False) -> T | None:
     result = next((
-      cast(T, item)
-      for phase in self.install_phases
-      for item in phase.items
+      cast(T, item) for phase in self.install_phases for item in phase.items
       if item.identifier() == reference.identifier()
     ), None)
     assert result is not None or optional, f"Item not found: {reference.identifier()}"
     return result
 
-  def confirm_mode(self, *args: ManagedConfigItem | ConfirmModeValues) -> ConfirmModeValues:
-    confirm_modes_from_strings = [item for item in args if isinstance(item, str)]
-    confirm_modes_from_items = [item.confirm_mode for item in args if isinstance(item, ManagedConfigItem)]
-    highest = highest_confirm_mode(*confirm_modes_from_items, *confirm_modes_from_strings)
-    if highest: return highest
-    return self.confirm_mode_fallback
+  def confirm_mode(self, *args: ManagedConfigItem) -> ConfirmModeValues:
+    highest = highest_confirm_mode(*[self._confirm_mode(arg) for arg in args])
+    return highest if highest else self.confirm_mode_fallback
+
+  def _confirm_mode(self, arg: ManagedConfigItem) -> ConfirmModeValues:
+    if arg.confirm_mode is not None:
+      return arg.confirm_mode
+    item = self.item(arg, optional = True)
+    if item is not None:
+      return item.confirm_mode if item.confirm_mode is not None else self.confirm_mode_fallback
+    confirm_mode_from_archive = self.confirm_mode_archive[arg.identifier()]
+    return confirm_mode_from_archive if confirm_mode_from_archive is not None else self.confirm_mode_fallback
 
 
 class InstallPhase:

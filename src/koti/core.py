@@ -4,10 +4,13 @@ from os import getuid
 from typing import Iterable, Iterator
 
 from koti.types import *
+from koti.utils import JsonMapping, JsonStore
 
 
 class Koti:
+  store: JsonStore
   model: ExecutionModel
+  confirm_mode_store: JsonMapping[str, ConfirmModeValues]
 
   def __init__(
     self,
@@ -16,10 +19,11 @@ class Koti:
     default_confirm_mode: ConfirmModeValues = "cautious"
   ):
     assert getuid() == 0, "this program must be run as root (or through sudo)"
+    self.store = JsonStore("/var/cache/koti/Koti.json")
     configs_cleaned = [c for c in configs if c is not None]
     managers_cleaned = [m for m in managers if m is not None]
     Koti.check_manager_consistency(managers_cleaned, configs_cleaned)
-    self.model = Koti.build_execution_model(managers_cleaned, configs_cleaned, default_confirm_mode)
+    self.model = Koti.build_execution_model(managers_cleaned, configs_cleaned, default_confirm_mode, self.store)
     Koti.check_config_item_consistency(self.model)
 
   def plan(self, groups: bool = True, items: bool = True, summary: bool = True) -> int:
@@ -69,6 +73,7 @@ class Koti:
       if len(items_to_keep):
         Koti.print_phase_log(self.model, None, manager, items_to_keep)
         manager.cleanup(items_to_keep, self.model)
+    Koti.save_confirm_modes(self.store, self.model)
 
   @staticmethod
   def print_phase_log(model: ExecutionModel, phase_idx: int | None, manager: ConfigManager, items: list[ConfigItem]):
@@ -96,7 +101,12 @@ class Koti:
     ]
 
   @staticmethod
-  def build_execution_model(managers: Sequence[ConfigManager], configs: Sequence[ConfigGroup], default_confirm_mode: ConfirmModeValues) -> ExecutionModel:
+  def build_execution_model(
+    managers: Sequence[ConfigManager],
+    configs: Sequence[ConfigGroup],
+    default_confirm_mode: ConfirmModeValues,
+    store: JsonStore,
+  ) -> ExecutionModel:
     groups = Koti.get_all_provided_groups(configs)
     groups_separated_into_phases = Koti.separate_into_phases(groups)
 
@@ -122,7 +132,22 @@ class Koti:
       install_phases = install_phases,
       cleanup_phase = cleanup_phase,
       confirm_mode_fallback = default_confirm_mode,
+      confirm_mode_archive = Koti.load_confirm_modes(store),
     )
+
+  @staticmethod
+  def load_confirm_modes(store: JsonStore) -> dict[str, ConfirmModeValues]:
+    result = store.get("confirm_modes")
+    return result if isinstance(result, dict) else {}
+
+  @staticmethod
+  def save_confirm_modes(store: JsonStore, model: ExecutionModel):
+    result: dict[str, ConfirmModeValues] = {}
+    for phase in model.install_phases:
+      for manager, items in phase.order:
+        for item in items:
+          result[item.identifier()] = model.confirm_mode(item)
+    store.put("confirm_modes", result)
 
   @staticmethod
   def merge_items(items_grouped_by_phase: list[list[ConfigItem]]) -> list[list[ConfigItem]]:

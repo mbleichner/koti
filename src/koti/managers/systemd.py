@@ -1,16 +1,11 @@
 from hashlib import sha256
-from typing import TypedDict
 
-from koti.core import Checksums, ConfigManager, ConfirmModeValues, ExecutionModel
+from koti.core import Checksums, ConfigManager, ExecutionModel
 from koti.items.systemd import SystemdUnit
 from koti.managers.pacman import shell
 from koti.utils import shell_success
 from koti.utils.confirm import confirm
-from koti.utils.json_store import JsonCollection, JsonMapping, JsonStore
-
-
-class SystemdUnitStoreEntry(TypedDict):
-  confirm_mode: ConfirmModeValues
+from koti.utils.json_store import JsonCollection, JsonStore
 
 
 class SystemdUnitManager(ConfigManager[SystemdUnit]):
@@ -43,7 +38,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
 
   def cleanup(self, items_to_keep: list[SystemdUnit], model: ExecutionModel):
     shell(f"systemctl daemon-reload")
-    self.store_all_seen_units(model, items_to_keep)
+    self.store_all_seen_units(items_to_keep)
     self.deactivate_removed_units(model, items_to_keep)
 
   def deactivate_removed_units(self, model: ExecutionModel, items: list[SystemdUnit]):
@@ -51,30 +46,28 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
     users = set([item.user for item in items] + previously_seen_users + [None])
     for user in users:
       items_for_user = [item for item in items if item.user == user]
-      units_store: JsonMapping[str, SystemdUnitStoreEntry] = self.store.mapping(store_key_for_user(user))
+      units_store: JsonCollection[str] = self.store.collection(store_key_for_user(user))
       currently_managed_units = [item.name for item in items_for_user]
-      previously_managed_units = units_store.keys()
-      units_to_deactivate = [file for file in previously_managed_units if file not in currently_managed_units]
+      previously_managed_units = units_store.elements()
+      units_to_deactivate = [name for name in previously_managed_units if name not in currently_managed_units]
       if len(units_to_deactivate) > 0:
         confirm(
           message = f"confirm to deactivate units: {", ".join(units_to_deactivate)}" if user is None
           else f"confirm to deactivate units for user {user}: {", ".join(units_to_deactivate)}",
           destructive = True,
-          mode = model.confirm_mode(*(
-            units_store.get(unit, {"confirm_mode": model.confirm_mode_fallback})["confirm_mode"] for unit in units_to_deactivate
-          )),
+          mode = model.confirm_mode(*(SystemdUnit(name, user = user) for name in units_to_deactivate)),
         )
         shell(f"{systemctl_for_user(user)} disable --now {" ".join(units_to_deactivate)}")
         for identifier in units_to_deactivate:
           units_store.remove(identifier)
 
-  def store_all_seen_units(self, model: ExecutionModel, items: list[SystemdUnit]):
+  def store_all_seen_units(self, items: list[SystemdUnit]):
     users = set([item.user for item in items])
     for user in users:
       items_for_user = [item for item in items if item.user == user]
-      units_store: JsonMapping[str, SystemdUnitStoreEntry] = self.store.mapping(store_key_for_user(user))
+      units_store: JsonCollection[str] = self.store.collection(store_key_for_user(user))
       for item in items_for_user:
-        units_store.put(item.name, {"confirm_mode": model.confirm_mode(item)})
+        units_store.add(item.name)
         if user is not None: self.user_list_store.add(user)
 
 

@@ -1,25 +1,21 @@
 import os
 import pwd
 from hashlib import sha256
-from typing import TypedDict
 
-from koti.core import Checksums, ConfigManager, ConfirmModeValues, ExecutionModel
+from koti.core import Checksums, ConfigManager, ExecutionModel
 from koti.items.file import File
+from koti.utils import JsonCollection
 from koti.utils.confirm import confirm
-from koti.utils.json_store import JsonMapping, JsonStore
-
-
-class FileStoreEntry(TypedDict):
-  confirm_mode: ConfirmModeValues
+from koti.utils.json_store import JsonStore
 
 
 class FileManager(ConfigManager[File]):
   managed_classes = [File]
-  managed_files_store: JsonMapping[str, FileStoreEntry]
+  managed_files_store: JsonCollection[str]
 
   def __init__(self):
     store = JsonStore("/var/cache/koti/FileManager.json")
-    self.managed_files_store = store.mapping("managed_files")
+    self.managed_files_store = store.collection("managed_files")
 
   def check_configuration(self, item: File, model: ExecutionModel):
     assert item.content is not None, "missing either content or content_from_file"
@@ -64,18 +60,17 @@ class FileManager(ConfigManager[File]):
 
   def cleanup(self, items_to_keep: list[File], model: ExecutionModel):
     for item in items_to_keep:
-      self.managed_files_store.put(item.filename, {"confirm_mode": model.confirm_mode(item)})
+      self.managed_files_store.add(item.filename)
 
     currently_managed_files = [item.filename for item in items_to_keep]
-    previously_managed_files = self.managed_files_store.keys()
+    previously_managed_files = self.managed_files_store.elements()
     files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]
     for file in files_to_delete:
       if os.path.isfile(file):
-        store_entry: FileStoreEntry = self.managed_files_store.get(file, {"confirm_mode": model.confirm_mode_fallback})
         confirm(
           message = f"confirm to delete file: {file}",
           destructive = True,
-          mode = store_entry["confirm_mode"],
+          mode = model.confirm_mode(File(file)),
         )
         os.unlink(file)
       self.managed_files_store.remove(file)
