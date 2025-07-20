@@ -87,8 +87,10 @@ class Koti:
       details = "cleaning up leftover items"
     elif len(items) == 0:
       details = "no outdated items found"
-    else:
+    elif len(items) < 5:
       details = f"items to update: {", ".join([item.description() for item in items])}"
+    else:
+      details = f"{len(items)} items to update"
 
     print(f"{phase}  {manager.__class__.__name__.ljust(max_manager_name_len)}  {details}")
 
