@@ -18,20 +18,12 @@ def kernel_cachyos(sortkey: int) -> Generator[ConfigGroup]:
     ],
     provides = [
       *Packages("linux-cachyos", "linux-cachyos-headers"),
-      File("/boot/loader/entries/arch-cachyos.conf", permissions = "r-x", content = cleandoc(f'''
-        title    Arch Linux with CachyOS Kernel
-        linux    /vmlinuz-linux-cachyos
-        initrd   /initramfs-linux-cachyos.img
-        options  root=UUID={root_uuid} rw {kernel_params}
-        sort-key {sortkey}
-      ''')),
-      File("/boot/loader/entries/arch-cachyos-fallback.conf", permissions = "r-x", content = cleandoc(f'''
-        title    Arch Linux with CachyOS Kernel (Fallback)
-        linux    /vmlinuz-linux-cachyos
-        initrd   /initramfs-linux-cachyos-fallback.img
-        options  root=UUID={root_uuid} rw
-        sort-key {sortkey + 80}
-      ''')),
+      *SystemdBootLoader(
+        filename = "/boot/loader/entries/arch-cachyos.conf",
+        description = "Arch Linux with CachyOS Kernel",
+        kernel = "linux-cachyos",
+        sortkey = sortkey
+      ),
     ]
   )
 
@@ -42,20 +34,12 @@ def kernel_stock(sortkey: int) -> Generator[ConfigGroup]:
     confirm_mode = "paranoid",
     provides = [
       *Packages("linux", "linux-headers"),
-      File("/boot/loader/entries/arch-stock.conf", permissions = "r-x", content = cleandoc(f'''
-        title    Arch Linux with Stock Kernel
-        linux    /vmlinuz-linux
-        initrd   /initramfs-linux.img
-        options  root=UUID={root_uuid} rw {kernel_params}
-        sort-key {sortkey}
-      ''')),
-      File("/boot/loader/entries/arch-stock-fallback.conf", permissions = "r-x", content = cleandoc(f'''
-        title    Arch Linux with Stock Kernel (Fallback)
-        linux    /vmlinuz-linux
-        initrd   /initramfs-linux-fallback.img
-        options  root=UUID={root_uuid} rw
-        sort-key {sortkey + 80}
-      ''')),
+      *SystemdBootLoader(
+        filename = "/boot/loader/entries/arch-stock.conf",
+        description = "Arch Linux with Stock Kernel",
+        kernel = "linux",
+        sortkey = sortkey
+      ),
     ]
   )
 
@@ -66,19 +50,29 @@ def kernel_lts(sortkey: int) -> Generator[ConfigGroup]:
     confirm_mode = "paranoid",
     provides = [
       *Packages("linux-lts", "linux-lts-headers"),
-      File("/boot/loader/entries/arch-lts.conf", permissions = "r-x", content = cleandoc(f'''
-        title    Arch Linux with LTS Kernel
-        linux    /vmlinuz-linux-lts
-        initrd   /initramfs-linux-lts.img
-        options  root=UUID={root_uuid} rw {kernel_params}
-        sort-key {sortkey}
-      ''')),
-      File("/boot/loader/entries/arch-lts-fallback.conf", permissions = "r-x", content = cleandoc(f'''
-        title    Arch Linux with LTS Kernel (Fallback)
-        linux    /vmlinuz-linux-lts
-        initrd   /initramfs-linux-lts-fallback.img
-        options  root=UUID={root_uuid} rw
-        sort-key {sortkey + 80}
-      ''')),
+      *SystemdBootLoader(
+        filename = "/boot/loader/entries/arch-lts.conf",
+        description = "Arch Linux with LTS Kernel",
+        kernel = "linux-lts",
+        sortkey = sortkey
+      ),
     ]
   )
+
+
+# noinspection PyPep8Naming
+def SystemdBootLoader(filename: str, description: str, kernel: str, sortkey: int) -> Generator[File]:
+  yield File(filename, permissions = "r-x", content = cleandoc(f'''
+    title    {description}
+    linux    /vmlinuz-{kernel}
+    initrd   /initramfs-{kernel}.img
+    options  root=UUID={root_uuid} rw {kernel_params}
+    sort-key {sortkey}
+  '''))
+  yield File(filename.replace(".conf", "-fallback.conf"), permissions = "r-x", content = cleandoc(f'''
+    title    {description} (Fallback)
+    linux    /vmlinuz-{kernel}
+    initrd   /initramfs-{kernel}-fallback.img
+    options  root=UUID={root_uuid} rw
+    sort-key {sortkey + 80}
+  '''))
