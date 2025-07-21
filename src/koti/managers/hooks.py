@@ -44,16 +44,6 @@ class PostHookManager(ConfigManager[PostHook]):
       hook.execute()
       self.checksum_store.put(hook.name, str(target_checksum))
 
-  def cleanup(self, items_to_keep: list[PostHook], model: ExecutionModel):
-    currently_managed_hooks = [item.name for item in items_to_keep]
-    previously_managed_hooks = self.checksum_store.keys()
-    hooks_to_delete = [name for name in previously_managed_hooks if name not in currently_managed_hooks]
-    for hook_name in hooks_to_delete:
-      self.checksum_store.remove(hook_name)
-
-  def finalize(self, all_items: list[PostHook], model: ExecutionModel):
-    self.install(all_items, model)
-
   @staticmethod
   def index_in_execution_order(model: ExecutionModel, needle: ConfigItem) -> int | None:
     result = 0
@@ -64,6 +54,12 @@ class PostHookManager(ConfigManager[PostHook]):
             return result
           result += 1
     return None
+
+  def list_installed_items(self) -> list[PostHook]:
+    return []
+
+  def uninstall(self, items: list[PostHook], model: ExecutionModel):
+    pass
 
 
 class PostHookChecksums(Checksums[PostHook]):

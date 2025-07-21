@@ -40,25 +40,29 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
       units_store: JsonCollection[str] = self.store.collection(store_key_for_user(user))
       units_store.add_all([item.name for item in items])
 
-  def cleanup(self, items_to_keep: list[SystemdUnit], model: ExecutionModel):
-    shell(f"systemctl daemon-reload")
+  def list_installed_items(self) -> list[SystemdUnit]:
+    result: list[SystemdUnit] = []
     previously_seen_users = self.user_list_store.elements()
-    users = set([item.user for item in items_to_keep] + previously_seen_users + [None])
-    for user in users:
-      items_for_user = [item for item in items_to_keep if item.user == user]
+    for user in [None, *previously_seen_users]:
       units_store: JsonCollection[str] = self.store.collection(store_key_for_user(user))
-      currently_managed_units = [item.name for item in items_for_user]
-      previously_managed_units = units_store.elements()
-      units_to_deactivate = [name for name in previously_managed_units if name not in currently_managed_units]
-      if len(units_to_deactivate) > 0:
+      result += [SystemdUnit(name, user) for name in units_store.elements()]
+    return result
+
+  def uninstall(self, items: list[SystemdUnit], model: ExecutionModel):
+    distinct_users = {item.user for item in items}
+    for user in distinct_users:
+      units_store: JsonCollection[str] = self.store.collection(store_key_for_user(user))
+      items_to_deactivate = [item for item in items if item.user == user]
+      if len(items_to_deactivate) > 0:
+        unit_names = [item.name for item in items_to_deactivate]
         confirm(
-          message = f"confirm to deactivate units: {", ".join(units_to_deactivate)}" if user is None
-          else f"confirm to deactivate units for user {user}: {", ".join(units_to_deactivate)}",
+          message = f"confirm to deactivate units: {", ".join(unit_names)}" if user is None
+          else f"confirm to deactivate units for user {user}: {", ".join(unit_names)}",
           destructive = True,
-          mode = model.confirm_mode(*(SystemdUnit(name, user = user) for name in units_to_deactivate)),
+          mode = model.confirm_mode(*items_to_deactivate),
         )
-        shell(f"{systemctl_for_user(user)} disable --now {" ".join(units_to_deactivate)}")
-        units_store.remove_all(units_to_deactivate)
+        shell(f"{systemctl_for_user(user)} disable --now {" ".join(unit_names)}")
+        units_store.remove_all(unit_names)
 
 
 def systemctl_for_user(user):

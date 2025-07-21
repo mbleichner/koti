@@ -13,14 +13,3 @@ class KotiManagerPresets:
       SystemdUnitManager(),
       PostHookManager(),
     ]
-
-  # @staticmethod
-  # def debian() -> list[ConfigManager]:
-  #   return [
-  #     DebianPackageManager,
-  #     SwapfileManager(),
-  #     FileManager(),
-  #     SystemdUnitManager(),
-  #     PostHookManager(),
-  #     CheckpointManager(),
-  #   ]

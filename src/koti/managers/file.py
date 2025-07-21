@@ -57,19 +57,19 @@ class FileManager(ConfigManager[File]):
 
       self.managed_files_store.add(item.filename)
 
-  def cleanup(self, items_to_keep: list[File], model: ExecutionModel):
-    currently_managed_files = [item.filename for item in items_to_keep]
-    previously_managed_files = self.managed_files_store.elements()
-    files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]
-    for file in files_to_delete:
-      if os.path.isfile(file):
+  def list_installed_items(self) -> list[File]:
+    return [File(filename) for filename in self.managed_files_store.elements()]
+
+  def uninstall(self, items: list[File], model: ExecutionModel):
+    for item in items:
+      if os.path.isfile(item.filename):
         confirm(
-          message = f"confirm to delete file: {file}",
+          message = f"confirm to delete file: {item.filename}",
           destructive = True,
-          mode = model.confirm_mode(File(file)),
+          mode = model.confirm_mode(item),
         )
-        os.unlink(file)
-      self.managed_files_store.remove(file)
+        os.unlink(item.filename)
+      self.managed_files_store.remove(item.filename)
 
 
 class FileChecksums(Checksums[File]):

@@ -57,28 +57,28 @@ class SwapfileManager(ConfigManager[Swapfile]):
 
       self.managed_files_store.add(item.filename)
 
-  def cleanup(self, items_to_keep: list[Swapfile], model: ExecutionModel):
-    currently_managed_files = [item.filename for item in items_to_keep]
-    previously_managed_files = self.managed_files_store.elements()
-    files_to_delete = [file for file in previously_managed_files if file not in currently_managed_files]
-    for swapfile in files_to_delete:
-      if os.path.isfile(swapfile):
-        confirm(
-          message = f"confirm to delete swapfile {swapfile}",
-          destructive = True,
-          mode = model.confirm_mode(Swapfile(swapfile)),
-        )
-        if self.is_mounted(swapfile):
-          shell(f"swapoff {swapfile}")
-        os.unlink(swapfile)
-      self.managed_files_store.remove(swapfile)
-
   def create_swapfile(self, item: Swapfile):
     shell(f"mkswap -U clear --size {item.size_bytes} --file {item.identifier}")
     shell(f"chmod 600 {item.identifier}")
 
   def is_mounted(self, swapfile: str) -> bool:
     return shell_success(f"swapon --show | grep {swapfile}")
+
+  def list_installed_items(self) -> list[Swapfile]:
+    return [Swapfile(filename) for filename in self.managed_files_store.elements()]
+
+  def uninstall(self, items: list[Swapfile], model: ExecutionModel):
+    for item in items:
+      if os.path.isfile(item.filename):
+        confirm(
+          message = f"confirm to delete swapfile {item.filename}",
+          destructive = True,
+          mode = model.confirm_mode(item),
+        )
+        if self.is_mounted(item.filename):
+          shell(f"swapoff {item.filename}")
+        os.unlink(item.filename)
+      self.managed_files_store.remove(item.filename)
 
 
 class SwapfileChecksums(Checksums[Swapfile]):

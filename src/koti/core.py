@@ -26,9 +26,9 @@ class Koti:
     self.model = Koti.build_execution_model(managers_cleaned, configs_cleaned, default_confirm_mode, self.store)
     Koti.check_config_item_consistency(self.model)
 
-  def plan(self, groups: bool = True, items: bool = True, summary: bool = True) -> int:
-    items_total: list[ConfigItem] = []
-    items_to_update: list[ManagedConfigItem] = []
+  def plan(self, groups: bool = True, items: bool = True) -> int:
+    items_total: list[ManagedConfigItem] = []
+    items_changed: list[ManagedConfigItem] = []
     for phase_idx, phase in enumerate(self.model.install_phases):
       for manager, items_in_phase in phase.order:
         checksums = manager.checksums(self.model)
@@ -36,29 +36,40 @@ class Koti:
           items_total.append(item)
           needs_update = checksums.current(item) != checksums.target(item)
           if needs_update:
-            items_to_update.append(item)
+            items_changed.append(item)
 
     for phase_idx, phase in enumerate(self.model.install_phases):
       print(f"Phase {phase_idx + 1}:")
       if groups:
         for group in phase.groups:
-          needs_update = len([item for item in group.provides if item in items_to_update]) > 0
+          needs_update = len([item for item in group.provides if item in items_changed]) > 0
           print(f"{"*" if needs_update else "-"} {group.description}")
       if items:
         for manager, items_in_phase in phase.order:
           for item in items_in_phase:
-            needs_update = item in items_to_update
+            needs_update = item in items_changed or item in items_changed
             print(f"{"*" if needs_update else "-"} {item.description()}")
       print()
 
-    if summary:
-      if len(items_to_update) > 0:
-        print(f"{len(items_total)} items total, {len(items_to_update)} items to update:")
-        for item in items_to_update: print(f"- {item.description()}")
-        print()
-      else:
-        print(f"{len(items_total)} items total, no outdated items found - only cleanup will be performed")
-        print()
+    installed = [item.identifier() for manager in self.model.managers for item in manager.list_installed_items()]
+    items_to_install = [item for item in items_changed if item.identifier() not in installed]
+    items_to_update = [item for item in items_changed if item.identifier() in installed]
+    items_to_uninstall = self.model.cleanup_phase.items
+
+    count = len(items_to_install) + len(items_to_update) + len(items_to_uninstall)
+    if count > 0:
+      print(f"{len(items_total)} items total, {count} items to update:")
+      for item in items_to_install:
+        print(f"- install: {item.description()}")
+      for item in items_to_update:
+        print(f"- update:  {item.description()}")
+      for item in items_to_uninstall:
+        print(f"- remove:  {item.description()}")
+      print()
+      print("// additional updates may be triggered by PostHooks")
+    else:
+      print(f"{len(items_total)} items total, everything up to date")
+    print()
 
     return len(items_to_update)
 
@@ -69,10 +80,10 @@ class Koti:
         items_to_update = [item for item in items if checksums.current(item) != checksums.target(item)]
         Koti.print_phase_log(self.model, phase_idx, manager, items_to_update)
         manager.install(items_to_update, self.model) or []
-    for manager, items_to_keep in self.model.cleanup_phase.order:
-      if len(items_to_keep):
-        Koti.print_phase_log(self.model, None, manager, items_to_keep)
-        manager.cleanup(items_to_keep, self.model)
+    for manager, items_to_uninstall in self.model.cleanup_phase.order:
+      if len(items_to_uninstall):
+        Koti.print_phase_log(self.model, None, manager, items_to_uninstall)
+        manager.uninstall(items_to_uninstall, self.model)
     Koti.save_confirm_modes(self.store, self.model)
 
   @staticmethod
@@ -84,18 +95,18 @@ class Koti:
     ])
 
     if phase_idx is None:
-      details = "cleaning up leftover items"
+      details = f"{len(items)} items to uninstall"
     elif len(items) == 0:
       details = "no outdated items found"
     elif len(items) < 5:
-      details = f"items to update: {", ".join([item.description() for item in items])}"
+      details = f"items to install/update: {", ".join([item.description() for item in items])}"
     else:
       details = f"{len(items)} items to update"
 
     print(f"{phase}  {manager.__class__.__name__.ljust(max_manager_name_len)}  {details}")
 
   @staticmethod
-  def get_cleanup_phase_manager_order(managers: Sequence[ConfigManager]):
+  def get_cleanup_phase_manager_order(managers: Sequence[ConfigManager]) -> Sequence[ConfigManager]:
     return [
       *[manager for manager in managers if manager.order_in_cleanup_phase == "first"],
       *reversed([manager for manager in managers if manager.order_in_cleanup_phase == "reverse_install_order"]),
@@ -111,28 +122,18 @@ class Koti:
   ) -> ExecutionModel:
     groups = Koti.get_all_provided_groups(configs)
     groups_separated_into_phases = Koti.separate_into_phases(groups)
-
     merged_items_grouped_by_phase: list[list[ConfigItem]] = Koti.merge_items([
       [item for group in phase for item in group.provides]
       for phase in groups_separated_into_phases
     ])
 
-    install_phases = [
-      Koti.create_install_phase(managers, groups_in_phase, items_in_phase)
-      for groups_in_phase, items_in_phase in zip(groups_separated_into_phases, merged_items_grouped_by_phase)
-    ]
-
-    cleanup_phase = CleanupPhase(
-      order = [
-        (manager, [item for phase in install_phases for m, items in phase.order if m is manager for item in items])
-        for manager in Koti.get_cleanup_phase_manager_order(managers)
-      ]
-    )
-
     return ExecutionModel(
       managers = managers,
-      install_phases = install_phases,
-      cleanup_phase = cleanup_phase,
+      install_phases = [
+        Koti.create_install_phase(managers, groups_in_phase, items_in_phase)
+        for groups_in_phase, items_in_phase in zip(groups_separated_into_phases, merged_items_grouped_by_phase)
+      ],
+      cleanup_phase = (Koti.create_cleanup_phase(managers, merged_items_grouped_by_phase)),
       confirm_mode_fallback = default_confirm_mode,
       confirm_mode_archive = Koti.load_confirm_modes(store),
     )
@@ -228,7 +229,21 @@ class Koti:
       ]
       if len(managed_items) > 0:
         order.append((manager, managed_items))
-    return InstallPhase(groups = groups_in_phase, order = order, items = merged_items_in_phase)
+    return InstallPhase(
+      groups = groups_in_phase,
+      order = order,
+      items = merged_items_in_phase
+    )
+
+  @staticmethod
+  def create_cleanup_phase(managers, merged_items_grouped_by_phase) -> CleanupPhase:
+    all_item_identifieres = [item.identifier() for phase in merged_items_grouped_by_phase for item in phase]
+    return CleanupPhase(
+      order = [
+        (manager, [item for item in manager.list_installed_items() if item.identifier() not in all_item_identifieres])
+        for manager in Koti.get_cleanup_phase_manager_order(managers)
+      ]
+    )
 
   @staticmethod
   def find_dependency_violation(phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup] | None:

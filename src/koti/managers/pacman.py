@@ -4,7 +4,7 @@ from koti import Checksums
 from koti.core import ConfigManager, ConfirmMode, ExecutionModel
 from koti.items.package import Package
 from koti.items.pacman_key import PacmanKey
-from koti.utils import confirm, JsonCollection, JsonStore
+from koti.utils import JsonCollection, JsonStore, confirm
 from koti.utils.shell import shell, shell_output, shell_success
 
 
@@ -105,20 +105,17 @@ class PacmanPackageManager(ConfigManager[Package]):
 
     self.managed_packages_store.add_all([item.name for item in items])
 
-  def cleanup(self, items_to_keep: list[Package], model: ExecutionModel):
-    desired = [pkg.name for pkg in items_to_keep]
-    explicit = self.delegate.list_explicit_packages()
-
-    # in case we want to ignore packages not installed by koti, we only consider
-    # to remove packages that have been recorded by koti before
+  def list_installed_items(self) -> list[Package]:
     if self.ignore_externally_installed:
-      previously_managed_packages = self.managed_packages_store.elements()
-      explicit = [pkg for pkg in explicit if pkg in previously_managed_packages]
+      return [Package(pkg) for pkg in self.managed_packages_store.elements()]
+    else:
+      return [Package(pkg) for pkg in self.delegate.list_explicit_packages()]
 
-    packages_to_remove = [pkg for pkg in explicit if pkg not in desired]
-    confirm_mode = model.confirm_mode(*(Package(pkg) for pkg in packages_to_remove))
-    self.delegate.mark_as_dependency(packages_to_remove, confirm_mode = confirm_mode)
-    self.managed_packages_store.remove_all(packages_to_remove)
+  def uninstall(self, items: list[Package], model: ExecutionModel):
+    confirm_mode = model.confirm_mode(*items)
+    package_names = [pkg.name for pkg in items]
+    self.delegate.mark_as_dependency(package_names, confirm_mode = confirm_mode)
+    self.managed_packages_store.remove_all(package_names)
     self.delegate.prune_unneeded(confirm_mode = confirm_mode)
 
 
@@ -142,8 +139,11 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
       shell(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
       shell(f"sudo pacman-key --lsign-key {item.key_id}")
 
-  def cleanup(self, items_to_keep: list[PacmanKey], model: ExecutionModel):
+  def uninstall(self, items: list[PacmanKey], model: ExecutionModel):
     pass
+
+  def list_installed_items(self) -> list[PacmanKey]:
+    return []
 
 
 class PackageChecksums(Checksums[Package]):

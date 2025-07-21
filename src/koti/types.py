@@ -68,12 +68,16 @@ class ConfigManager[T: ManagedConfigItem](metaclass = ABCMeta):
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.checksums()")
 
   @abstractmethod
+  def list_installed_items(self) -> list[T]:
+    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.list_installed_items()")
+
+  @abstractmethod
   def install(self, items: list[T], model: ExecutionModel):
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.install()")
 
   @abstractmethod
-  def cleanup(self, items_to_keep: list[T], model: ExecutionModel):
-    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.cleanup()")
+  def uninstall(self, items: list[T], model: ExecutionModel):
+    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.uninstall()")
 
 
 class Checksums[T:ConfigItem]:
@@ -152,7 +156,9 @@ class InstallPhase:
 
 
 class CleanupPhase:
+  items: Sequence[ManagedConfigItem]
   order: Sequence[tuple[ConfigManager, list[ManagedConfigItem]]]
 
   def __init__(self, order: Sequence[tuple[ConfigManager, list[ManagedConfigItem]]]):
+    self.items = [item for manager, items in order for item in items]
     self.order = order
