@@ -81,9 +81,8 @@ class Koti:
         Koti.print_phase_log(self.model, phase_idx, manager, items_to_update)
         manager.install(items_to_update, self.model) or []
     for manager, items_to_uninstall in self.model.cleanup_phase.order:
-      if len(items_to_uninstall):
-        Koti.print_phase_log(self.model, None, manager, items_to_uninstall)
-        manager.uninstall(items_to_uninstall, self.model)
+      Koti.print_phase_log(self.model, None, manager, items_to_uninstall)
+      manager.uninstall(items_to_uninstall, self.model)
     Koti.save_confirm_modes(self.store, self.model)
 
   @staticmethod
@@ -94,14 +93,11 @@ class Koti:
       for phase in model.install_phases for manager, items in phase.order
     ])
 
-    if phase_idx is None:
-      details = f"{len(items)} items to uninstall"
-    elif len(items) == 0:
-      details = "no outdated items found"
-    elif len(items) < 5:
-      details = f"items to install/update: {", ".join([item.description() for item in items])}"
+    action = "install or update" if phase_idx is not None else "remove"
+    if 0 < len(items) < 5:
+      details = f"items to {action}: {", ".join([item.description() for item in items])}"
     else:
-      details = f"{len(items)} items to update"
+      details = f"{len(items) or "no"} items to {action}"
 
     print(f"{phase}  {manager.__class__.__name__.ljust(max_manager_name_len)}  {details}")
 
