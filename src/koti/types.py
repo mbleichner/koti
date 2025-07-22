@@ -64,29 +64,30 @@ class ConfigManager[T: ManagedConfigItem](metaclass = ABCMeta):
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.check_configuration()")
 
   @abstractmethod
-  def checksums(self, model: ExecutionModel) -> Checksums[T]:
-    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.checksums()")
-
-  @abstractmethod
   def list_installed_items(self) -> list[T]:
+    """Returns a list of all items currently installed on the system."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.list_installed_items()")
 
   @abstractmethod
+  def checksum_current(self, item: T) -> str:
+    """Returns the checksum of a currently installed item on the system."""
+    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.checksum_current()")
+
+  @abstractmethod
+  def checksum_target(self, item: T, model: ExecutionModel) -> str:
+    """Returns the checksum that the item will have after installation/updating.
+    Can depend on the ExecutionModel, as there might be e.g. Option()s that need to be considered."""
+    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.checksum_target()")
+
+  @abstractmethod
   def install(self, items: list[T], model: ExecutionModel):
+    """Installs one or multiple items on the system."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.install()")
 
   @abstractmethod
   def uninstall(self, items: list[T], model: ExecutionModel):
+    """Removes one or multiple items from the system."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.uninstall()")
-
-
-class Checksums[T:ConfigItem]:
-
-  def current(self, item: T) -> str | None:
-    pass
-
-  def target(self, item: T) -> str | None:
-    pass
 
 
 class ExecutionModel:

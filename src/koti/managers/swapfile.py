@@ -1,7 +1,7 @@
 import os.path
 from hashlib import sha256
 
-from koti.core import Checksums, ConfigManager, ExecutionModel
+from koti.core import ConfigManager, ExecutionModel
 from koti.items.swapfile import Swapfile
 from koti.utils import JsonCollection
 from koti.utils.confirm import confirm
@@ -19,9 +19,6 @@ class SwapfileManager(ConfigManager[Swapfile]):
 
   def check_configuration(self, item: Swapfile, model: ExecutionModel):
     assert item.size_bytes is not None, "missing size_bytes parameter"
-
-  def checksums(self, model: ExecutionModel) -> Checksums[Swapfile]:
-    return SwapfileChecksums()
 
   def install(self, items: list[Swapfile], model: ExecutionModel):
     for item in items:
@@ -80,10 +77,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
         os.unlink(item.filename)
       self.managed_files_store.remove(item.filename)
 
-
-class SwapfileChecksums(Checksums[Swapfile]):
-
-  def current(self, item: Swapfile) -> str | None:
+  def checksum_current(self, item: Swapfile) -> str:
     exists = os.path.isfile(item.filename)
     current_size = os.stat(item.filename).st_size if exists else 0
     sha256_hash = sha256()
@@ -91,7 +85,7 @@ class SwapfileChecksums(Checksums[Swapfile]):
     sha256_hash.update(str(current_size).encode())
     return sha256_hash.hexdigest()
 
-  def target(self, item: Swapfile) -> str | None:
+  def checksum_target(self, item: Swapfile, model: ExecutionModel) -> str:
     sha256_hash = sha256()
     sha256_hash.update(str(True).encode())
     sha256_hash.update(str(item.size_bytes).encode())

@@ -3,7 +3,7 @@ from __future__ import annotations
 from hashlib import sha256
 
 from koti import ConfigItem
-from koti.core import Checksums, ConfigManager, ExecutionModel, ManagedConfigItem
+from koti.core import ConfigManager, ExecutionModel, ManagedConfigItem
 from koti.items.hooks import PostHook
 from koti.utils import JsonMapping, JsonStore
 from koti.utils.confirm import confirm
@@ -28,11 +28,7 @@ class PostHookManager(ConfigManager[PostHook]):
       assert exec_order_item is None or exec_order_item < exec_order_hook
       if exec_order_item is not None and not exec_order_item < exec_order_hook: f"{hook} has trigger that is evaluated too late: {item}"
 
-  def checksums(self, model: ExecutionModel) -> PostHookChecksums:
-    return PostHookChecksums(self, model, self.checksum_store)
-
   def install(self, items: list[PostHook], model: ExecutionModel):
-    checksums = self.checksums(model)
     for hook in items:
       confirm(
         message = f"confirm executing {hook.description()}",
@@ -40,7 +36,7 @@ class PostHookManager(ConfigManager[PostHook]):
         mode = model.confirm_mode(hook),
       )
       assert hook.execute is not None
-      target_checksum = checksums.target(hook)
+      target_checksum = self.checksum_target(hook, model)
       hook.execute()
       self.checksum_store.put(hook.name, str(target_checksum))
 
@@ -61,22 +57,11 @@ class PostHookManager(ConfigManager[PostHook]):
   def uninstall(self, items: list[PostHook], model: ExecutionModel):
     pass
 
+  def checksum_current(self, hook: PostHook) -> str:
+    return self.checksum_store.get(hook.name, "")
 
-class PostHookChecksums(Checksums[PostHook]):
-  manager: PostHookManager
-  model: ExecutionModel
-  checksum_store: JsonMapping[str, str]
-
-  def __init__(self, manager: PostHookManager, model: ExecutionModel, checksum_store: JsonMapping[str, str]):
-    self.manager = manager
-    self.checksum_store = checksum_store
-    self.model = model
-
-  def current(self, hook: PostHook) -> str | None:
-    return self.checksum_store.get(hook.name, None)
-
-  def target(self, hook: PostHook) -> str | None:
-    checksums = self.get_current_checksums_for_items(hook.trigger)
+  def checksum_target(self, hook: PostHook, model: ExecutionModel) -> str:
+    checksums = self.get_current_checksums_for_items(hook.trigger, model)
     sha256_hash = sha256()
     for idx, trigger in enumerate(hook.trigger):
       checksum = checksums[idx]
@@ -84,12 +69,10 @@ class PostHookChecksums(Checksums[PostHook]):
       sha256_hash.update(str(checksum).encode())
     return sha256_hash.hexdigest()
 
-  def get_current_checksums_for_items(self, dependent_items: list[ManagedConfigItem]) -> list[str | None]:
-    result = []
-    for manager in self.model.managers:
+  def get_current_checksums_for_items(self, dependent_items: list[ManagedConfigItem], model: ExecutionModel) -> list[str]:
+    result: list[str] = []
+    for manager in model.managers:
       managed_items = [item for item in dependent_items if item.__class__ in manager.managed_classes]
-      if len(managed_items) == 0: continue
-      manager_checksums = manager.checksums(self.model)
       for item in managed_items:
-        result.append(manager_checksums.current(item))
+        result.append(manager.checksum_current(item))
     return result

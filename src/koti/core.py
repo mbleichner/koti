@@ -31,10 +31,9 @@ class Koti:
     items_changed: list[ManagedConfigItem] = []
     for phase_idx, phase in enumerate(self.model.install_phases):
       for manager, items_in_phase in phase.order:
-        checksums = manager.checksums(self.model)
         for item in items_in_phase:
           items_total.append(item)
-          needs_update = checksums.current(item) != checksums.target(item)
+          needs_update = manager.checksum_current(item) != manager.checksum_target(item, self.model)
           if needs_update:
             items_changed.append(item)
 
@@ -76,8 +75,7 @@ class Koti:
   def apply(self):
     for phase_idx, phase in enumerate(self.model.install_phases):
       for manager, items in phase.order:
-        checksums = manager.checksums(self.model)
-        items_to_update = [item for item in items if checksums.current(item) != checksums.target(item)]
+        items_to_update = [item for item in items if manager.checksum_current(item) != manager.checksum_target(item, self.model)]
         Koti.print_phase_log(self.model, phase_idx, manager, items_to_update)
         manager.install(items_to_update, self.model) or []
     for manager, items_to_uninstall in self.model.cleanup_phase.order:

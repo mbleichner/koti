@@ -2,7 +2,7 @@ import os
 import pwd
 from hashlib import sha256
 
-from koti.core import Checksums, ConfigManager, ExecutionModel
+from koti.core import ConfigManager, ExecutionModel
 from koti.items.file import File
 from koti.utils import JsonCollection
 from koti.utils.confirm import confirm
@@ -19,9 +19,6 @@ class FileManager(ConfigManager[File]):
 
   def check_configuration(self, item: File, model: ExecutionModel):
     assert item.content is not None, "missing either content or content_from_file"
-
-  def checksums(self, model: ExecutionModel) -> Checksums[File]:
-    return FileChecksums(model)
 
   def create_dir(self, dir: str, item: File):
     if os.path.exists(dir): return
@@ -71,16 +68,9 @@ class FileManager(ConfigManager[File]):
         os.unlink(item.filename)
       self.managed_files_store.remove(item.filename)
 
-
-class FileChecksums(Checksums[File]):
-  model: ExecutionModel
-
-  def __init__(self, model: ExecutionModel):
-    self.model = model
-
-  def current(self, item: File) -> str | None:
+  def checksum_current(self, item: File) -> str:
     if not os.path.isfile(item.filename):
-      return None
+      return sha256("<file does not exist>".encode()).hexdigest()
     stat = os.stat(item.filename)
     sha256_hash = sha256()
     sha256_hash.update(str(stat.st_uid).encode())
@@ -91,7 +81,7 @@ class FileChecksums(Checksums[File]):
         sha256_hash.update(byte_block)
     return sha256_hash.hexdigest()
 
-  def target(self, item: File) -> str | None:
+  def checksum_target(self, item: File, model: ExecutionModel) -> str:
     getpwnam = pwd.getpwnam(item.owner)
     (uid, gid) = (getpwnam.pw_uid, getpwnam.pw_gid)
     if item.content is None:
@@ -100,5 +90,5 @@ class FileChecksums(Checksums[File]):
     sha256_hash.update(str(uid).encode())
     sha256_hash.update(str(gid).encode())
     sha256_hash.update(str(item.permissions & 0o777).encode())
-    sha256_hash.update(item.content(self.model))
+    sha256_hash.update(item.content(model))
     return sha256_hash.hexdigest()

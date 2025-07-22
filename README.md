@@ -98,3 +98,4 @@ system that is no longer present in the configs:
 - User anlegen und Gruppen zuordnen
 - Directory() item => gamma-icc-profiles
 - FlatpakRepo() + FlatpakPackage()
+- list_installed_items() und checksums() zusammenführen?
