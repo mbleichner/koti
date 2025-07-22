@@ -148,18 +148,40 @@ class ExecutionModel:
 class InstallPhase:
   groups: Sequence[ConfigGroup]
   items: Sequence[ConfigItem]
-  order: Sequence[tuple[ConfigManager, list[ManagedConfigItem]]]
+  steps: Sequence[InstallStep]
 
-  def __init__(self, groups: Sequence[ConfigGroup], order: Sequence[tuple[ConfigManager, list[ManagedConfigItem]]], items: Sequence[ConfigItem]):
+  def __init__(self, groups: Sequence[ConfigGroup], order: Sequence[InstallStep], items: Sequence[ConfigItem]):
     self.items = items
     self.groups = groups
-    self.order = order
+    self.steps = order
+
+
+class InstallStep:
+  manager: ConfigManager
+  items_to_install: Sequence[ManagedConfigItem]
+
+  def __init__(self, manager: ConfigManager, items_to_install: Sequence[ManagedConfigItem]):
+    self.items_to_install = items_to_install
+    self.manager = manager
 
 
 class CleanupPhase:
-  items: Sequence[ManagedConfigItem]
-  order: Sequence[tuple[ConfigManager, list[ManagedConfigItem]]]
+  items_to_uninstall: Sequence[ManagedConfigItem]
+  items_to_keep: Sequence[ManagedConfigItem]
+  steps: Sequence[CleanupStep]
 
-  def __init__(self, order: Sequence[tuple[ConfigManager, list[ManagedConfigItem]]]):
-    self.items = [item for manager, items in order for item in items]
-    self.order = order
+  def __init__(self, order: list[CleanupStep]):
+    self.items_to_uninstall = [item for step in order for item in step.items_to_uninstall]
+    self.items_to_keep = [item for step in order for item in step.items_to_keep]
+    self.steps = order
+
+
+class CleanupStep:
+  manager: ConfigManager
+  items_to_uninstall: list[ManagedConfigItem]
+  items_to_keep: list[ManagedConfigItem]
+
+  def __init__(self, manager: ConfigManager, items_to_uninstall: list[ManagedConfigItem], items_to_keep: list[ManagedConfigItem]):
+    self.items_to_uninstall = items_to_uninstall
+    self.items_to_keep = items_to_keep
+    self.manager = manager

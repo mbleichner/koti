@@ -44,8 +44,8 @@ class PostHookManager(ConfigManager[PostHook]):
   def index_in_execution_order(model: ExecutionModel, needle: ConfigItem) -> int | None:
     result = 0
     for phase in model.install_phases:
-      for manager, items_for_manager in phase.order:
-        for item in items_for_manager:
+      for step in phase.steps:
+        for item in step.items_to_install:
           if item.identifier() == needle.identifier():
             return result
           result += 1

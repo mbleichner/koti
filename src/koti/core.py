@@ -30,8 +30,9 @@ class Koti:
     items_total: list[ManagedConfigItem] = []
     items_changed: list[ManagedConfigItem] = []
     for phase_idx, phase in enumerate(self.model.install_phases):
-      for manager, items_in_phase in phase.order:
-        for item in items_in_phase:
+      for install_step in phase.steps:
+        manager = install_step.manager
+        for item in install_step.items_to_install:
           items_total.append(item)
           needs_update = manager.checksum_current(item) != manager.checksum_target(item, self.model)
           if needs_update:
@@ -44,8 +45,8 @@ class Koti:
           needs_update = len([item for item in group.provides if item in items_changed]) > 0
           print(f"{"*" if needs_update else "-"} {group.description}")
       if items:
-        for manager, items_in_phase in phase.order:
-          for item in items_in_phase:
+        for install_step in phase.steps:
+          for item in install_step.items_to_install:
             needs_update = item in items_changed or item in items_changed
             print(f"{"*" if needs_update else "-"} {item.description()}")
       print()
@@ -53,7 +54,7 @@ class Koti:
     installed = [item.identifier() for manager in self.model.managers for item in manager.installed()]
     items_to_install = [item for item in items_changed if item.identifier() not in installed]
     items_to_update = [item for item in items_changed if item.identifier() in installed]
-    items_to_uninstall = self.model.cleanup_phase.items
+    items_to_uninstall = self.model.cleanup_phase.items_to_uninstall
 
     count = len(items_to_install) + len(items_to_update) + len(items_to_uninstall)
     if count > 0:
@@ -73,31 +74,40 @@ class Koti:
     return len(items_to_update)
 
   def apply(self):
+
     for phase_idx, phase in enumerate(self.model.install_phases):
-      for manager, items in phase.order:
-        items_to_update = [item for item in items if manager.checksum_current(item) != manager.checksum_target(item, self.model)]
-        Koti.print_phase_log(self.model, phase_idx, manager, items_to_update)
+      for step in phase.steps:
+        manager = step.manager
+        items_to_update = [item for item in step.items_to_install if manager.checksum_current(item) != manager.checksum_target(item, self.model)]
+        Koti.print_install_step_log(self.model, phase_idx, step, items_to_update)
         manager.install(items_to_update, self.model) or []
-    for manager, items_to_uninstall in self.model.cleanup_phase.order:
-      Koti.print_phase_log(self.model, None, manager, items_to_uninstall)
-      manager.uninstall(items_to_uninstall, self.model)
+
+    for step in self.model.cleanup_phase.steps:
+      manager = step.manager
+      Koti.print_cleanup_step_log(self.model, step)
+      manager.uninstall(step.items_to_uninstall, self.model)
+
     Koti.save_confirm_modes(self.store, self.model)
 
   @staticmethod
-  def print_phase_log(model: ExecutionModel, phase_idx: int | None, manager: ConfigManager, items: list[ConfigItem]):
-    phase = f"Phase {phase_idx + 1}" if phase_idx is not None else "Cleanup"
-    max_manager_name_len = max([
-      len(manager.__class__.__name__)
-      for phase in model.install_phases for manager, items in phase.order
-    ])
-
-    action = "install or update" if phase_idx is not None else "remove"
-    if 0 < len(items) < 5:
-      details = f"items to {action}: {", ".join([item.description() for item in items])}"
+  def print_install_step_log(model: ExecutionModel, phase_idx: int, step: InstallStep, items_to_update: Sequence[ManagedConfigItem]):
+    manager_name_maxlen = max([len(manager.__class__.__name__) for manager in model.managers])
+    manager_name = step.manager.__class__.__name__
+    if 0 < len(items_to_update) < 5:
+      details = f"items to install or update: {", ".join([item.description() for item in items_to_update])}"
     else:
-      details = f"{len(items) or "no"} items to {action}"
+      details = f"{len(items_to_update) or "no"} outdated items"
+    print(f"Phase {phase_idx + 1}  |  {manager_name.ljust(manager_name_maxlen)}  |  {str(len(step.items_to_install)).rjust(3)} items total  |  {details}")
 
-    print(f"{phase}  {manager.__class__.__name__.ljust(max_manager_name_len)}  {details}")
+  @staticmethod
+  def print_cleanup_step_log(model: ExecutionModel, step: CleanupStep):
+    manager_name_maxlen = max([len(manager.__class__.__name__) for manager in model.managers])
+    manager_name = step.manager.__class__.__name__
+    if 0 < len(step.items_to_uninstall) < 5:
+      details = f"items to uninstall: {", ".join([item.description() for item in step.items_to_uninstall])}"
+    else:
+      details = f"{len(step.items_to_uninstall) or "no"} items to uninstall"
+    print(f"Cleanup  |  {manager_name.ljust(manager_name_maxlen)}  |  {str(len(step.items_to_keep)).rjust(3)} remaining    |  {details}")
 
   @staticmethod
   def get_cleanup_phase_manager_order(managers: Sequence[ConfigManager]) -> Sequence[ConfigManager]:
@@ -141,8 +151,8 @@ class Koti:
   def save_confirm_modes(store: JsonStore, model: ExecutionModel):
     result: dict[str, ConfirmMode] = {}
     for phase in model.install_phases:
-      for manager, items in phase.order:
-        for item in items:
+      for install_step in phase.steps:
+        for item in install_step.items_to_install:
           result[item.identifier()] = model.confirm_mode(item)
     store.put("confirm_modes", result)
 
@@ -182,12 +192,12 @@ class Koti:
   @staticmethod
   def check_config_item_consistency(model: ExecutionModel):
     for phase in model.install_phases:
-      for manager, items_for_manager in phase.order:
-        for item in items_for_manager:
+      for install_step in phase.steps:
+        for item in install_step.items_to_install:
           try:
-            manager.check_configuration(item, model)
+            install_step.manager.check_configuration(item, model)
           except Exception as e:
-            raise AssertionError(f"{manager.__class__.__name__}: {e}")
+            raise AssertionError(f"{install_step.manager.__class__.__name__}: {e}")
 
   @staticmethod
   def separate_into_phases(groups: Sequence[ConfigGroup]) -> list[list[ConfigGroup]]:
@@ -215,29 +225,37 @@ class Koti:
 
   @staticmethod
   def create_install_phase(managers: Sequence[ConfigManager], groups_in_phase: list[ConfigGroup], merged_items_in_phase: list[ConfigItem]) -> InstallPhase:
-    order: list[tuple[ConfigManager, list[ManagedConfigItem]]] = []
+    steps: list[InstallStep] = []
     for manager in managers:
-      managed_items = [
+      items_for_manager = [
         item for item in merged_items_in_phase
         if isinstance(item, ManagedConfigItem) and item.__class__ in manager.managed_classes
       ]
-      if len(managed_items) > 0:
-        order.append((manager, managed_items))
+      if not items_for_manager:
+        continue  # only add the manager to the install phase if it actually has items to check
+      steps.append(InstallStep(manager = manager, items_to_install = items_for_manager))
     return InstallPhase(
       groups = groups_in_phase,
-      order = order,
+      order = steps,
       items = merged_items_in_phase
     )
 
   @staticmethod
-  def create_cleanup_phase(managers, merged_items_grouped_by_phase) -> CleanupPhase:
-    target_identifiers = [item.identifier() for phase in merged_items_grouped_by_phase for item in phase]
-    return CleanupPhase(
-      order = [
-        (manager, [item for item in manager.installed() if item.identifier() not in target_identifiers])
-        for manager in Koti.get_cleanup_phase_manager_order(managers)
-      ]
-    )
+  def create_cleanup_phase(managers: Sequence[ConfigManager], merged_items_grouped_by_phase: list[list[ConfigItem]]) -> CleanupPhase:
+    target_items = [item for phase in merged_items_grouped_by_phase for item in phase if isinstance(item, ManagedConfigItem)]
+    target_identifiers = [item.identifier() for item in target_items]
+    steps: list[CleanupStep] = []
+    for manager in Koti.get_cleanup_phase_manager_order(managers):
+      installed_items = manager.installed()
+      if not installed_items:
+        continue  # only add the manager to the cleanup phase if there are any items that could potentially be uninstalled
+      items_to_uninstall = [item for item in installed_items if item.identifier() not in target_identifiers]
+      steps.append(CleanupStep(
+        manager = manager,
+        items_to_uninstall = items_to_uninstall,
+        items_to_keep = [item for item in target_items if item.__class__ in manager.managed_classes],
+      ))
+    return CleanupPhase(steps)
 
   @staticmethod
   def find_dependency_violation(phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup] | None:
