@@ -26,7 +26,7 @@ class Koti:
     self.model = Koti.build_execution_model(managers_cleaned, configs_cleaned, default_confirm_mode, self.store)
     Koti.check_config_item_consistency(self.model)
 
-  def plan(self, groups: bool = True, items: bool = True) -> int:
+  def plan(self, groups: bool = True, items: bool = False) -> bool:
     items_total: list[ManagedConfigItem] = []
     items_changed: list[ManagedConfigItem] = []
     for phase_idx, phase in enumerate(self.model.install_phases):
@@ -38,18 +38,19 @@ class Koti:
           if needs_update:
             items_changed.append(item)
 
-    for phase_idx, phase in enumerate(self.model.install_phases):
-      print(f"Phase {phase_idx + 1}:")
-      if groups:
-        for group in phase.groups:
-          needs_update = len([item for item in group.provides if item in items_changed]) > 0
-          print(f"{"*" if needs_update else "-"} {group.description}")
-      if items:
-        for install_step in phase.steps:
-          for item in install_step.items_to_install:
-            needs_update = item in items_changed or item in items_changed
-            print(f"{"*" if needs_update else "-"} {item.description()}")
-      print()
+    if groups or items:
+      for phase_idx, phase in enumerate(self.model.install_phases):
+        print(f"Phase {phase_idx + 1}:")
+        if groups:
+          for group in phase.groups:
+            needs_update = len([item for item in group.provides if item in items_changed]) > 0
+            print(f"{"*" if needs_update else "-"} {group.description}")
+        if items:
+          for install_step in phase.steps:
+            for item in install_step.items_to_install:
+              needs_update = item in items_changed or item in items_changed
+              print(f"{"*" if needs_update else "-"} {item.description()}")
+        print()
 
     installed = [item.identifier() for manager in self.model.managers for item in manager.installed()]
     items_to_install = [item for item in items_changed if item.identifier() not in installed]
@@ -69,9 +70,8 @@ class Koti:
       print("// additional updates may be triggered by PostHooks")
     else:
       print(f"{len(items_total)} items total, everything up to date")
-    print()
 
-    return len(items_to_update)
+    return count > 0
 
   def apply(self):
 
