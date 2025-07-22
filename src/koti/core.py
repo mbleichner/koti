@@ -50,7 +50,7 @@ class Koti:
             print(f"{"*" if needs_update else "-"} {item.description()}")
       print()
 
-    installed = [item.identifier() for manager in self.model.managers for item in manager.list_installed_items()]
+    installed = [item.identifier() for manager in self.model.managers for item in manager.installed()]
     items_to_install = [item for item in items_changed if item.identifier() not in installed]
     items_to_update = [item for item in items_changed if item.identifier() in installed]
     items_to_uninstall = self.model.cleanup_phase.items
@@ -231,10 +231,10 @@ class Koti:
 
   @staticmethod
   def create_cleanup_phase(managers, merged_items_grouped_by_phase) -> CleanupPhase:
-    all_item_identifieres = [item.identifier() for phase in merged_items_grouped_by_phase for item in phase]
+    target_identifiers = [item.identifier() for phase in merged_items_grouped_by_phase for item in phase]
     return CleanupPhase(
       order = [
-        (manager, [item for item in manager.list_installed_items() if item.identifier() not in all_item_identifieres])
+        (manager, [item for item in manager.installed() if item.identifier() not in target_identifiers])
         for manager in Koti.get_cleanup_phase_manager_order(managers)
       ]
     )

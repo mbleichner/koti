@@ -111,7 +111,7 @@ class PacmanPackageManager(ConfigManager[Package]):
     self.explicit_packages_on_system = self.delegate.list_explicit_packages()
     self.managed_packages_store.add_all([item.name for item in items])
 
-  def list_installed_items(self) -> list[Package]:
+  def installed(self) -> list[Package]:
     if self.ignore_externally_installed:
       return [Package(pkg) for pkg in self.managed_packages_store.elements()]
     else:
@@ -146,7 +146,7 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
   def uninstall(self, items: list[PacmanKey], model: ExecutionModel):
     pass
 
-  def list_installed_items(self) -> list[PacmanKey]:
+  def installed(self) -> list[PacmanKey]:
     return []
 
   def checksum_current(self, item: PacmanKey) -> str:

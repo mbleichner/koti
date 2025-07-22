@@ -64,9 +64,9 @@ class ConfigManager[T: ManagedConfigItem](metaclass = ABCMeta):
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.check_configuration()")
 
   @abstractmethod
-  def list_installed_items(self) -> list[T]:
+  def installed(self) -> Sequence[T]:
     """Returns a list of all items currently installed on the system."""
-    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.list_installed_items()")
+    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.installed()")
 
   @abstractmethod
   def checksum_current(self, item: T) -> str:

@@ -51,14 +51,14 @@ class PostHookManager(ConfigManager[PostHook]):
           result += 1
     return None
 
-  def list_installed_items(self) -> list[PostHook]:
+  def installed(self) -> list[PostHook]:
     return []
 
   def uninstall(self, items: list[PostHook], model: ExecutionModel):
     pass
 
   def checksum_current(self, hook: PostHook) -> str:
-    return self.checksum_store.get(hook.name, "")
+    return self.checksum_store.get(hook.name, "n/a")
 
   def checksum_target(self, hook: PostHook, model: ExecutionModel) -> str:
     checksums = self.get_current_checksums_for_items(hook.trigger, model)

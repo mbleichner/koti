@@ -54,7 +54,7 @@ class FileManager(ConfigManager[File]):
 
       self.managed_files_store.add(item.filename)
 
-  def list_installed_items(self) -> list[File]:
+  def installed(self) -> list[File]:
     return [File(filename) for filename in self.managed_files_store.elements()]
 
   def uninstall(self, items: list[File], model: ExecutionModel):
