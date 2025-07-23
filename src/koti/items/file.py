@@ -4,11 +4,11 @@ from pathlib import Path
 from typing import Callable
 from re import match
 
-from koti import ConfigItem, ConfirmMode, ExecutionModel, ManagedConfigItem
+from koti import ConfigItem, ConfirmMode, ConfigModel, ManagedConfigItem
 
 
 class File(ManagedConfigItem):
-  content: Callable[[ExecutionModel], bytes] | None
+  content: Callable[[ConfigModel], bytes] | None
   permissions: int = 0o755
   owner: str = "root"
   filename: str
@@ -16,7 +16,7 @@ class File(ManagedConfigItem):
   def __init__(
     self,
     filename: str,
-    content: str | Callable[[ExecutionModel], str] | None = None,
+    content: str | Callable[[ConfigModel], str] | None = None,
     source: str | None = None,
     permissions: int | str = "r--",
     owner: str = "root",

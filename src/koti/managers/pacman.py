@@ -1,6 +1,6 @@
 from hashlib import sha256
 
-from koti.core import ConfigManager, ConfirmMode, ExecutionModel
+from koti.core import ConfigManager, ConfirmMode, ConfigModel
 from koti.items.package import Package
 from koti.items.pacman_key import PacmanKey
 from koti.utils import JsonCollection, JsonStore, confirm
@@ -74,17 +74,17 @@ class PacmanPackageManager(ConfigManager[Package]):
     self.ignore_externally_installed = ignore_externally_installed
     self.explicit_packages_on_system = self.delegate.list_explicit_packages()
 
-  def check_configuration(self, item: Package, model: ExecutionModel):
+  def check_configuration(self, item: Package, model: ConfigModel):
     pass
 
   def checksum_current(self, item: Package) -> str:
     installed: bool = item.name in self.explicit_packages_on_system
     return sha256(str(installed).encode()).hexdigest()
 
-  def checksum_target(self, item: Package, model: ExecutionModel) -> str:
+  def checksum_target(self, item: Package, model: ConfigModel) -> str:
     return sha256(str(True).encode()).hexdigest()
 
-  def install(self, items: list[Package], model: ExecutionModel):
+  def install(self, items: list[Package], model: ConfigModel):
     url_items = [item for item in items if item.url is not None]
     repo_items = [item for item in items if item.url is None]
     installed_packages = self.delegate.list_installed_packages()
@@ -117,7 +117,7 @@ class PacmanPackageManager(ConfigManager[Package]):
     else:
       return [Package(pkg) for pkg in self.explicit_packages_on_system]
 
-  def uninstall(self, items: list[Package], model: ExecutionModel):
+  def uninstall(self, items: list[Package], model: ConfigModel):
     confirm_mode = model.confirm_mode(*items)
     package_names = [pkg.name for pkg in items]
     self.delegate.mark_as_dependency(package_names, confirm_mode = confirm_mode)
@@ -129,10 +129,10 @@ class PacmanPackageManager(ConfigManager[Package]):
 class PacmanKeyManager(ConfigManager[PacmanKey]):
   managed_classes = [PacmanKey]
 
-  def check_configuration(self, item: PacmanKey, model: ExecutionModel):
+  def check_configuration(self, item: PacmanKey, model: ConfigModel):
     pass
 
-  def install(self, items: list[PacmanKey], model: ExecutionModel):
+  def install(self, items: list[PacmanKey], model: ConfigModel):
     for item in items:
       confirm(
         message = f"confirm installing pacman key {item.key_id}",
@@ -143,7 +143,7 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
       shell(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
       shell(f"sudo pacman-key --lsign-key {item.key_id}")
 
-  def uninstall(self, items: list[PacmanKey], model: ExecutionModel):
+  def uninstall(self, items: list[PacmanKey], model: ConfigModel):
     pass
 
   def installed(self) -> list[PacmanKey]:
@@ -153,5 +153,5 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
     installed: bool = shell_success(f"pacman-key --list-keys | grep {item.key_id}")
     return sha256(str(installed).encode()).hexdigest()
 
-  def checksum_target(self, item: PacmanKey, model: ExecutionModel) -> str:
+  def checksum_target(self, item: PacmanKey, model: ConfigModel) -> str:
     return sha256(str(True).encode()).hexdigest()

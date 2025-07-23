@@ -1,6 +1,6 @@
 from hashlib import sha256
 
-from koti.core import ConfigManager, ExecutionModel
+from koti.core import ConfigManager, ConfigModel
 from koti.items.systemd import SystemdUnit
 from koti.managers.pacman import shell
 from koti.utils import shell_success
@@ -17,10 +17,10 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
     self.store = JsonStore("/var/cache/koti/SystemdUnitManager.json")
     self.user_list_store = self.store.collection("users")
 
-  def check_configuration(self, item: SystemdUnit, model: ExecutionModel):
+  def check_configuration(self, item: SystemdUnit, model: ConfigModel):
     pass
 
-  def install(self, items: list[SystemdUnit], model: ExecutionModel):
+  def install(self, items: list[SystemdUnit], model: ConfigModel):
     if len(items) > 0: shell(f"systemctl daemon-reload")
     users = set([item.user for item in items])
     for user in users:
@@ -45,7 +45,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
       result += [SystemdUnit(name, user) for name in units_store.elements()]
     return result
 
-  def uninstall(self, items: list[SystemdUnit], model: ExecutionModel):
+  def uninstall(self, items: list[SystemdUnit], model: ConfigModel):
     distinct_users = {item.user for item in items}
     for user in distinct_users:
       units_store: JsonCollection[str] = self.store.collection(self.store_key_for_user(user))
@@ -65,7 +65,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
     enabled: bool = shell_success(f"{self.systemctl_for_user(item.user)} is-enabled {item.name}")
     return sha256(str(enabled).encode()).hexdigest()
 
-  def checksum_target(self, item: SystemdUnit, model: ExecutionModel) -> str:
+  def checksum_target(self, item: SystemdUnit, model: ConfigModel) -> str:
     return sha256(str(True).encode()).hexdigest()
 
   def systemctl_for_user(self, user: str | None):

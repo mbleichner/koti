@@ -4,13 +4,14 @@ from os import getuid
 from typing import Iterable, Iterator
 
 from koti.types import *
-from koti.utils import JsonMapping, JsonStore
+from koti.utils import JsonStore
 
 
 class Koti:
   store: JsonStore
-  model: ExecutionModel
-  confirm_mode_store: JsonMapping[str, ConfirmMode]
+  default_confirm_mode: ConfirmMode
+  managers: list[ConfigManager]
+  configs: list[ConfigGroup]
 
   def __init__(
     self,
@@ -19,53 +20,48 @@ class Koti:
     default_confirm_mode: ConfirmMode = "cautious"
   ):
     assert getuid() == 0, "this program must be run as root (or through sudo)"
+    self.default_confirm_mode = default_confirm_mode
     self.store = JsonStore("/var/cache/koti/Koti.json")
-    configs_cleaned = [c for c in configs if c is not None]
-    managers_cleaned = [m for m in managers if m is not None]
-    Koti.check_manager_consistency(managers_cleaned, configs_cleaned)
-    self.model = Koti.build_execution_model(managers_cleaned, configs_cleaned, default_confirm_mode, self.store)
-    Koti.check_config_item_consistency(self.model)
+    self.configs = [c for c in configs if c is not None]
+    self.managers = [m for m in managers if m is not None]
 
   def plan(self, groups: bool = True, items: bool = False) -> bool:
-    items_total: list[ManagedConfigItem] = []
-    items_changed: list[ManagedConfigItem] = []
-    for phase_idx, phase in enumerate(self.model.install_phases):
-      for install_step in phase.steps:
-        manager = install_step.manager
-        for item in install_step.items_to_install:
-          items_total.append(item)
-          needs_update = manager.checksum_current(item) != manager.checksum_target(item, self.model)
-          if needs_update:
-            items_changed.append(item)
+
+    # plan installation phases
+    model = Koti.create_model(self.managers, self.configs, self.default_confirm_mode, self.store)
+    items_total = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
+    installed_identifiers = [item.identifier() for manager in model.managers for item in manager.installed()]
+    items_outdated = [
+      item for phase in model.phases for step in phase.steps for item in step.items_to_install
+      if step.manager.checksum_current(item) != step.manager.checksum_target(item, model)
+    ]
+
+    # plan cleanup phase
+    cleanup_phase = Koti.create_cleanup_phase(model)
+    items_to_uninstall = cleanup_phase.items_to_uninstall
 
     if groups or items:
-      for phase_idx, phase in enumerate(self.model.install_phases):
+      for phase_idx, phase in enumerate(model.phases):
         print(f"Phase {phase_idx + 1}:")
         if groups:
           for group in phase.groups:
-            needs_update = len([item for item in group.provides if item in items_changed]) > 0
+            needs_update = len([item for item in group.provides if item in items_outdated]) > 0
             print(f"{"*" if needs_update else "-"} {group.description}")
         if items:
           for install_step in phase.steps:
             for item in install_step.items_to_install:
-              needs_update = item in items_changed or item in items_changed
+              needs_update = item in items_outdated or item in items_outdated
               print(f"{"*" if needs_update else "-"} {item.description()}")
         print()
 
-    installed = [item.identifier() for manager in self.model.managers for item in manager.installed()]
-    items_to_install = [item for item in items_changed if item.identifier() not in installed]
-    items_to_update = [item for item in items_changed if item.identifier() in installed]
-    items_to_uninstall = self.model.cleanup_phase.items_to_uninstall
-
-    count = len(items_to_install) + len(items_to_update) + len(items_to_uninstall)
+    count = len(items_outdated) + len(items_to_uninstall)
     if count > 0:
       print(f"{len(items_total)} items total, {count} items to update:")
-      for item in items_to_install:
-        print(f"- install: {item.description()}")
-      for item in items_to_update:
-        print(f"- update:  {item.description()}")
+      for item in items_outdated:
+        action = "upd" if item.identifier() in installed_identifiers else "add"
+        print(f"- {action} {item.description()}")
       for item in items_to_uninstall:
-        print(f"- remove:  {item.description()}")
+        print(f"- del {item.description()}")
       print()
       print("// additional updates may be triggered by PostHooks")
     else:
@@ -74,23 +70,52 @@ class Koti:
     return count > 0
 
   def apply(self):
-
-    for phase_idx, phase in enumerate(self.model.install_phases):
+    model = Koti.create_model(self.managers, self.configs, self.default_confirm_mode, self.store)
+    for phase_idx, phase in enumerate(model.phases):
       for step in phase.steps:
         manager = step.manager
-        items_to_update = [item for item in step.items_to_install if manager.checksum_current(item) != manager.checksum_target(item, self.model)]
-        Koti.print_install_step_log(self.model, phase_idx, step, items_to_update)
-        manager.install(items_to_update, self.model) or []
+        items_to_update = [item for item in step.items_to_install if manager.checksum_current(item) != manager.checksum_target(item, model)]
+        Koti.print_install_step_log(model, phase_idx, step, items_to_update)
+        manager.install(items_to_update, model) or []
 
-    for step in self.model.cleanup_phase.steps:
+    cleanup_phase = Koti.create_cleanup_phase(model)
+    for step in cleanup_phase.steps:
       manager = step.manager
-      Koti.print_cleanup_step_log(self.model, step)
-      manager.uninstall(step.items_to_uninstall, self.model)
+      Koti.print_cleanup_step_log(model, step)
+      manager.uninstall(step.items_to_uninstall, model)
 
-    Koti.save_confirm_modes(self.store, self.model)
+    Koti.save_confirm_modes(self.store, model)
 
   @staticmethod
-  def print_install_step_log(model: ExecutionModel, phase_idx: int, step: InstallStep, items_to_update: Sequence[ManagedConfigItem]):
+  def create_model(
+    managers: Sequence[ConfigManager],
+    configs: Sequence[ConfigGroup],
+    default_confirm_mode: ConfirmMode,
+    store: JsonStore,
+  ) -> ConfigModel:
+
+    Koti.check_manager_consistency(managers, configs)
+
+    groups = Koti.get_all_provided_groups(configs)
+    groups_separated_into_phases = Koti.separate_into_phases(groups)
+    merged_items_grouped_by_phase: list[list[ConfigItem]] = Koti.merge_items([
+      [item for group in phase for item in group.provides]
+      for phase in groups_separated_into_phases
+    ])
+
+    model = ConfigModel(
+      managers = managers,
+      phases = [Koti.create_install_phase(managers, groups_in_phase, items_in_phase) for groups_in_phase, items_in_phase in
+                zip(groups_separated_into_phases, merged_items_grouped_by_phase)],
+      confirm_mode_fallback = default_confirm_mode,
+      confirm_mode_archive = Koti.load_confirm_modes(store)
+    )
+
+    Koti.check_config_item_consistency(model)
+    return model
+
+  @staticmethod
+  def print_install_step_log(model: ConfigModel, phase_idx: int, step: InstallStep, items_to_update: Sequence[ManagedConfigItem]):
     manager_name_maxlen = max([len(manager.__class__.__name__) for manager in model.managers])
     manager_name = step.manager.__class__.__name__
     if 0 < len(items_to_update) < 5:
@@ -100,7 +125,7 @@ class Koti:
     print(f"Phase {phase_idx + 1}  |  {manager_name.ljust(manager_name_maxlen)}  |  {str(len(step.items_to_install)).rjust(3)} items total  |  {details}")
 
   @staticmethod
-  def print_cleanup_step_log(model: ExecutionModel, step: CleanupStep):
+  def print_cleanup_step_log(model: ConfigModel, step: CleanupStep):
     manager_name_maxlen = max([len(manager.__class__.__name__) for manager in model.managers])
     manager_name = step.manager.__class__.__name__
     if 0 < len(step.items_to_uninstall) < 5:
@@ -118,39 +143,14 @@ class Koti:
     ]
 
   @staticmethod
-  def build_execution_model(
-    managers: Sequence[ConfigManager],
-    configs: Sequence[ConfigGroup],
-    default_confirm_mode: ConfirmMode,
-    store: JsonStore,
-  ) -> ExecutionModel:
-    groups = Koti.get_all_provided_groups(configs)
-    groups_separated_into_phases = Koti.separate_into_phases(groups)
-    merged_items_grouped_by_phase: list[list[ConfigItem]] = Koti.merge_items([
-      [item for group in phase for item in group.provides]
-      for phase in groups_separated_into_phases
-    ])
-
-    return ExecutionModel(
-      managers = managers,
-      install_phases = [
-        Koti.create_install_phase(managers, groups_in_phase, items_in_phase)
-        for groups_in_phase, items_in_phase in zip(groups_separated_into_phases, merged_items_grouped_by_phase)
-      ],
-      cleanup_phase = (Koti.create_cleanup_phase(managers, merged_items_grouped_by_phase)),
-      confirm_mode_fallback = default_confirm_mode,
-      confirm_mode_archive = Koti.load_confirm_modes(store),
-    )
-
-  @staticmethod
   def load_confirm_modes(store: JsonStore) -> dict[str, ConfirmMode]:
     result = store.get("confirm_modes")
     return result if isinstance(result, dict) else {}
 
   @staticmethod
-  def save_confirm_modes(store: JsonStore, model: ExecutionModel):
+  def save_confirm_modes(store: JsonStore, model: ConfigModel):
     result: dict[str, ConfirmMode] = {}
-    for phase in model.install_phases:
+    for phase in model.phases:
       for install_step in phase.steps:
         for item in install_step.items_to_install:
           result[item.identifier()] = model.confirm_mode(item)
@@ -190,8 +190,8 @@ class Koti:
           raise AssertionError(f"multiple managers found for class {item.__class__.__name__}")
 
   @staticmethod
-  def check_config_item_consistency(model: ExecutionModel):
-    for phase in model.install_phases:
+  def check_config_item_consistency(model: ConfigModel):
+    for phase in model.phases:
       for install_step in phase.steps:
         for item in install_step.items_to_install:
           try:
@@ -241,19 +241,19 @@ class Koti:
     )
 
   @staticmethod
-  def create_cleanup_phase(managers: Sequence[ConfigManager], merged_items_grouped_by_phase: list[list[ConfigItem]]) -> CleanupPhase:
-    target_items = [item for phase in merged_items_grouped_by_phase for item in phase if isinstance(item, ManagedConfigItem)]
-    target_identifiers = [item.identifier() for item in target_items]
+  def create_cleanup_phase(model: ConfigModel) -> CleanupPhase:
+    items_to_install = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
+    identifiers_to_install = [item.identifier() for item in items_to_install]
     steps: list[CleanupStep] = []
-    for manager in Koti.get_cleanup_phase_manager_order(managers):
+    for manager in Koti.get_cleanup_phase_manager_order(model.managers):
       installed_items = manager.installed()
       if not installed_items:
         continue  # only add the manager to the cleanup phase if there are any items that could potentially be uninstalled
-      items_to_uninstall = [item for item in installed_items if item.identifier() not in target_identifiers]
+      items_to_uninstall = [item for item in installed_items if item.identifier() not in identifiers_to_install]
       steps.append(CleanupStep(
         manager = manager,
         items_to_uninstall = items_to_uninstall,
-        items_to_keep = [item for item in target_items if item.__class__ in manager.managed_classes],
+        items_to_keep = [item for item in items_to_install if item.__class__ in manager.managed_classes],
       ))
     return CleanupPhase(steps)
 

@@ -60,7 +60,7 @@ class ConfigManager[T: ManagedConfigItem](metaclass = ABCMeta):
   order_in_cleanup_phase: Literal["reverse_install_order", "first", "last"] = "reverse_install_order"
 
   @abstractmethod
-  def check_configuration(self, item: T, model: ExecutionModel):
+  def check_configuration(self, item: T, model: ConfigModel):
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.check_configuration()")
 
   @abstractmethod
@@ -74,40 +74,37 @@ class ConfigManager[T: ManagedConfigItem](metaclass = ABCMeta):
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.checksum_current()")
 
   @abstractmethod
-  def checksum_target(self, item: T, model: ExecutionModel) -> str:
+  def checksum_target(self, item: T, model: ConfigModel) -> str:
     """Returns the checksum that the item will have after installation/updating.
     Can depend on the ExecutionModel, as there might be e.g. Option()s that need to be considered."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.checksum_target()")
 
   @abstractmethod
-  def install(self, items: list[T], model: ExecutionModel):
+  def install(self, items: list[T], model: ConfigModel):
     """Installs one or multiple items on the system."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.install()")
 
   @abstractmethod
-  def uninstall(self, items: list[T], model: ExecutionModel):
+  def uninstall(self, items: list[T], model: ConfigModel):
     """Removes one or multiple items from the system."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.uninstall()")
 
 
-class ExecutionModel:
+class ConfigModel:
   managers: Sequence[ConfigManager]
-  install_phases: Sequence[InstallPhase]
-  cleanup_phase: CleanupPhase
+  phases: Sequence[InstallPhase]
   confirm_mode_fallback: ConfirmMode
   confirm_mode_archive: dict[str, ConfirmMode]
 
   def __init__(
     self,
     managers: Sequence[ConfigManager],
-    install_phases: Sequence[InstallPhase],
-    cleanup_phase: CleanupPhase,
+    phases: Sequence[InstallPhase],
     confirm_mode_fallback: ConfirmMode,
     confirm_mode_archive: dict[str, ConfirmMode],
   ):
     self.managers = managers
-    self.install_phases = install_phases
-    self.cleanup_phase = cleanup_phase
+    self.phases = phases
     self.confirm_mode_fallback = confirm_mode_fallback
     self.confirm_mode_archive = confirm_mode_archive
 
@@ -125,7 +122,7 @@ class ExecutionModel:
 
   def item[T: ConfigItem](self, reference: T, optional: bool = False) -> T | None:
     result = next((
-      cast(T, item) for phase in self.install_phases for item in phase.items
+      cast(T, item) for phase in self.phases for item in phase.items
       if item.identifier() == reference.identifier()
     ), None)
     assert result is not None or optional, f"Item not found: {reference.identifier()}"

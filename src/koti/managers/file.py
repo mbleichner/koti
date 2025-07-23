@@ -2,7 +2,7 @@ import os
 import pwd
 from hashlib import sha256
 
-from koti.core import ConfigManager, ExecutionModel
+from koti.core import ConfigManager, ConfigModel
 from koti.items.file import File
 from koti.utils import JsonCollection
 from koti.utils.confirm import confirm
@@ -17,7 +17,7 @@ class FileManager(ConfigManager[File]):
     store = JsonStore("/var/cache/koti/FileManager.json")
     self.managed_files_store = store.collection("managed_files")
 
-  def check_configuration(self, item: File, model: ExecutionModel):
+  def check_configuration(self, item: File, model: ConfigModel):
     assert item.content is not None, "missing either content or content_from_file"
 
   def create_dir(self, dir: str, item: File):
@@ -28,7 +28,7 @@ class FileManager(ConfigManager[File]):
     getpwnam = pwd.getpwnam(item.owner)
     os.chown(dir, uid = getpwnam.pw_uid, gid = getpwnam.pw_gid)
 
-  def install(self, items: list[File], model: ExecutionModel):
+  def install(self, items: list[File], model: ConfigModel):
     for item in items:
       assert item.content is not None
       getpwnam = pwd.getpwnam(item.owner)
@@ -57,7 +57,7 @@ class FileManager(ConfigManager[File]):
   def installed(self) -> list[File]:
     return [File(filename) for filename in self.managed_files_store.elements()]
 
-  def uninstall(self, items: list[File], model: ExecutionModel):
+  def uninstall(self, items: list[File], model: ConfigModel):
     for item in items:
       if os.path.isfile(item.filename):
         confirm(
@@ -81,7 +81,7 @@ class FileManager(ConfigManager[File]):
         sha256_hash.update(byte_block)
     return sha256_hash.hexdigest()
 
-  def checksum_target(self, item: File, model: ExecutionModel) -> str:
+  def checksum_target(self, item: File, model: ConfigModel) -> str:
     getpwnam = pwd.getpwnam(item.owner)
     (uid, gid) = (getpwnam.pw_uid, getpwnam.pw_gid)
     if item.content is None:
