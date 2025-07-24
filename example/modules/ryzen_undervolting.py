@@ -12,7 +12,7 @@ def ryzen_undervolting() -> Generator[ConfigGroup]:
       SystemdUnit("ryzen-undervolting.service"),
 
       # Quelle: https://github.com/svenlange2/Ryzen-5800x3d-linux-undervolting
-      File("/opt/undervolting/ryzen-undervolting.py", source = "files/ryzen-undervolting.py"),
+      File("/opt/undervolting/ryzen-undervolting.py", permissions = "r--", source = "files/ryzen-undervolting.py"),
 
       File("/etc/systemd/system/ryzen-undervolting.service", permissions = "r--", content = cleandoc('''
         [Unit]

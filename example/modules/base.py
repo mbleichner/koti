@@ -54,6 +54,7 @@ def base() -> Generator[ConfigGroup]:
       Package("wget"),
       Package("ethtool"),
       Package("tcpdump"),
+      #Package("nload"),
 
       # Hardware Utilities
       Package("cpupower"),

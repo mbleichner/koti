@@ -4,7 +4,7 @@ from os import getuid
 from typing import Iterable, Iterator
 
 from koti.types import *
-from koti.utils import JsonStore
+from koti.utils import *
 
 
 class Koti:
@@ -53,26 +53,32 @@ class Koti:
 
     if groups or items:
       for phase_idx, phase in enumerate(model.phases):
-        print(f"Phase {phase_idx + 1}:")
+        printc(f"Phase {phase_idx + 1}:", BOLD)
         if groups:
           for group in phase.groups:
             needs_update = len([item for item in group.provides if item in items_outdated]) > 0
-            print(f"{"*" if needs_update else "-"} {group.description}")
+            printc(f"{"~" if needs_update else "-"} {group.description}", YELLOW if needs_update else None)
         if items:
           for install_step in phase.steps:
             for item in install_step.items_to_install:
               needs_update = item in items_outdated or item in items_outdated
-              print(f"{"*" if needs_update else "-"} {item.description()}")
+              if needs_update:
+                new = item.identifier() not in installed_identifiers
+                printc(f"{"~" if new else "+"} {item.description()}", GREEN if new else YELLOW)
+              else:
+                printc(f"- {item.description()}")
         print()
 
     count = len(items_outdated) + len(items_to_uninstall)
     if count > 0:
       print(f"{len(items_total)} items total, {count} items to update:")
       for item in items_outdated:
-        action = "upd" if item.identifier() in installed_identifiers else "add"
-        print(f"- {action} {item.description()}")
+        if item.identifier() in installed_identifiers:
+          printc(f"~ upd {item.description()}", YELLOW)
+        else:
+          printc(f"+ add {item.description()}", GREEN)
       for item in items_to_uninstall:
-        print(f"- del {item.description()}")
+        printc(f"- del {item.description()}", RED)
       print()
       print("// additional updates may be triggered by PostHooks")
     else:
