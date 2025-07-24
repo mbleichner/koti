@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Callable
 from re import match
 
-from koti import ConfigItem, ConfirmMode, ConfigModel, ManagedConfigItem
+from koti import ConfigItem, ConfigModel, ConfirmMode, ManagedConfigItem
 
 
 class File(ManagedConfigItem):
@@ -18,7 +19,7 @@ class File(ManagedConfigItem):
     filename: str,
     content: str | Callable[[ConfigModel], str] | None = None,
     source: str | None = None,
-    permissions: int | str = "r--",
+    permissions: int | str | None = None,
     owner: str = "root",
     confirm_mode: ConfirmMode | None = None,
   ):
@@ -29,12 +30,15 @@ class File(ManagedConfigItem):
       self.content = lambda model: content.encode("utf-8")
     elif source is not None:
       self.content = lambda model: Path(source).read_bytes()
+      self.permissions = os.stat(source).st_mode & 0o777
     else:
       self.content = None
     if isinstance(permissions, str):
       self.permissions = File.parse_permissions(permissions)
-    else:
+    elif isinstance(permissions, int):
       self.permissions = permissions
+    elif self.permissions is None:
+      self.permissions = 0o444  # r--r--r--
     self.owner = owner
     self.confirm_mode = confirm_mode
 

@@ -28,6 +28,7 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
     ],
     provides = [
       Option("/etc/pacman.conf/NoExtract", "etc/xdg/autostart/org.kde.discover.notifier.desktop"),
+      Directory("/opt/gamma-icc-profiles", source = "files/gamma-icc-profiles", mask = "r--"),
       Package("archlinux-wallpaper"),
       Package("ark"),
       Package("code"),
