@@ -1,6 +1,6 @@
 from hashlib import sha256
 
-from koti.core import ConfigManager, ConfirmMode, ConfigModel
+from koti.core import ConfigManager, ConfigModel, ConfirmMode
 from koti.items.package import Package
 from koti.items.pacman_key import PacmanKey
 from koti.utils import JsonCollection, JsonStore, confirm
@@ -19,9 +19,6 @@ class PacmanAdapter:
     elif confirm_mode == "paranoid":
       return "--confirm"
     return ""
-
-  def update_system(self):
-    shell_output(f"{self.pacman} -Syu")
 
   def list_explicit_packages(self) -> list[str]:
     return self.parse_pkgs(shell_output(f"{self.pacman} -Qqe", check = False))
