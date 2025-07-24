@@ -47,10 +47,18 @@ class FileManager(ConfigManager[File | Directory]):
   def checksum_current(self, item: File | Directory) -> str:
     return self.checksum_file_current(item) if isinstance(item, File) else self.checksum_dir_current(item)
 
-  def installed(self) -> list[File | Directory]:
+  def installed(self, model: ConfigModel) -> list[File | Directory]:
+    filenames = {
+      *self.managed_files_store.elements(),
+      *(item.filename for phase in model.phases for item in phase.items if isinstance(item, File) and os.path.isfile(item.filename))
+    }
+    dirnames = {
+      *self.managed_dirs_store.elements(),
+      *(item.dirname for phase in model.phases for item in phase.items if isinstance(item, Directory) and os.path.isdir(item.dirname))
+    }
     return [
-      *(File(filename) for filename in self.managed_files_store.elements()),
-      *(Directory(dirname) for dirname in self.managed_dirs_store.elements()),
+      *(File(filename) for filename in filenames),
+      *(Directory(dirname) for dirname in dirnames),
     ]
 
   def install_file(self, item: File, model: ConfigModel):

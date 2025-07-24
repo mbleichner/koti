@@ -64,8 +64,9 @@ class ConfigManager[T: ManagedConfigItem](metaclass = ABCMeta):
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.check_configuration()")
 
   @abstractmethod
-  def installed(self) -> Sequence[T]:
-    """Returns a list of all items currently installed on the system."""
+  def installed(self, model: ConfigModel) -> Sequence[T]:
+    """Returns a list of all items currently installed on the system. This may depend on the model, as it may
+    be beneficial to check if newly added ConfigItems already exist on the system and display them accordingly."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.installed()")
 
   @abstractmethod

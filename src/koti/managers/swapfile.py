@@ -61,7 +61,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
   def is_mounted(self, swapfile: str) -> bool:
     return shell_success(f"swapon --show | grep {swapfile}")
 
-  def installed(self) -> list[Swapfile]:
+  def installed(self, model: ConfigModel) -> list[Swapfile]:
     return [Swapfile(filename) for filename in self.managed_files_store.elements()]
 
   def uninstall(self, items: list[Swapfile], model: ConfigModel):

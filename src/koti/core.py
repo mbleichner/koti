@@ -41,7 +41,7 @@ class Koti:
     # plan installation phases
     model = self.create_model()
     items_total = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
-    installed_identifiers = [item.identifier() for manager in model.managers for item in manager.installed()]
+    installed_identifiers = [item.identifier() for manager in model.managers for item in manager.installed(model)]
     items_outdated = [
       item for phase in model.phases for step in phase.steps for item in step.items_to_install
       if step.manager.checksum_current(item) != step.manager.checksum_target(item, model)
@@ -142,7 +142,7 @@ class Koti:
     identifiers_to_install = [item.identifier() for item in items_to_install]
     steps: list[CleanupStep] = []
     for manager in self.get_cleanup_phase_manager_order(self.managers):
-      installed_items = manager.installed()
+      installed_items = manager.installed(model)
       if not installed_items:
         continue  # only add the manager to the cleanup phase if there are any items that could potentially be uninstalled
       items_to_uninstall = [item for item in installed_items if item.identifier() not in identifiers_to_install]

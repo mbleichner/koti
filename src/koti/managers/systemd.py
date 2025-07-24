@@ -37,7 +37,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
       units_store: JsonCollection[str] = self.store.collection(self.store_key_for_user(user))
       units_store.add_all([item.name for item in items])
 
-  def installed(self) -> list[SystemdUnit]:
+  def installed(self, model: ConfigModel) -> list[SystemdUnit]:
     result: list[SystemdUnit] = []
     previously_seen_users = self.user_list_store.elements()
     for user in [None, *previously_seen_users]:

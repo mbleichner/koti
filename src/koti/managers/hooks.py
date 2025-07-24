@@ -51,7 +51,7 @@ class PostHookManager(ConfigManager[PostHook]):
           result += 1
     return None
 
-  def installed(self) -> list[PostHook]:
+  def installed(self, model: ConfigModel) -> list[PostHook]:
     return []
 
   def uninstall(self, items: list[PostHook], model: ConfigModel):
