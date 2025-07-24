@@ -3,3 +3,4 @@ from koti.types import ConfigGroup, ConfigItem, ConfigManager, ConfigModel, Mana
 from koti.core import Koti
 from koti.items import *
 from koti.managers import *
+from koti.presets import *

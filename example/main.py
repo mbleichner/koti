@@ -1,19 +1,9 @@
-from __future__ import annotations
-
-# disable bytecode compilation (can cause issues with root-owned cache-files)
 import sys
-sys.dont_write_bytecode = True
+sys.dont_write_bytecode = True  # disable bytecode compilation (can cause issues with root-owned cache-files)
 
-# import koti stuff
 from koti import *
-from koti.utils import *
-from koti.presets import KotiManagerPresets
-
-# import user configs
-from systems.dan import dan
-from systems.lenovo import lenovo
-from systems.mserver import mserver
-
+from koti.utils import confirm
+from systems import *  # my system configs
 from socket import gethostname
 
 my_arch_systems = {
@@ -23,8 +13,8 @@ my_arch_systems = {
 }
 
 koti = Koti(
-  managers = KotiManagerPresets.arch(PacmanAdapter("sudo -u manuel paru")),  # predefined managers for Arch Linux, but use paru instead of pacman
   configs = my_arch_systems[gethostname()],  # choose system config based on the current hostname
+  managers = KotiManagerPresets.arch(PacmanAdapter("sudo -u manuel paru")),  # predefined managers for Arch Linux, but use paru instead of pacman
 )
 
 if koti.plan():
