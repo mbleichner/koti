@@ -7,20 +7,27 @@ from koti.confirmmode import ConfirmMode, highest_confirm_mode
 
 
 class ConfigGroup:
+  """The purpose of ConfigGroups is to provide ConfigItems that should be installed on the system.
+  It's good practice to create a ConfigGroup for related ConfigItems that should be installed
+  within the same phase. Also, ConfigGroups allow to define dependencies on other ConfigGroups
+  so they are split into separate phases to control the order of installation."""
   description: str
   requires: Sequence[ConfigItem]
   provides: Sequence[ConfigItem]
 
-  def __init__(self, description: str, provides: Sequence[ConfigItem | None], requires: Sequence[ConfigItem | None] | None = None, confirm_mode: ConfirmMode | None = None):
+  def __init__(
+    self,
+    description: str,
+    provides: Sequence[ConfigItem | None],
+    requires: Sequence[ConfigItem | None] | None = None,
+    confirm_mode: ConfirmMode | None = None,
+  ):
     self.description = description
     self.requires = [item for item in (requires or []) if item is not None]
     self.provides = [item for item in (provides or []) if item is not None]
     for item in self.provides:
       if isinstance(item, ManagedConfigItem) and item.confirm_mode is None:
         item.confirm_mode = confirm_mode
-
-  def __str__(self):
-    return f"ConfigGroup('{self.description}')"
 
 
 class ConfigItem(metaclass = ABCMeta):
