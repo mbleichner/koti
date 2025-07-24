@@ -25,10 +25,21 @@ class Koti:
     self.configs = [c for c in configs if c is not None]
     self.managers = [m for m in managers if m is not None]
 
+  def create_model(self) -> ConfigModel:
+    self.check_manager_consistency(self.managers, self.configs)
+    result = ConfigModel(
+      managers = self.managers,
+      phases = self.create_install_phases(self.managers, self.configs),
+      confirm_mode_fallback = self.default_confirm_mode,
+      confirm_mode_archive = self.load_confirm_modes(self.store),
+    )
+    self.check_config_item_consistency(result)
+    return result
+
   def plan(self, groups: bool = True, items: bool = False) -> bool:
 
     # plan installation phases
-    model = Koti.create_model(self.managers, self.configs, self.default_confirm_mode, self.store)
+    model = self.create_model()
     items_total = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
     installed_identifiers = [item.identifier() for manager in model.managers for item in manager.installed()]
     items_outdated = [
@@ -37,7 +48,7 @@ class Koti:
     ]
 
     # plan cleanup phase
-    cleanup_phase = Koti.create_cleanup_phase(model)
+    cleanup_phase = self.create_cleanup_phase(model)
     items_to_uninstall = cleanup_phase.items_to_uninstall
 
     if groups or items:
@@ -70,52 +81,24 @@ class Koti:
     return count > 0
 
   def apply(self):
-    model = Koti.create_model(self.managers, self.configs, self.default_confirm_mode, self.store)
+    model = self.create_model()
     for phase_idx, phase in enumerate(model.phases):
       for step in phase.steps:
         manager = step.manager
         items_to_update = [item for item in step.items_to_install if manager.checksum_current(item) != manager.checksum_target(item, model)]
-        Koti.print_install_step_log(model, phase_idx, step, items_to_update)
+        self.print_install_step_log(model, phase_idx, step, items_to_update)
         manager.install(items_to_update, model) or []
 
-    cleanup_phase = Koti.create_cleanup_phase(model)
+    cleanup_phase = self.create_cleanup_phase(model)
     for step in cleanup_phase.steps:
       manager = step.manager
-      Koti.print_cleanup_step_log(model, step)
+      self.print_cleanup_step_log(model, step)
       manager.uninstall(step.items_to_uninstall, model)
 
-    Koti.save_confirm_modes(self.store, model)
+    self.save_confirm_modes(self.store, model)
 
-  @staticmethod
-  def create_model(
-    managers: Sequence[ConfigManager],
-    configs: Sequence[ConfigGroup],
-    default_confirm_mode: ConfirmMode,
-    store: JsonStore,
-  ) -> ConfigModel:
-
-    Koti.check_manager_consistency(managers, configs)
-
-    groups = Koti.get_all_provided_groups(configs)
-    groups_separated_into_phases = Koti.separate_into_phases(groups)
-    merged_items_grouped_by_phase: list[list[ConfigItem]] = Koti.merge_items([
-      [item for group in phase for item in group.provides]
-      for phase in groups_separated_into_phases
-    ])
-
-    model = ConfigModel(
-      managers = managers,
-      phases = [Koti.create_install_phase(managers, groups_in_phase, items_in_phase) for groups_in_phase, items_in_phase in
-                zip(groups_separated_into_phases, merged_items_grouped_by_phase)],
-      confirm_mode_fallback = default_confirm_mode,
-      confirm_mode_archive = Koti.load_confirm_modes(store)
-    )
-
-    Koti.check_config_item_consistency(model)
-    return model
-
-  @staticmethod
-  def print_install_step_log(model: ConfigModel, phase_idx: int, step: InstallStep, items_to_update: Sequence[ManagedConfigItem]):
+  @classmethod
+  def print_install_step_log(cls, model: ConfigModel, phase_idx: int, step: InstallStep, items_to_update: Sequence[ManagedConfigItem]):
     manager_name_maxlen = max([len(manager.__class__.__name__) for manager in model.managers])
     manager_name = step.manager.__class__.__name__
     if 0 < len(items_to_update) < 5:
@@ -124,8 +107,8 @@ class Koti:
       details = f"{len(items_to_update) or "no"} outdated items"
     print(f"Phase {phase_idx + 1}  |  {manager_name.ljust(manager_name_maxlen)}  |  {str(len(step.items_to_install)).rjust(3)} items total  |  {details}")
 
-  @staticmethod
-  def print_cleanup_step_log(model: ConfigModel, step: CleanupStep):
+  @classmethod
+  def print_cleanup_step_log(cls, model: ConfigModel, step: CleanupStep):
     manager_name_maxlen = max([len(manager.__class__.__name__) for manager in model.managers])
     manager_name = step.manager.__class__.__name__
     if 0 < len(step.items_to_uninstall) < 5:
@@ -134,21 +117,13 @@ class Koti:
       details = f"{len(step.items_to_uninstall) or "no"} items to uninstall"
     print(f"Cleanup  |  {manager_name.ljust(manager_name_maxlen)}  |  {str(len(step.items_to_keep)).rjust(3)} remaining    |  {details}")
 
-  @staticmethod
-  def get_cleanup_phase_manager_order(managers: Sequence[ConfigManager]) -> Sequence[ConfigManager]:
-    return [
-      *[manager for manager in managers if manager.order_in_cleanup_phase == "first"],
-      *reversed([manager for manager in managers if manager.order_in_cleanup_phase == "reverse_install_order"]),
-      *[manager for manager in managers if manager.order_in_cleanup_phase == "last"],
-    ]
-
-  @staticmethod
-  def load_confirm_modes(store: JsonStore) -> dict[str, ConfirmMode]:
+  @classmethod
+  def load_confirm_modes(cls, store: JsonStore) -> dict[str, ConfirmMode]:
     result = store.get("confirm_modes")
     return result if isinstance(result, dict) else {}
 
-  @staticmethod
-  def save_confirm_modes(store: JsonStore, model: ConfigModel):
+  @classmethod
+  def save_confirm_modes(cls, store: JsonStore, model: ConfigModel):
     result: dict[str, ConfirmMode] = {}
     for phase in model.phases:
       for install_step in phase.steps:
@@ -156,8 +131,65 @@ class Koti:
           result[item.identifier()] = model.confirm_mode(item)
     store.put("confirm_modes", result)
 
-  @staticmethod
-  def merge_items(items_grouped_by_phase: list[list[ConfigItem]]) -> list[list[ConfigItem]]:
+  def create_cleanup_phase(self, model: ConfigModel) -> CleanupPhase:
+    items_to_install = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
+    identifiers_to_install = [item.identifier() for item in items_to_install]
+    steps: list[CleanupStep] = []
+    for manager in self.get_cleanup_phase_manager_order(self.managers):
+      installed_items = manager.installed()
+      if not installed_items:
+        continue  # only add the manager to the cleanup phase if there are any items that could potentially be uninstalled
+      items_to_uninstall = [item for item in installed_items if item.identifier() not in identifiers_to_install]
+      steps.append(CleanupStep(
+        manager = manager,
+        items_to_uninstall = items_to_uninstall,
+        items_to_keep = [item for item in items_to_install if item.__class__ in manager.managed_classes],
+      ))
+    return CleanupPhase(steps)
+
+  @classmethod
+  def get_cleanup_phase_manager_order(cls, managers: Sequence[ConfigManager]) -> Sequence[ConfigManager]:
+    return [
+      *[manager for manager in managers if manager.order_in_cleanup_phase == "first"],
+      *reversed([manager for manager in managers if manager.order_in_cleanup_phase == "reverse_install_order"]),
+      *[manager for manager in managers if manager.order_in_cleanup_phase == "last"],
+    ]
+
+  @classmethod
+  def create_install_phases(cls, managers: Sequence[ConfigManager], configs: Sequence[ConfigGroup]) -> list[InstallPhase]:
+    groups = cls.get_all_provided_groups(configs)
+    groups_separated_into_phases = cls.separate_into_phases(groups)
+    merged_items_grouped_by_phase: list[list[ConfigItem]] = cls.merge_items([
+      [item for group in phase for item in group.provides]
+      for phase in groups_separated_into_phases
+    ])
+    return [
+      cls.create_install_phase(managers, groups_in_phase, items_in_phase) for groups_in_phase, items_in_phase in
+      zip(groups_separated_into_phases, merged_items_grouped_by_phase)
+    ]
+
+  @classmethod
+  def check_config_item_consistency(cls, model: ConfigModel):
+    for phase in model.phases:
+      for install_step in phase.steps:
+        for item in install_step.items_to_install:
+          try:
+            install_step.manager.check_configuration(item, model)
+          except Exception as e:
+            raise AssertionError(f"{install_step.manager.__class__.__name__}: {e}")
+
+  @classmethod
+  def check_manager_consistency(cls, managers: Sequence[ConfigManager], configs: Sequence[ConfigGroup]):
+    for group in cls.get_all_provided_groups(configs):
+      for item in (x for x in group.provides if x is not None and isinstance(x, ManagedConfigItem)):
+        matching_managers = [manager for manager in managers if item.__class__ in manager.managed_classes]
+        if len(matching_managers) == 0:
+          raise AssertionError(f"no manager found for class {item.__class__.__name__}")
+        if len(matching_managers) > 1:
+          raise AssertionError(f"multiple managers found for class {item.__class__.__name__}")
+
+  @classmethod
+  def merge_items(cls, items_grouped_by_phase: list[list[ConfigItem]]) -> list[list[ConfigItem]]:
     flattened = [item for phase in items_grouped_by_phase for item in phase]
     processed_identifiers: set[str] = set()
     result: list[list[ConfigItem]] = []
@@ -167,43 +199,23 @@ class Koti:
       for item in phase:
         if item.identifier() in processed_identifiers: continue
         others = [other for other in flattened if other.identifier() == item.identifier()]
-        merged = Koti.reduce_items(others)
+        merged = cls.reduce_items(others)
         phase_new.append(merged)
         processed_identifiers.add(item.identifier())
     return result
 
-  @staticmethod
-  def reduce_items(items: list[ConfigItem]) -> ConfigItem:
+  @classmethod
+  def reduce_items(cls, items: list[ConfigItem]) -> ConfigItem:
     if len(items) == 1:
       return items[0]
     merged_item = items[0].merge(items[1])
-    return Koti.reduce_items([merged_item, *items[2:]])
+    return cls.reduce_items([merged_item, *items[2:]])
 
-  @staticmethod
-  def check_manager_consistency(managers: Sequence[ConfigManager], configs: Sequence[ConfigGroup]):
-    for group in Koti.get_all_provided_groups(configs):
-      for item in (x for x in group.provides if x is not None and isinstance(x, ManagedConfigItem)):
-        matching_managers = [manager for manager in managers if item.__class__ in manager.managed_classes]
-        if len(matching_managers) == 0:
-          raise AssertionError(f"no manager found for class {item.__class__.__name__}")
-        if len(matching_managers) > 1:
-          raise AssertionError(f"multiple managers found for class {item.__class__.__name__}")
-
-  @staticmethod
-  def check_config_item_consistency(model: ConfigModel):
-    for phase in model.phases:
-      for install_step in phase.steps:
-        for item in install_step.items_to_install:
-          try:
-            install_step.manager.check_configuration(item, model)
-          except Exception as e:
-            raise AssertionError(f"{install_step.manager.__class__.__name__}: {e}")
-
-  @staticmethod
-  def separate_into_phases(groups: Sequence[ConfigGroup]) -> list[list[ConfigGroup]]:
+  @classmethod
+  def separate_into_phases(cls, groups: Sequence[ConfigGroup]) -> list[list[ConfigGroup]]:
     result: list[list[ConfigGroup]] = [list(groups)]
     while True:
-      violation = Koti.find_dependency_violation(result)
+      violation = cls.find_dependency_violation(result)
       if violation is None: break
       idx_phase, group = violation
       result[idx_phase].remove(group)
@@ -215,16 +227,16 @@ class Koti:
         result = [[group]] + result
     return result
 
-  @staticmethod
-  def get_all_provided_groups(configs: Sequence[ConfigGroup]) -> Sequence[ConfigGroup]:
+  @classmethod
+  def get_all_provided_groups(cls, configs: Sequence[ConfigGroup]) -> Sequence[ConfigGroup]:
     result: list[ConfigGroup] = []
     for config_group in configs:
       config_group_list = config_group if isinstance(config_group, list) else [config_group]
       result += [group for group in config_group_list if group is not None]
     return result
 
-  @staticmethod
-  def create_install_phase(managers: Sequence[ConfigManager], groups_in_phase: list[ConfigGroup], merged_items_in_phase: list[ConfigItem]) -> InstallPhase:
+  @classmethod
+  def create_install_phase(cls, managers: Sequence[ConfigManager], groups_in_phase: list[ConfigGroup], merged_items_in_phase: list[ConfigItem]) -> InstallPhase:
     steps: list[InstallStep] = []
     for manager in managers:
       items_for_manager = [
@@ -240,29 +252,12 @@ class Koti:
       items = merged_items_in_phase
     )
 
-  @staticmethod
-  def create_cleanup_phase(model: ConfigModel) -> CleanupPhase:
-    items_to_install = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
-    identifiers_to_install = [item.identifier() for item in items_to_install]
-    steps: list[CleanupStep] = []
-    for manager in Koti.get_cleanup_phase_manager_order(model.managers):
-      installed_items = manager.installed()
-      if not installed_items:
-        continue  # only add the manager to the cleanup phase if there are any items that could potentially be uninstalled
-      items_to_uninstall = [item for item in installed_items if item.identifier() not in identifiers_to_install]
-      steps.append(CleanupStep(
-        manager = manager,
-        items_to_uninstall = items_to_uninstall,
-        items_to_keep = [item for item in items_to_install if item.__class__ in manager.managed_classes],
-      ))
-    return CleanupPhase(steps)
-
-  @staticmethod
-  def find_dependency_violation(phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup] | None:
+  @classmethod
+  def find_dependency_violation(cls, phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup] | None:
     for phase_idx, phase in enumerate(phases):
       for group in phase:
         for required_item in group.requires:
-          required_phase_and_group = Koti.find_required_group(required_item, phases)
+          required_phase_and_group = cls.find_required_group(required_item, phases)
           if required_phase_and_group is None:
             raise AssertionError(f"required item not found: {required_item.identifier()}")
           required_phase_idx, required_group = required_phase_and_group
@@ -271,8 +266,8 @@ class Koti:
             return required_phase_idx, required_group
     return None
 
-  @staticmethod
-  def find_required_group(required_item: ConfigItem, phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup] | None:
+  @classmethod
+  def find_required_group(cls, required_item: ConfigItem, phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup] | None:
     for idx_phase, phase in enumerate(phases):
       for group in phase:
         for group_item in group.provides:

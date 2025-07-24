@@ -103,10 +103,10 @@ class ConfigModel:
     confirm_mode_fallback: ConfirmMode,
     confirm_mode_archive: dict[str, ConfirmMode],
   ):
-    self.managers = managers
-    self.phases = phases
     self.confirm_mode_fallback = confirm_mode_fallback
     self.confirm_mode_archive = confirm_mode_archive
+    self.managers = managers
+    self.phases = phases
 
   @overload
   def item[T: ConfigItem](self, reference: T) -> T:
@@ -129,10 +129,10 @@ class ConfigModel:
     return result
 
   def confirm_mode(self, *args: ManagedConfigItem) -> ConfirmMode:
-    highest = highest_confirm_mode(*[self._confirm_mode(arg) for arg in args])
+    highest = highest_confirm_mode(*[self.__confirm_mode(arg) for arg in args])
     return highest if highest else self.confirm_mode_fallback
 
-  def _confirm_mode(self, arg: ManagedConfigItem) -> ConfirmMode:
+  def __confirm_mode(self, arg: ManagedConfigItem) -> ConfirmMode:
     if arg.confirm_mode is not None:
       return arg.confirm_mode
     item = self.item(arg, optional = True)
