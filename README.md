@@ -63,7 +63,8 @@ See the `examples` folder, specifically `koti-apply` and all the stuff in the `m
     - Run post-hooks
 - If there are dependencies present, this will happen in multiple rounds (so-called phases) where koti will bundle mutually compatible config groups together and run an installation phase on each
   bundle.
-- When all config items have been installed, koti performs a system cleanup - looking for old items that have been removed from the system and uninstalls them (in reverse installation order).
+- When all config items have been installed, koti performs a system cleanup - looking for old items that have been removed from the koti config and uninstalls them from the system (in reverse
+  installation order).
 
 ## How does koti compare to...
 
