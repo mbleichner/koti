@@ -64,11 +64,11 @@ class PacmanPackageManager(ConfigManager[Package]):
   managed_packages_store: JsonCollection[str]
   explicit_packages_on_system: set[str]  # holds the list of explicitly installed packages on the system; will be updated whenever the manager adds/removes explicit packages.
 
-  def __init__(self, delegate: PacmanAdapter, ignore_manually_installed_packages: bool):
+  def __init__(self, delegate: PacmanAdapter, keep_unmanaged_packages: bool):
     store = JsonStore("/var/cache/koti/PacmanPackageManager.json")
     self.managed_packages_store = store.collection("managed_packages")
     self.delegate = delegate
-    self.ignore_manually_installed_packages = ignore_manually_installed_packages
+    self.ignore_manually_installed_packages = keep_unmanaged_packages
     self.explicit_packages_on_system = set(self.delegate.list_explicit_packages())
 
   def check_configuration(self, item: Package, model: ConfigModel):
