@@ -144,6 +144,7 @@ class FileManager(ConfigManager[File | Directory]):
     sha256_hash.update(str(stat.st_uid).encode())
     sha256_hash.update(str(stat.st_gid).encode())
     sha256_hash.update(str(stat.st_mode & 0o777).encode())
+    sha256_hash.update(item.filename.encode())
     with open(item.filename, "rb") as f:
       for byte_block in iter(lambda: f.read(4096), b""):
         sha256_hash.update(byte_block)
@@ -158,6 +159,7 @@ class FileManager(ConfigManager[File | Directory]):
     sha256_hash.update(str(uid).encode())
     sha256_hash.update(str(gid).encode())
     sha256_hash.update(str(item.permissions & 0o777).encode())
+    sha256_hash.update(item.filename.encode())
     sha256_hash.update(item.content(model))
     return sha256_hash.hexdigest()
 
