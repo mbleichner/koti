@@ -1,5 +1,5 @@
 # Maintainer: Manuel Bleichner <mbleichner AT gmail DOT com>
-pkgname=koti
+pkgname=python-koti
 pkgver=0.1.0.8da1e08
 pkgrel=1
 pkgdesc="Declarative configuration manager"
