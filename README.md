@@ -49,7 +49,7 @@ makepkg -si -D /tmp/koti
 
 See the `examples` folder, specifically `koti-apply` and all the stuff in the `modules` subdirectory.
 
-## Key concepts and how koti works
+## Key concepts, explanations
 
 - **Config items** declare individual things to install, such as `Package("htop")`, or `File("/etc/fstab", content="...")`
 - **Config managers** are responsible for applying config items to your system. They are largely part of koti itself and are not meant to be implemented by the user (although it can be done in case
