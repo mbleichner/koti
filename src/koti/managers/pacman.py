@@ -60,16 +60,16 @@ class PacmanAdapter:
 class PacmanPackageManager(ConfigManager[Package]):
   managed_classes = [Package]
   delegate: PacmanAdapter
-  ignore_externally_installed: bool
+  ignore_manually_installed_packages: bool
   managed_packages_store: JsonCollection[str]
-  explicit_packages_on_system: list[str]  # holds the list of explicitly installed packages on the system; will be updated whenever the manager adds/removes explicit packages.
+  explicit_packages_on_system: set[str]  # holds the list of explicitly installed packages on the system; will be updated whenever the manager adds/removes explicit packages.
 
-  def __init__(self, delegate: PacmanAdapter, ignore_externally_installed: bool):
+  def __init__(self, delegate: PacmanAdapter, ignore_manually_installed_packages: bool):
     store = JsonStore("/var/cache/koti/PacmanPackageManager.json")
     self.managed_packages_store = store.collection("managed_packages")
     self.delegate = delegate
-    self.ignore_externally_installed = ignore_externally_installed
-    self.explicit_packages_on_system = self.delegate.list_explicit_packages()
+    self.ignore_manually_installed_packages = ignore_manually_installed_packages
+    self.explicit_packages_on_system = set(self.delegate.list_explicit_packages())
 
   def check_configuration(self, item: Package, model: ConfigModel):
     pass
@@ -105,14 +105,16 @@ class PacmanPackageManager(ConfigManager[Package]):
       confirm_mode = model.confirm_mode(*additional_explicit_items)
     )
 
-    self.explicit_packages_on_system = self.delegate.list_explicit_packages()
+    self.explicit_packages_on_system = set(self.delegate.list_explicit_packages())
     self.managed_packages_store.add_all([item.name for item in items])
 
   def installed(self, model: ConfigModel) -> list[Package]:
-    if self.ignore_externally_installed:
-      return [Package(pkg) for pkg in self.managed_packages_store.elements()]
-    else:
-      return [Package(pkg) for pkg in self.explicit_packages_on_system]
+    installed_by_koti = self.managed_packages_store.elements()
+    package_names = {
+      pkg for pkg in self.explicit_packages_on_system
+      if not self.ignore_manually_installed_packages or pkg in installed_by_koti
+    }
+    return [Package(pkg) for pkg in package_names]
 
   def uninstall(self, items: list[Package], model: ConfigModel):
     confirm_mode = model.confirm_mode(*items)
@@ -120,7 +122,7 @@ class PacmanPackageManager(ConfigManager[Package]):
     self.delegate.mark_as_dependency(package_names, confirm_mode = confirm_mode)
     self.managed_packages_store.remove_all(package_names)
     self.delegate.prune_unneeded(confirm_mode = confirm_mode)
-    self.explicit_packages_on_system = self.delegate.list_explicit_packages()
+    self.explicit_packages_on_system = set(self.delegate.list_explicit_packages())
 
 
 class PacmanKeyManager(ConfigManager[PacmanKey]):

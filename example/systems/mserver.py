@@ -105,28 +105,28 @@ def mserver() -> Generator[ConfigGroup | None]:
       SystemdUnit("docker.service"),
 
       *DockerComposeService(
-        File("/opt/traefik/docker-compose.yml", permissions = "r--", source = "docker/traefik/docker-compose.yml"),
+        File("/opt/traefik/docker-compose.yml", permissions = "r--", source = "files/traefik/docker-compose.yml"),
       ),
 
       *DockerComposeService(
-        File("/opt/nextcloud/docker-compose.yml", permissions = "r--", source = "docker/nextcloud/docker-compose.yml"),
+        File("/opt/nextcloud/docker-compose.yml", permissions = "r--", source = "files/nextcloud/docker-compose.yml"),
       ),
 
       *DockerComposeService(
-        File("/opt/homeassistant/docker-compose.yml", permissions = "r--", source = "docker/homeassistant/docker-compose.yml"),
+        File("/opt/homeassistant/docker-compose.yml", permissions = "r--", source = "files/homeassistant/docker-compose.yml"),
       ),
 
       *DockerComposeService(
-        File("/opt/pihole/docker-compose.yml", permissions = "r--", source = "docker/pihole/docker-compose.yml"),
+        File("/opt/pihole/docker-compose.yml", permissions = "r--", source = "files/pihole/docker-compose.yml"),
       ),
 
       *DockerComposeService(
-        File("/opt/pyanodon-mapshot/docker-compose.yml", permissions = "r--", source = "docker/pyanodon-mapshot/docker-compose.yml"),
+        File("/opt/pyanodon-mapshot/docker-compose.yml", permissions = "r--", source = "files/pyanodon-mapshot/docker-compose.yml"),
       ),
 
       *DockerComposeService(
-        File("/opt/pacoloco/docker-compose.yml", permissions = "r--", source = "docker/pacoloco/docker-compose.yml"),
-        File("/opt/pacoloco/pacoloco.yaml", permissions = "r--", source = "docker/pacoloco/pacoloco.yaml"),
+        File("/opt/pacoloco/docker-compose.yml", permissions = "r--", source = "files/pacoloco/docker-compose.yml"),
+        File("/opt/pacoloco/pacoloco.yaml", permissions = "r--", source = "files/pacoloco/pacoloco.yaml"),
       ),
     ]
   )

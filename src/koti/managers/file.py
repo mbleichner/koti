@@ -50,15 +50,15 @@ class FileManager(ConfigManager[File | Directory]):
   def installed(self, model: ConfigModel) -> list[File | Directory]:
     filenames = {
       *self.managed_files_store.elements(),
-      *(item.filename for phase in model.phases for item in phase.items if isinstance(item, File) and os.path.isfile(item.filename))
+      *(item.filename for phase in model.phases for item in phase.items if isinstance(item, File))
     }
     dirnames = {
       *self.managed_dirs_store.elements(),
-      *(item.dirname for phase in model.phases for item in phase.items if isinstance(item, Directory) and os.path.isdir(item.dirname))
+      *(item.dirname for phase in model.phases for item in phase.items if isinstance(item, Directory))
     }
     return [
-      *(File(filename) for filename in filenames),
-      *(Directory(dirname) for dirname in dirnames),
+      *(File(filename) for filename in filenames if os.path.isfile(filename)),
+      *(Directory(dirname) for dirname in dirnames if os.path.isdir(dirname)),
     ]
 
   def install_file(self, item: File, model: ConfigModel):

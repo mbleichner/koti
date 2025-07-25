@@ -1,13 +1,20 @@
-from koti import *
+from koti.types import ConfigManager
+from koti.managers import *
 
 
 class KotiManagerPresets:
 
   @staticmethod
-  def arch(pacman_adapter: PacmanAdapter = PacmanAdapter()) -> list[ConfigManager]:
+  def arch(
+    pacman_adapter: PacmanAdapter = PacmanAdapter(),
+    ignore_manually_installed_packages: bool = False,
+  ) -> list[ConfigManager]:
     return [
       PacmanKeyManager(),
-      PacmanPackageManager(pacman_adapter, ignore_externally_installed = False),
+      PacmanPackageManager(
+        delegate = pacman_adapter,
+        ignore_manually_installed_packages = ignore_manually_installed_packages
+      ),
       SwapfileManager(),
       FileManager(),
       SystemdUnitManager(),
