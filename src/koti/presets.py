@@ -1,4 +1,4 @@
-from koti.types import ConfigManager
+from koti.model import ConfigManager
 from koti.managers import *
 
 

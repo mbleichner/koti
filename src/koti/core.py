@@ -3,7 +3,7 @@ from __future__ import annotations
 from os import getuid
 from typing import Iterable, Iterator
 
-from koti.types import *
+from koti.model import *
 from koti.utils import *
 
 

@@ -3,8 +3,6 @@ from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from typing import Literal, Optional, Sequence, Type, cast, overload
 
-from koti.confirmmode import ConfirmMode, highest_confirm_mode
-
 
 class ConfigGroup:
   """The purpose of ConfigGroups is to provide ConfigItems that should be installed on the system.
@@ -190,3 +188,18 @@ class CleanupStep:
     self.items_to_uninstall = items_to_uninstall
     self.items_to_keep = items_to_keep
     self.manager = manager
+
+
+type ConfirmMode = Literal[
+  "paranoid",  # confirm every change
+  "cautious",  # confirm only destructive changes
+  "yolo",  # apply everything without confirmation
+]
+
+
+def highest_confirm_mode(*modes: ConfirmMode | None) -> ConfirmMode | None:
+  modes_in_order: list[ConfirmMode] = ["paranoid", "cautious", "yolo"]
+  for mode in modes_in_order:
+    if mode in modes:
+      return mode
+  return None
