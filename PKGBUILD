@@ -13,16 +13,16 @@ source=("git+https://github.com/mbleichner/koti")
 sha256sums=(SKIP)
 
 build() {
-    cd "koti"
-    python -m build --wheel --no-isolation
+  cd "$srcdir/koti"
+  python -m build --wheel --no-isolation
 }
 
 package() {
-    cd "koti"
-    python -m installer --destdir="$pkgdir" dist/*.whl
+  cd "$srcdir/koti"
+  python -m installer --destdir="$pkgdir" dist/*.whl
 }
 
 pkgver() {
-  cd "$srcdir/$pkgname"
+  cd "$srcdir/koti"
   echo "0.1.0.$(git rev-parse --short HEAD)"
 }
