@@ -21,7 +21,7 @@ my_arch_systems = {
 
 koti = Koti(
   configs = my_arch_systems[gethostname()],  # choose system config based on the current hostname
-  managers = KotiManagerPresets.arch(PacmanAdapter("sudo -u manuel paru")),  # predefined managers for Arch Linux, but use paru instead of pacman
+  managers = ConfigManagerPresets.arch(PacmanAdapter("sudo -u manuel paru")),  # predefined managers for Arch Linux, but use paru instead of pacman
 )
 
 if koti.plan():

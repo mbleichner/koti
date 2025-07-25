@@ -2,7 +2,7 @@ from koti.types import ConfigManager
 from koti.managers import *
 
 
-class KotiManagerPresets:
+class ConfigManagerPresets:
 
   @staticmethod
   def arch(
