@@ -51,7 +51,7 @@ makepkg -si -D /tmp/koti
 
 ## Example Usage
 
-See the `examples` folder, specifically `main.py` and all the stuff in the `modules` subdirectory.
+See the `examples` folder, specifically `koti-apply` and all the stuff in the `modules` subdirectory.
 
 ## Key Concepts
 
