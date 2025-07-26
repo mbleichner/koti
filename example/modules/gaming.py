@@ -43,7 +43,7 @@ def gaming() -> Generator[ConfigGroup]:
       ''')),
 
       File("/etc/environment.d/proton-wayland.conf", permissions = "r--", content = cleandoc(f'''
-        PROTON_ENABLE_WAYLAND = 1
+        PROTON_ENABLE_WAYLAND=1
       ''')),
 
       File("/usr/bin/steam", permissions = "r-x", content = cleandoc(f'''
