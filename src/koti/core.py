@@ -122,16 +122,18 @@ class Koti:
 
   @classmethod
   def load_tags(cls, store: JsonStore) -> dict[str, set[str]]:
-    result = store.get("item_tags")
-    return result if isinstance(result, dict) else {}
+    stored: dict[str, list[str]] | None = store.get("item_tags")
+    if stored is not None:
+      return {identifier: set(tags) for identifier, tags in stored.items()}
+    else:
+      return {}
 
   @classmethod
   def save_tags(cls, store: JsonStore, model: ConfigModel):
-    result: dict[str, set[str]] = {}
-    for phase in model.phases:
-      for install_step in phase.steps:
-        for item in install_step.items_to_install:
-          result[item.identifier()] = item.tags
+    result: dict[str, list[str]] = {
+      item.identifier(): list(item.tags)
+      for phase in model.phases for install_step in phase.steps for item in install_step.items_to_install
+    }
     store.put("item_tags", result)
 
   def create_cleanup_phase(self, model: ConfigModel) -> CleanupPhase:
