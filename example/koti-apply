@@ -5,7 +5,7 @@
 # can lead to annoying permission problems.
 #
 # In case you want to run a specific version of koti, you can specify it like this:
-# import sys; sys.path.insert(0, "/path/to/my/specific/version/of/koti")
+# import sys; sys.path.insert(0, "/path/to/my/specific/version/of/koti/src")
 
 from socket import gethostname
 

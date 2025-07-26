@@ -18,8 +18,8 @@ unfortunately rooted in the way Nix works.
 So I went back to my beloved Arch and looked for similar solutions that would allow me to describe my whole system in a similar manner. There are a few, but none of them managed to get that
 declarative approach quite right, in my opinion. They all had their problems:
 
-- Not being able to control the order of execution in a fine-grained way
 - Not being able to detect stuff that has been removed from your config and uninstalling it from the system
+- Not being able to control the order of execution in a fine-grained way (unlike NixOS, configuration in Arch is done in an incremental way, so the order of things matters)
 - Not being able to write easy-to-read + modular configs that can be applied to multiple systems
 
 So I thought I'll give it a shot myself and the result is koti.
