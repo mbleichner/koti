@@ -12,7 +12,7 @@ kernel_params = "console=tty1 loglevel=3 nowatchdog zswap.enabled=1"
 def kernel_cachyos(sortkey: int) -> Generator[ConfigGroup]:
   yield ConfigGroup(
     description = "CachyOS kernel + systemd-boot entry",
-    confirm_mode = "paranoid",
+    tags = ["CRITICAL"],
     requires = [
       File("/etc/pacman.conf"),
     ],
@@ -31,7 +31,7 @@ def kernel_cachyos(sortkey: int) -> Generator[ConfigGroup]:
 def kernel_stock(sortkey: int) -> Generator[ConfigGroup]:
   yield ConfigGroup(
     description = "Arch kernel + systemd-boot entry",
-    confirm_mode = "paranoid",
+    tags = ["CRITICAL"],
     provides = [
       *Packages("linux", "linux-headers"),
       *SystemdBootLoader(
@@ -47,7 +47,7 @@ def kernel_stock(sortkey: int) -> Generator[ConfigGroup]:
 def kernel_lts(sortkey: int) -> Generator[ConfigGroup]:
   yield ConfigGroup(
     description = "Arch LTS kernel + systemd-boot entry",
-    confirm_mode = "paranoid",
+    tags = ["CRITICAL"],
     provides = [
       *Packages("linux-lts", "linux-lts-headers"),
       *SystemdBootLoader(

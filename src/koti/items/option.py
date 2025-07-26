@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from koti import ConfigItem, UnmanagedConfigItem
+from koti.model import ConfigItem, UnmanagedConfigItem
 
 
 class Option[T](UnmanagedConfigItem):

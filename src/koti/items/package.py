@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from koti import ConfirmMode, highest_confirm_mode
-from koti.core import ConfigItem, ManagedConfigItem
+from typing import Iterable
+
+from koti.model import ConfigItem, ManagedConfigItem
 
 
 class Package(ManagedConfigItem):
@@ -12,11 +13,11 @@ class Package(ManagedConfigItem):
     self,
     name: str,
     url: str | None = None,
-    confirm_mode: ConfirmMode | None = None
+    tags: Iterable[str] | None = None
   ):
     self.name = name
     self.url = url
-    self.confirm_mode = confirm_mode
+    self.tags = set(tags or [])
 
   def identifier(self):
     return f"Package('{self.name}')"
@@ -34,7 +35,7 @@ class Package(ManagedConfigItem):
     return Package(
       name = self.name,
       url = self.url,
-      confirm_mode = highest_confirm_mode(self.confirm_mode, other.confirm_mode),
+      tags = self.tags.union(other.tags),
     )
 
 

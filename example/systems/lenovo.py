@@ -39,7 +39,7 @@ def lenovo() -> Generator[ConfigGroup | None]:
 
   yield ConfigGroup(
     description = "fstab (lenovo)",
-    confirm_mode = "paranoid",
+    tags = ["CRITICAL"],
     requires = [
       Swapfile("/swapfile"),
     ],

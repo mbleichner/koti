@@ -6,7 +6,6 @@ from koti import ConfigItem
 from koti.core import ConfigManager, ConfigModel, ManagedConfigItem
 from koti.items.hooks import PostHook
 from koti.utils import JsonMapping, JsonStore
-from koti.utils.confirm import confirm
 
 
 class PostHookManager(ConfigManager[PostHook]):
@@ -30,11 +29,6 @@ class PostHookManager(ConfigManager[PostHook]):
 
   def install(self, items: list[PostHook], model: ConfigModel):
     for hook in items:
-      confirm(
-        message = f"confirm executing {hook.description()}",
-        destructive = False,
-        mode = model.confirm_mode(hook),
-      )
       assert hook.execute is not None
       target_checksum = self.checksum_target(hook, model)
       hook.execute()

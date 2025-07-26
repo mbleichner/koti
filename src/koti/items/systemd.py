@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from koti import ConfigItem, highest_confirm_mode
-from koti.core import ConfirmMode, ManagedConfigItem
+from typing import Iterable
+
+from koti.model import ConfigItem, ManagedConfigItem
 
 
 class SystemdUnit(ManagedConfigItem):
@@ -12,9 +13,9 @@ class SystemdUnit(ManagedConfigItem):
     self,
     name: str,
     user: str | None = None,
-    confirm_mode: ConfirmMode | None = None,
+    tags: Iterable[str] | None = None,
   ):
-    self.confirm_mode = confirm_mode
+    self.tags = set(tags or [])
     self.name = name
     self.user = user
 
@@ -30,7 +31,7 @@ class SystemdUnit(ManagedConfigItem):
     return SystemdUnit(
       name = self.name,
       user = self.user,
-      confirm_mode = highest_confirm_mode(self.confirm_mode, other.confirm_mode),
+      tags = self.tags.union(other.tags),
     )
 
 

@@ -4,7 +4,6 @@ from koti.core import ConfigManager, ConfigModel
 from koti.items.systemd import SystemdUnit
 from koti.managers.pacman import shell
 from koti.utils import shell_success
-from koti.utils.confirm import confirm
 from koti.utils.json_store import JsonCollection, JsonStore
 
 
@@ -25,12 +24,6 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
     users = set([item.user for item in items])
     for user in users:
       items_for_user = [item for item in items if item.user == user]
-      confirm(
-        message = f"confirm to activate units: {", ".join([item.name for item in items_for_user])}" if user is None
-        else f"confirm to deactivate units for user {user}: {", ".join([item.name for item in items_for_user])}",
-        destructive = True,
-        mode = model.confirm_mode(*items_for_user),
-      )
       shell(f"{self.systemctl_for_user(user)} enable --now {" ".join([item.name for item in items_for_user])}")
 
       if user is not None: self.user_list_store.add(user)
@@ -52,12 +45,6 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
       items_to_deactivate = [item for item in items if item.user == user]
       if len(items_to_deactivate) > 0:
         unit_names = [item.name for item in items_to_deactivate]
-        confirm(
-          message = f"confirm to deactivate units: {", ".join(unit_names)}" if user is None
-          else f"confirm to deactivate units for user {user}: {", ".join(unit_names)}",
-          destructive = True,
-          mode = model.confirm_mode(*items_to_deactivate),
-        )
         shell(f"{self.systemctl_for_user(user)} disable --now {" ".join(unit_names)}")
         units_store.remove_all(unit_names)
 

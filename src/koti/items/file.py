@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Iterable
 from re import match
 
-from koti import ConfigItem, ConfigModel, ConfirmMode, ManagedConfigItem
+from koti.model import ConfigItem, ConfigModel, ManagedConfigItem
 
 
 class File(ManagedConfigItem):
@@ -21,8 +21,9 @@ class File(ManagedConfigItem):
     source: str | None = None,
     permissions: int | str | None = None,
     owner: str = "root",
-    confirm_mode: ConfirmMode | None = None,
+    tags: Iterable[str] | None = None,
   ):
+
     self.filename = filename
     if callable(content):
       self.content = lambda model: content(model).encode("utf-8")
@@ -40,7 +41,7 @@ class File(ManagedConfigItem):
     elif self.permissions is None:
       self.permissions = 0o444  # r--r--r--
     self.owner = owner
-    self.confirm_mode = confirm_mode
+    self.tags = set(tags or [])
 
   def identifier(self):
     return f"File('{self.filename}')"

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import os
+from typing import Iterable
 
 from koti.items.file import File
-from koti import ConfigItem, ConfirmMode, ManagedConfigItem
+from koti.model import ConfigItem, ManagedConfigItem
 
 
 class Directory(ManagedConfigItem):
@@ -17,7 +18,7 @@ class Directory(ManagedConfigItem):
     source: str | None = None,
     mask: int | str = "rwx",
     owner: str = "root",
-    confirm_mode: ConfirmMode | None = None,
+    tags: Iterable[str] | None = None,
   ):
     dirname = dirname.removesuffix("/")
     self.dirname = dirname
@@ -44,7 +45,7 @@ class Directory(ManagedConfigItem):
       self.files = []
 
     self.owner = owner
-    self.confirm_mode = confirm_mode
+    self.tags = set(tags or [])
 
   def identifier(self):
     return f"Directory('{self.dirname}')"

@@ -1,5 +1,4 @@
 from inspect import cleandoc
-from typing import Generator
 
 from koti import *
 from koti.utils import *
@@ -73,7 +72,7 @@ def base() -> Generator[ConfigGroup]:
 
   yield ConfigGroup(
     description = "cachyos keyring and mirrorlist",
-    confirm_mode = "paranoid",
+    tags = ["CRITICAL"],
     provides = [
       PacmanKey("F3B607488DB35A47", comment = "cachyos"),
       Package("cachyos-keyring", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst"),
@@ -84,7 +83,7 @@ def base() -> Generator[ConfigGroup]:
 
   yield ConfigGroup(
     description = "pacman.conf and related utilities",
-    confirm_mode = "paranoid",
+    tags = ["CRITICAL"],
     requires = [
       Package("cachyos-mirrorlist"),
       Package("cachyos-v3-mirrorlist"),
@@ -189,7 +188,6 @@ def base() -> Generator[ConfigGroup]:
         name = "run reflector to update pacman mirrorlist",
         trigger = File("/etc/xdg/reflector/reflector.conf"),
         execute = lambda: shell("systemctl start reflector"),
-        confirm_mode = "yolo",
       ),
     ]
   )
@@ -236,7 +234,6 @@ def base() -> Generator[ConfigGroup]:
 
   yield ConfigGroup(
     description = "arch-update (for user manuel)",
-    confirm_mode = "yolo",
     provides = [
       Package("arch-update"),
       File("/home/manuel/.config/arch-update/arch-update.conf", owner = "manuel", permissions = "r--", content = cleandoc('''
@@ -256,7 +253,6 @@ def base() -> Generator[ConfigGroup]:
 
   yield ConfigGroup(
     description = "various system config files",
-    confirm_mode = "paranoid",
     provides = [
       File("/etc/environment.d/editor.conf", permissions = "r--", content = cleandoc(f'''
         EDITOR=nano

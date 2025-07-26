@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from typing import Callable, Sequence
+from typing import Callable, Iterable, Sequence
 
-from koti import ConfirmMode, ManagedConfigItem
-from koti.core import ConfigItem
+from koti.model import ConfigItem, ManagedConfigItem
 
 
 class PostHook(ManagedConfigItem):
@@ -18,7 +17,7 @@ class PostHook(ManagedConfigItem):
     name: str,
     execute: Callable | None = None,
     trigger: Sequence[ManagedConfigItem] | ManagedConfigItem | None = None,
-    confirm_mode: ConfirmMode | None = None,
+    tags: Iterable[str] | None = None,
   ):
     self.name = name
     self.execute = execute
@@ -26,7 +25,7 @@ class PostHook(ManagedConfigItem):
       self.trigger = [trigger]
     else:
       self.trigger = [item for item in (trigger or []) if item is not None]
-    self.confirm_mode = confirm_mode
+    self.tags = set(tags or [])
 
   def identifier(self):
     return f"PostHook('{self.name}')"

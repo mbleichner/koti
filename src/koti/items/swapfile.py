@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from koti import highest_confirm_mode
-from koti.core import ConfigItem, ConfirmMode, ManagedConfigItem
+from typing import Iterable
+
+from koti.model import ConfigItem, ManagedConfigItem
 
 
 class Swapfile(ManagedConfigItem):
@@ -12,9 +13,9 @@ class Swapfile(ManagedConfigItem):
     self,
     filename: str,
     size_bytes: int | None = None,
-    confirm_mode: ConfirmMode | None = None,
+    tags: Iterable[str] | None = None,
   ):
-    self.confirm_mode = confirm_mode
+    self.tags = set(tags or [])
     self.filename = filename
     self.size_bytes = size_bytes
 
@@ -28,5 +29,5 @@ class Swapfile(ManagedConfigItem):
     return Swapfile(
       filename = self.filename,
       size_bytes = self.size_bytes,
-      confirm_mode = highest_confirm_mode(self.confirm_mode, other.confirm_mode),
+      tags = self.tags.union(other.tags),
     )

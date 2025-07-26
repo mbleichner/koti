@@ -7,7 +7,6 @@ from koti.core import ConfigManager, ConfigModel
 from koti.items.file import File
 from koti.items.directory import Directory
 from koti.utils import JsonCollection
-from koti.utils.confirm import confirm
 from koti.utils.json_store import JsonStore
 
 
@@ -62,23 +61,10 @@ class FileManager(ConfigManager[File | Directory]):
     ]
 
   def install_file(self, item: File, model: ConfigModel):
-    exists = os.path.exists(item.filename)
-    confirm(
-      message = f"confirm {"changed" if exists else "new"} file {item.filename}",
-      destructive = exists,
-      mode = model.confirm_mode(item),
-    )
     self.update_file(item, model)
     self.managed_files_store.add(item.filename)
 
   def install_dir(self, item: Directory, model: ConfigModel):
-    exists = os.path.isdir(item.dirname)
-    confirm(
-      message = f"confirm {"changed" if exists else "new"} directory {item.dirname}",
-      destructive = exists,
-      mode = model.confirm_mode(item),
-    )
-
     # install all files in their current version
     for file in item.files:
       self.update_file(file, model)
@@ -118,21 +104,11 @@ class FileManager(ConfigManager[File | Directory]):
 
   def uninstall_file(self, item: File, model: ConfigModel):
     if os.path.isfile(item.filename):
-      confirm(
-        message = f"confirm to delete file: {item.filename}",
-        destructive = True,
-        mode = model.confirm_mode(item),
-      )
       os.unlink(item.filename)
     self.managed_files_store.remove(item.filename)
 
   def uninstall_dir(self, item: Directory, model: ConfigModel):
     if os.path.isdir(item.dirname):
-      confirm(
-        message = f"confirm to delete directory: {item.dirname}",
-        destructive = True,
-        mode = model.confirm_mode(item),
-      )
       shutil.rmtree(item.dirname)
     self.managed_dirs_store.remove(item.dirname)
 

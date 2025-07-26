@@ -41,7 +41,7 @@ def mserver() -> Generator[ConfigGroup | None]:
 
   yield ConfigGroup(
     description = "fstab (mserver)",
-    confirm_mode = "paranoid",
+    tags = ["CRITICAL"],
     requires = [
       Swapfile("/swapfile"),
     ],
@@ -57,7 +57,7 @@ def mserver() -> Generator[ConfigGroup | None]:
 
   yield ConfigGroup(
     description = "networking via systemd-networkd",
-    confirm_mode = "paranoid",
+    tags = ["CRITICAL"],
     provides = [
       SystemdUnit("systemd-networkd.service"),
 
@@ -84,7 +84,6 @@ def mserver() -> Generator[ConfigGroup | None]:
 
   yield ConfigGroup(
     description = "docker-update script",
-    confirm_mode = "yolo",
     provides = [
       File("/usr/local/bin/docker-update", permissions = "r-x", content = cleandoc('''
         #!/bin/bash -e
@@ -97,7 +96,7 @@ def mserver() -> Generator[ConfigGroup | None]:
 
   yield ConfigGroup(
     description = "docker and services",
-    confirm_mode = "paranoid",
+    tags = ["CRITICAL"],
     provides = [
       Package("docker"),
       Package("docker-compose"),

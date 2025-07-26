@@ -52,7 +52,7 @@ def dan() -> Generator[ConfigGroup | None]:
 
   yield ConfigGroup(
     description = "fstab (dan)",
-    confirm_mode = "paranoid",
+    tags = ["CRITICAL"],
     requires = [
       Swapfile("/swapfile"),
     ],

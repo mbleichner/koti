@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from os import getuid
-from typing import Iterable, Iterator
+from typing import Iterator
 
 from koti.model import *
 from koti.utils import *
@@ -9,7 +9,6 @@ from koti.utils import *
 
 class Koti:
   store: JsonStore
-  default_confirm_mode: ConfirmMode
   managers: list[ConfigManager]
   configs: list[ConfigGroup]
 
@@ -17,10 +16,8 @@ class Koti:
     self,
     managers: Iterator[ConfigManager | None] | Iterable[ConfigManager | None],
     configs: Iterator[ConfigGroup | None] | Iterable[ConfigGroup | None],
-    default_confirm_mode: ConfirmMode = "cautious"
   ):
     assert getuid() == 0, "this program must be run as root (or through sudo)"
-    self.default_confirm_mode = default_confirm_mode
     self.store = JsonStore("/var/cache/koti/Koti.json")
     self.configs = [c for c in configs if c is not None]
     self.managers = [m for m in managers if m is not None]
@@ -30,8 +27,7 @@ class Koti:
     result = ConfigModel(
       managers = self.managers,
       phases = self.create_install_phases(self.managers, self.configs),
-      confirm_mode_fallback = self.default_confirm_mode,
-      confirm_mode_archive = self.load_confirm_modes(self.store),
+      tags_archive = self.load_tags(self.store),
     )
     self.check_config_item_consistency(result)
     return result
@@ -71,14 +67,15 @@ class Koti:
 
     count = len(items_outdated) + len(items_to_uninstall)
     if count > 0:
+      maxlen = max((len(item.identifier()) for item in [*items_outdated, *items_to_uninstall]))
       print(f"{len(items_total)} items total, {count} items to update:")
       for item in items_outdated:
         if item.identifier() in installed_identifiers:
-          printc(f"~ upd {item.description()}", YELLOW)
+          printc(f"~ {item.description().ljust(maxlen)}  update   {", ".join(item.tags)}", YELLOW)
         else:
-          printc(f"+ add {item.description()}", GREEN)
+          printc(f"+ {item.description().ljust(maxlen)}  install  {", ".join(item.tags)}", GREEN)
       for item in items_to_uninstall:
-        printc(f"- del {item.description()}", RED)
+        printc(f"- {item.description().ljust(maxlen)}  remove   {", ".join(item.tags)}", RED)
       print()
       print("// additional updates may be triggered by PostHooks")
     else:
@@ -101,7 +98,7 @@ class Koti:
       self.print_cleanup_step_log(model, step)
       manager.uninstall(step.items_to_uninstall, model)
 
-    self.save_confirm_modes(self.store, model)
+    self.save_tags(self.store, model)
 
   @classmethod
   def print_install_step_log(cls, model: ConfigModel, phase_idx: int, step: InstallStep, items_to_update: Sequence[ManagedConfigItem]):
@@ -124,18 +121,18 @@ class Koti:
     print(f"Cleanup  |  {manager_name.ljust(manager_name_maxlen)}  |  {str(len(step.items_to_keep)).rjust(3)} remaining    |  {details}")
 
   @classmethod
-  def load_confirm_modes(cls, store: JsonStore) -> dict[str, ConfirmMode]:
-    result = store.get("confirm_modes")
+  def load_tags(cls, store: JsonStore) -> dict[str, set[str]]:
+    result = store.get("item_tags")
     return result if isinstance(result, dict) else {}
 
   @classmethod
-  def save_confirm_modes(cls, store: JsonStore, model: ConfigModel):
-    result: dict[str, ConfirmMode] = {}
+  def save_tags(cls, store: JsonStore, model: ConfigModel):
+    result: dict[str, set[str]] = {}
     for phase in model.phases:
       for install_step in phase.steps:
         for item in install_step.items_to_install:
-          result[item.identifier()] = model.confirm_mode(item)
-    store.put("confirm_modes", result)
+          result[item.identifier()] = item.tags
+    store.put("item_tags", result)
 
   def create_cleanup_phase(self, model: ConfigModel) -> CleanupPhase:
     items_to_install = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]

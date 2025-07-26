@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from koti import highest_confirm_mode
-from koti.core import ConfigItem, ConfirmMode, ManagedConfigItem
+from typing import Iterable
+
+from koti.model import ConfigItem, ManagedConfigItem
 
 
 class PacmanKey(ManagedConfigItem):
@@ -13,12 +14,12 @@ class PacmanKey(ManagedConfigItem):
     key_id: str,
     key_server = "keyserver.ubuntu.com",
     comment: str | None = None,
-    confirm_mode: ConfirmMode | None = None,
+    tags: Iterable[str] | None = None,
   ):
     self.key_id = key_id
     self.key_server = key_server
     self.comment = comment
-    self.confirm_mode = confirm_mode
+    self.tags = set(tags or [])
 
   def identifier(self):
     return f"PacmanKey('{self.key_id}')"
@@ -37,5 +38,5 @@ class PacmanKey(ManagedConfigItem):
       key_id = self.key_id,
       key_server = self.key_server,
       comment = " / ".join((x for x in {self.comment, other.comment} if x is not None)),
-      confirm_mode = highest_confirm_mode(self.confirm_mode, other.confirm_mode),
+      tags = self.tags.union(other.tags),
     )

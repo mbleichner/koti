@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from koti import ConfigItem, UnmanagedConfigItem
+from koti.model import ConfigItem, UnmanagedConfigItem
 
 
 class Checkpoint(UnmanagedConfigItem):

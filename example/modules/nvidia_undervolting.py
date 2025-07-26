@@ -36,7 +36,7 @@ def nvidia_undervolting() -> Generator[ConfigGroup]:
         Type=oneshot
         RemainAfterExit=true
         WorkingDirectory=/opt/undervolting
-        ExecStart=/usr/bin/python3 nvidia-undervolting.py --corecount 8 --offset -30
+        ExecStart=/usr/bin/python3 nvidia-undervolting.py
         
         [Install]
         WantedBy=multi-user.target

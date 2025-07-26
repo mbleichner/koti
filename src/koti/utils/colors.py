@@ -10,4 +10,4 @@ ENDC = '\033[0m'
 
 def printc(line: str, *styles: str | None):
   style = "".join((style for style in styles if style is not None))
-  print(f"{style}{line}{ENDC}")
+  print(f"{style}{line.rstrip()}{ENDC}")
