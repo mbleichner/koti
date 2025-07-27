@@ -1,5 +1,4 @@
 from inspect import cleandoc
-from typing import Generator
 
 from koti import *
 from koti.items import *
@@ -10,6 +9,7 @@ from koti.utils import shell
 def gaming() -> Generator[ConfigGroup]:
   yield ConfigGroup(
     description = "game launchers and utilities",
+    requires = [File("/etc/pacman.conf")],
     provides = [
       Package("discord"),
       Package("gamescope"),
@@ -32,6 +32,7 @@ def gaming() -> Generator[ConfigGroup]:
 
   yield ConfigGroup(
     description = "proton/wine + configs",
+    requires = [File("/etc/pacman.conf")],
     provides = [
       Package("proton-ge-custom-bin"),
       Package("protontricks"),
@@ -57,5 +58,35 @@ def gaming() -> Generator[ConfigGroup]:
       ''')),
 
       Option("/etc/pacman.conf/NoUpgrade", "usr/bin/steam"),
+    ]
+  )
+
+  yield ConfigGroup(
+    description = "lossless scaling + frame generation",
+    requires = [File("/etc/pacman.conf")],
+    provides = [
+      Package("lsfg-vk"),
+
+      File("/home/manuel/.config/lsfg-vk/conf.toml", permissions = "rw-", owner = "manuel", content = cleandoc(f'''
+        version = 1
+
+        # See the docs at: https://github.com/PancakeTAS/lsfg-vk/wiki/
+        # Since games get identified by their process name instead of their actual exe filename, we sometimes have to
+        # override the process name, in order to be able to distinguish them properly:
+        #   LSFG_PROCESS=helldivers2 %command%
+        #
+        # Almost every flag can be hot-reloaded, meaning you can edit the file while the game is running and it will apply instantly.
+        # As long as you have an entry in the configuration at the time of launching the game, it will work just fine.
+        
+        [[game]]
+        exe = "helldivers2" 
+        multiplier = 2
+        performance_mode = true
+        
+        [[game]]
+        exe = "vkcube"
+        multiplier = 2
+        performance_mode = true
+      ''')),
     ]
   )
