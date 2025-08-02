@@ -1,6 +1,7 @@
 from hashlib import sha256
 import re
 
+from koti import shell_success
 from koti.utils.shell import shell, shell_output
 from koti.items.flatpak_package import FlatpakPackage
 from koti.core import ConfigManager, ConfigModel
@@ -40,16 +41,20 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage]):
       shell("flatpak uninstall --unused")
 
   def installed(self, model: ConfigModel) -> list[FlatpakRepo | FlatpakPackage]:
-    installed_packages = [FlatpakPackage(name) for name in shell_output("flatpak list --app --columns application").splitlines()]
-    installed_repos = [FlatpakRepo(name) for name in shell_output("flatpak remotes --columns name").splitlines()]
-    return [*installed_repos, *installed_packages]
+    if shell_success("flatpak --version"):
+      installed_packages = [FlatpakPackage(name) for name in shell_output("flatpak list --app --columns application").splitlines()]
+      installed_repos = [FlatpakRepo(name) for name in shell_output("flatpak remotes --columns name").splitlines()]
+      return [*installed_repos, *installed_packages]
+    else:
+      return []
 
   def checksum_current(self, item: FlatpakRepo | FlatpakPackage) -> str:
+    flatpak_available = shell_success("flatpak --version")
     if isinstance(item, FlatpakRepo):
-      url = self.get_installed_repo_url(item) or "<none>"
-      return sha256(url.encode()).hexdigest()
+      url = self.get_installed_repo_url(item) if flatpak_available else None
+      return sha256((url or "-").encode()).hexdigest()
     else:
-      installed = self.is_package_installed(item.id)
+      installed = flatpak_available and self.is_package_installed(item.id)
       return sha256(str(installed).encode()).hexdigest()
 
   def checksum_target(self, item: FlatpakRepo | FlatpakPackage, model: ConfigModel) -> str:

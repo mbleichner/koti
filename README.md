@@ -82,4 +82,6 @@ See the `examples` folder, specifically `koti-apply` and all the stuff in the `m
 # TODOs
 
 - User anlegen und Gruppen zuordnen
-- FlatpakRepo() + FlatpakPackage()
+- Meldungen für nicht vorhersehbare Änderungen
+    - PostHooks
+    - FlatpakPackage (wenn flatpak nicht installiert)
