@@ -16,6 +16,7 @@ class ConfigManagerPresets:
         keep_unmanaged_packages = keep_unmanaged_packages
       ),
       SwapfileManager(),
+      FlatpakManager(),
       FileManager(),
       SystemdUnitManager(),
       PostHookManager(),

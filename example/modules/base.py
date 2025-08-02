@@ -1,6 +1,7 @@
 from inspect import cleandoc
 
 from koti import *
+from koti.items.flatpak_repo import FlatpakRepo
 from koti.utils import *
 
 
@@ -89,6 +90,15 @@ def base() -> Generator[ConfigGroup]:
       Package("cachyos-v3-mirrorlist"),
     ],
     provides = [
+      Package("pacman-contrib"),
+      Package("pacutils"),
+      Package("paru"),
+      Package("base-devel"),
+      Package("reflector"),
+      Package("lostfiles"),
+      Package("flatpak"),
+
+      FlatpakRepo("flathub", spec_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"),
 
       # Declare options for pacman.conf (so I don't have to null-check later)
       Option[str]("/etc/pacman.conf/NoExtract"),
@@ -176,13 +186,6 @@ def base() -> Generator[ConfigGroup]:
         --latest 5
         --sort delay
       ''')),
-
-      Package("pacman-contrib"),
-      Package("pacutils"),
-      Package("paru"),
-      Package("base-devel"),
-      Package("reflector"),
-      Package("lostfiles"),
 
       PostHook(
         name = "run reflector to update pacman mirrorlist",

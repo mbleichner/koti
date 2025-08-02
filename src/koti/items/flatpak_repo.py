@@ -1,0 +1,55 @@
+from __future__ import annotations
+
+import re
+from typing import Iterable
+
+from urllib3 import request
+
+from koti.model import ConfigItem, ManagedConfigItem
+
+
+class FlatpakRepo(ManagedConfigItem):
+  name: str
+  repo_url: str | None
+  spec_url: str | None
+
+  def __init__(
+    self,
+    name: str,
+    spec_url: str | None = None,
+    repo_url: str | None = None,
+    tags: Iterable[str] | None = None,
+  ):
+    self.name = name
+    self.spec_url = spec_url
+    if repo_url is not None:
+      self.repo_url = repo_url
+    elif spec_url is not None:
+      self.repo_url = FlatpakRepo.get_repo_url_from_spec(spec_url)
+    else:
+      self.repo_url = None
+    self.tags = set(tags or [])
+
+  def identifier(self):
+    return f"FlatpakRepo('{self.name}')"
+
+  def merge(self, other: ConfigItem) -> FlatpakRepo:
+    assert isinstance(other, FlatpakRepo)
+    assert other.identifier() == self.identifier()
+    assert other.spec_url == self.spec_url, f"Conflicting spec_url in {self.identifier()}"
+    assert other.repo_url == self.repo_url, f"Conflicting repo_url in {self.identifier()}"
+    return FlatpakRepo(
+      name = self.name,
+      spec_url = self.spec_url,
+      repo_url = self.repo_url,
+      tags = self.tags.union(other.tags),
+    )
+
+  @staticmethod
+  def get_repo_url_from_spec(install_url: str) -> str:
+    response = request("GET", install_url)
+    assert response.status == 200
+    data = response.data.decode("utf-8")
+    match = re.findall("Url=(.+)", data)
+    assert match
+    return match[0]

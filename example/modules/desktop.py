@@ -1,5 +1,5 @@
 from inspect import cleandoc
-from typing import Generator, TypedDict
+from typing import TypedDict
 
 from koti import *
 from koti.items.hooks import PostHookTriggerScope
@@ -25,6 +25,7 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
     requires = [
       Checkpoint("desktop-optional-dependencies"),  # avoid pacman asking for possible alternatives
       File("/etc/pacman.conf"),  # Damit NoExtract bei der ersten Ausführung angewendet wird
+      FlatpakRepo("flathub"),
     ],
     provides = [
       Option("/etc/pacman.conf/NoExtract", "etc/xdg/autostart/org.kde.discover.notifier.desktop"),
@@ -61,6 +62,7 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
       Package("noto-fonts"),
       Package("noto-fonts-emoji"),
       Package("pycharm-community-edition"),
+      FlatpakPackage("com.visualstudio.code"),
       SystemdUnit("coolercontrold.service"),
       SystemdUnit("bluetooth.service"),
     ]

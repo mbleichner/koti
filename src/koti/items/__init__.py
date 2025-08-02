@@ -7,3 +7,5 @@ from koti.items.package import Package, Packages
 from koti.items.pacman_key import PacmanKey
 from koti.items.swapfile import Swapfile
 from koti.items.systemd import SystemdUnit, SystemdUnits
+from koti.items.flatpak_package import FlatpakPackage
+from koti.items.flatpak_repo import FlatpakRepo
