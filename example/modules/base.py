@@ -45,6 +45,7 @@ def base() -> Generator[ConfigGroup]:
       Package("python"),
       Package("pyenv"),
       Package("mypy"),
+      Package("python-urllib3"), # koti dev
 
       # Networking
       Package("bind"),
