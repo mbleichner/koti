@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Callable, Iterable
 from re import match
 
+from urllib3 import request
+
 from koti.model import ConfigItem, ConfigModel, ManagedConfigItem
 
 
@@ -30,8 +32,11 @@ class File(ManagedConfigItem):
     elif isinstance(content, str):
       self.content = lambda model: content.encode("utf-8")
     elif source is not None:
-      self.content = lambda model: Path(source).read_bytes()
-      self.permissions = os.stat(source).st_mode & 0o777
+      if source.startswith("http://") or source.startswith("https://"):
+        self.content = lambda model: self.download(source)
+      else:
+        self.content = lambda model: Path(source).read_bytes()
+        self.permissions = os.stat(source).st_mode & 0o777
     else:
       self.content = None
     if isinstance(permissions, str):
@@ -81,3 +86,8 @@ class File(ManagedConfigItem):
     result += 0o002 if permissions[7] == "w" else 0
     result += 0o001 if permissions[8] == "x" else 0
     return result
+
+  def download(self, url: str) -> str:
+    response = request("GET", url)
+    assert response.status == 200
+    return response.data.decode("utf-8")
