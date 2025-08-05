@@ -33,7 +33,7 @@ class File(ManagedConfigItem):
       self.content = lambda model: content.encode("utf-8")
     elif source is not None:
       if source.startswith("http://") or source.startswith("https://"):
-        self.content = lambda model: self.download(source)
+        self.content = lambda model: self.download(source).encode()
       else:
         self.content = lambda model: Path(source).read_bytes()
         self.permissions = os.stat(source).st_mode & 0o777

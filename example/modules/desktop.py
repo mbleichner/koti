@@ -63,6 +63,7 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
       Package("noto-fonts-emoji"),
       Package("pycharm-community-edition"),
       FlatpakPackage("com.visualstudio.code"),
+      FlatpakPackage("us.zoom.Zoom"),
       SystemdUnit("coolercontrold.service"),
       SystemdUnit("bluetooth.service"),
     ]
