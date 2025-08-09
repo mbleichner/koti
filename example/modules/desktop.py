@@ -8,6 +8,14 @@ from koti.utils import shell
 
 def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
   yield ConfigGroup(
+    description = "flatpak + flathub",
+    provides = [
+      Package("flatpak"),
+      FlatpakRepo("flathub", spec_url="https://dl.flathub.org/repo/flathub.flatpakrepo"),
+    ]
+  )
+
+  yield ConfigGroup(
     description = "optional dependencies for desktop",
     provides = [
       Checkpoint("desktop-optional-dependencies"),
@@ -62,10 +70,18 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
       Package("noto-fonts"),
       Package("noto-fonts-emoji"),
       Package("pycharm-community-edition"),
+      Package("libva-utils"),
+      Package("vdpauinfo") if nvidia else None,
+      Package("libva-nvidia-driver") if nvidia else None,
       FlatpakPackage("com.visualstudio.code"),
       FlatpakPackage("us.zoom.Zoom"),
       SystemdUnit("coolercontrold.service"),
       SystemdUnit("bluetooth.service"),
+
+      # File("/usr/lib/firefox/defaults/pref/autoconfig.js", permissions = "r--",content = cleandoc(f'''
+      #   pref("media.ffmpeg.allow-openh264", false);
+      #   pref("media.ffmpeg.disable-software-fallback", true);
+      # ''')),
     ]
   )
 

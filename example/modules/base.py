@@ -97,9 +97,6 @@ def base() -> Generator[ConfigGroup]:
       Package("base-devel"),
       Package("reflector"),
       Package("lostfiles"),
-      Package("flatpak"),
-
-      FlatpakRepo("flathub", spec_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"),
 
       # Declare options for pacman.conf (so I don't have to null-check later)
       Option[str]("/etc/pacman.conf/NoExtract"),
