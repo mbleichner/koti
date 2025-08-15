@@ -11,7 +11,7 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
     description = "flatpak + flathub",
     provides = [
       Package("flatpak"),
-      FlatpakRepo("flathub", spec_url="https://dl.flathub.org/repo/flathub.flatpakrepo"),
+      FlatpakRepo("flathub", spec_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"),
     ]
   )
 
@@ -23,8 +23,6 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
       Package("phonon-qt6-vlc"),  # phonon-qt6-backend
       Package("pipewire-jack"),  # jack
       Package("jdk17-openjdk"),  # java-runtime=17
-      Package("nvidia-utils" if nvidia else "vulkan-radeon"),  # vulkan-driver
-      Package("lib32-nvidia-utils" if nvidia else "lib32-vulkan-radeon"),  # lib32-vulkan-driver
     ]
   )
 
@@ -56,7 +54,6 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
       Package("ksnip"),
       Package("libreoffice-fresh"),
       Package("nextcloud-client"),
-      Package("nvidia-open-dkms") if nvidia else None,
       Package("obsidian"),
       Package("okular"),
       Package("pavucontrol"),

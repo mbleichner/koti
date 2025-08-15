@@ -18,7 +18,7 @@ from modules.systray import systray
 
 # Configuration for my DAN A4-SFX desktop machine (Ryzen 5800X3D, RTX3080)
 def dan() -> Generator[ConfigGroup | None]:
-  yield from base()
+  yield from base(prefer_cachyos_sources = True)
   yield from cpufreq(min_freq = 2000, max_freq = 4500, governor = "performance")
   yield from throttle_after_boot(2000)
   yield from swapfile(12)
@@ -35,11 +35,13 @@ def dan() -> Generator[ConfigGroup | None]:
   yield from network_manager()
 
   yield ConfigGroup(
-    description = "firmware",
+    description = "firmware + drivers",
     provides = [
       Package("linux-firmware-other"),
       Package("linux-firmware-intel"),
       Package("linux-firmware-nvidia"),
+      Package("linux-cachyos-nvidia-open"),
+      Package("nvidia-open"),
     ]
   )
 
@@ -47,6 +49,7 @@ def dan() -> Generator[ConfigGroup | None]:
     description = "dan specific packages",
     provides = [
       Package("microsoft-edge-stable-bin"),
+      Package("proton-cachyos"),
     ]
   )
 

@@ -1,5 +1,4 @@
 from inspect import cleandoc
-from typing import Generator
 
 from koti import *
 from modules.base import base, swapfile
@@ -15,7 +14,7 @@ from modules.systray import systray
 
 # Configuration for my Lenovo X13 laptop
 def lenovo() -> Generator[ConfigGroup | None]:
-  yield from base()
+  yield from base(prefer_cachyos_sources = False)
   yield from cpufreq(min_freq = 1000, max_freq = 4500, governor = "powersave")
   yield from throttle_after_boot(1500)
   yield from swapfile(4)
@@ -29,7 +28,7 @@ def lenovo() -> Generator[ConfigGroup | None]:
   yield from network_manager()
 
   yield ConfigGroup(
-    description = "firmware (lenovo)",
+    description = "firmware + drivers",
     provides = [
       Package("linux-firmware-other"),
       Package("linux-firmware-amdgpu"),
