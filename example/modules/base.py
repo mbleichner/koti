@@ -338,6 +338,6 @@ def pacman_header(model: ConfigModel) -> str:
 def pacman_source(name: str, mirrorlist: str = "/etc/pacman.d/mirrorlist", pacoloco_url: str = "http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch") -> str:
   return cleandoc(f'''
     [{name}]
-    #CacheServer = {pacoloco_url}
+    CacheServer = {pacoloco_url}
     Include = {mirrorlist}
   ''')
