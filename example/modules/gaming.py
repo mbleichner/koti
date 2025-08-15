@@ -40,10 +40,14 @@ def gaming() -> Generator[ConfigGroup]:
 
       File("/etc/modules-load.d/proton-ntsync.conf", permissions = "r--", content = cleandoc(f'''
         # ntsync module has to be loaded manually in order for proton to be able to use it
+        # (not all proton version will actually use ntsync - e.g. proton-cachyos is built
+        # without ntsync support atm due to technical issues)
         ntsync
       ''')),
 
       File("/etc/environment.d/proton-wayland.conf", permissions = "r--", content = cleandoc(f'''
+        # Force use of wayland in proton if available
+        PROTON_USE_WAYLAND=1
         PROTON_ENABLE_WAYLAND=1
       ''')),
 
