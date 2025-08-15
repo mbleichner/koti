@@ -94,7 +94,6 @@ def base(prefer_cachyos_sources: bool) -> Generator[ConfigGroup]:
       Package("pacutils"),
       Package("paru"),
       Package("base-devel"),
-      Package("reflector"),
       Package("lostfiles"),
       Package('cachyos-rate-mirrors'),
 
@@ -135,20 +134,6 @@ def base(prefer_cachyos_sources: bool) -> Generator[ConfigGroup]:
         NeedsTargets
         Exec=/usr/bin/mkinitcpio -P
       ''')),
-
-      File("/etc/xdg/reflector/reflector.conf", permissions = "r--", content = cleandoc('''
-        --save /etc/pacman.d/mirrorlist
-        --protocol https
-        --country France,Germany,Switzerland
-        --latest 5
-        --sort delay
-      ''')),
-
-      PostHook(
-        name = "run reflector to update pacman mirrorlist",
-        trigger = File("/etc/xdg/reflector/reflector.conf"),
-        execute = lambda: shell("systemctl start reflector"),
-      ),
     ]
   )
 
