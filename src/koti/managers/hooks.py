@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from random import random
 from hashlib import sha256
 
 from koti import ConfigItem
@@ -19,7 +20,6 @@ class PostHookManager(ConfigManager[PostHook]):
 
   def check_configuration(self, hook: PostHook, model: ConfigModel):
     assert hook.execute is not None, "missing execute parameter"
-    assert len(hook.trigger) > 0, f"{hook} has no trigger(s)"
     for item in hook.trigger:
       exec_order_item = PostHookManager.index_in_execution_order(model, item)  # can be None in case the item isn't set up by koti (i.e. files created by pacman hooks or such)
       exec_order_hook = PostHookManager.index_in_execution_order(model, hook)
@@ -55,6 +55,8 @@ class PostHookManager(ConfigManager[PostHook]):
     return self.checksum_store.get(hook.name, "n/a")
 
   def checksum_target(self, hook: PostHook, model: ConfigModel) -> str:
+    if not hook.trigger:
+      return str(random())
     checksums = self.get_current_checksums_for_items(hook.trigger, model)
     sha256_hash = sha256()
     for idx, trigger in enumerate(hook.trigger):

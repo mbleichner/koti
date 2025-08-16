@@ -60,18 +60,21 @@ def base() -> Generator[ConfigGroup]:
       # Hardware Utilities
       Package("cpupower"),
       Package("bluez-utils"),
+      Package("fwupd"),
 
       # Dateisysteme
       Package("gparted"),
       Package("ntfs-3g"),
       Package("dosfstools"),
 
+      # Alternatives
       Package("zlib-ng"),
       Package("zlib-ng-compat"),
 
       SystemdUnit("systemd-timesyncd.service"),
       SystemdUnit("systemd-boot-update.service"),
       SystemdUnit("fstrim.timer"),
+      SystemdUnit("fwupd.service"),
     ]
   )
 
@@ -190,7 +193,6 @@ def base() -> Generator[ConfigGroup]:
 
       PostHook(
         name = "run reflector to update pacman mirrorlist",
-        trigger = File("/etc/xdg/reflector/reflector.conf"),
         execute = lambda: shell("systemctl start reflector"),
       ),
     ]

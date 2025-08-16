@@ -1,5 +1,4 @@
 from inspect import cleandoc
-from typing import Generator
 
 from koti import *
 from modules.base import base, swapfile
@@ -11,7 +10,6 @@ from modules.kernel import kernel_cachyos, kernel_stock
 from modules.networking import network_manager
 from modules.nvidia_undervolting import nvidia_undervolting
 from modules.nvme_thermal_throttling import nvme_thermal_throttling
-from modules.ollama_aichat import ollama_aichat
 from modules.ryzen_undervolting import ryzen_undervolting
 from modules.systray import systray
 
@@ -40,15 +38,16 @@ def dan() -> Generator[ConfigGroup | None]:
       Package("linux-firmware-other"),
       Package("linux-firmware-intel"),
       Package("linux-firmware-nvidia"),
-      Package("nvidia-open-dkms"),
+      Package("nvidia-open"),
+      Package("linux-cachyos-nvidia-open"),
     ]
   )
 
   yield ConfigGroup(
     description = "dan specific packages",
     provides = [
-      Package("microsoft-edge-stable-bin"),
-      Package("proton-cachyos"),
+      Package("microsoft-edge-stable-bin"),  # Homeoffice/Teams
+      Package("nvidia-settings"),
     ]
   )
 
