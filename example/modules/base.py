@@ -1,10 +1,11 @@
 from inspect import cleandoc
 
 from koti import *
+from koti.items.flatpak_repo import FlatpakRepo
 from koti.utils import *
 
 
-def base(prefer_cachyos_sources: bool) -> Generator[ConfigGroup]:
+def base() -> Generator[ConfigGroup]:
   yield ConfigGroup(
     description = "base packages needed on every system",
     provides = [
@@ -44,7 +45,7 @@ def base(prefer_cachyos_sources: bool) -> Generator[ConfigGroup]:
       Package("python"),
       Package("pyenv"),
       Package("mypy"),
-      Package("python-urllib3"),  # koti dev
+      Package("python-urllib3"), # koti dev
 
       # Networking
       Package("bind"),
@@ -64,6 +65,9 @@ def base(prefer_cachyos_sources: bool) -> Generator[ConfigGroup]:
       Package("gparted"),
       Package("ntfs-3g"),
       Package("dosfstools"),
+
+      Package("zlib-ng"),
+      Package("zlib-ng-compat"),
 
       SystemdUnit("systemd-timesyncd.service"),
       SystemdUnit("systemd-boot-update.service"),
@@ -94,18 +98,59 @@ def base(prefer_cachyos_sources: bool) -> Generator[ConfigGroup]:
       Package("pacutils"),
       Package("paru"),
       Package("base-devel"),
+      Package("reflector"),
       Package("lostfiles"),
-      Package('cachyos-rate-mirrors'),
 
       # Declare options for pacman.conf (so I don't have to null-check later)
       Option[str]("/etc/pacman.conf/NoExtract"),
       Option[str]("/etc/pacman.conf/NoUpgrade"),
 
-      File(
-        "/etc/pacman.conf",
-        permissions = "r--",
-        content = lambda model: pacman_conf_for_cachyos(model) if prefer_cachyos_sources else pacman_conf_for_arch(model)
-      ),
+      File("/etc/pacman.conf", permissions = "r--", content = lambda model: cleandoc(f'''
+        [options]
+        HoldPkg = pacman glibc
+        Architecture = auto x86_64_v3
+        NoExtract = {" ".join(model.item(Option[str]("/etc/pacman.conf/NoExtract")).distinct())}
+        NoUpgrade = {" ".join(model.item(Option[str]("/etc/pacman.conf/NoUpgrade")).distinct())}
+        Color
+        CheckSpace
+        VerbosePkgLists
+        ParallelDownloads = 8
+        DownloadUser = alpm
+        SigLevel = Required DatabaseOptional
+        LocalFileSigLevel = Optional
+  
+        [core]
+        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+        Include = /etc/pacman.d/mirrorlist
+        
+        [extra]
+        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+        Include = /etc/pacman.d/mirrorlist
+        
+        [multilib]
+        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+        Include = /etc/pacman.d/mirrorlist
+  
+        [core-testing]
+        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+        Include = /etc/pacman.d/mirrorlist
+        
+        [extra-testing]
+        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+        Include = /etc/pacman.d/mirrorlist
+        
+        [multilib-testing]
+        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+        Include = /etc/pacman.d/mirrorlist
+        
+        [cachyos-v3]
+        CacheServer = http://pacoloco.fritz.box/repo/cachyos-v3/$arch_v3/$repo
+        Include = /etc/pacman.d/cachyos-v3-mirrorlist
+        
+        [cachyos]
+        CacheServer = http://pacoloco.fritz.box/repo/cachyos/$arch/$repo
+        Include = /etc/pacman.d/cachyos-mirrorlist
+      ''')),
 
       File("/etc/paru.conf", permissions = "r--", content = cleandoc('''
         [options]
@@ -134,6 +179,20 @@ def base(prefer_cachyos_sources: bool) -> Generator[ConfigGroup]:
         NeedsTargets
         Exec=/usr/bin/mkinitcpio -P
       ''')),
+
+      File("/etc/xdg/reflector/reflector.conf", permissions = "r--", content = cleandoc('''
+        --save /etc/pacman.d/mirrorlist
+        --protocol https
+        --country France,Germany,Switzerland
+        --latest 5
+        --sort delay
+      ''')),
+
+      PostHook(
+        name = "run reflector to update pacman mirrorlist",
+        trigger = File("/etc/xdg/reflector/reflector.conf"),
+        execute = lambda: shell("systemctl start reflector"),
+      ),
     ]
   )
 
@@ -277,52 +336,3 @@ def swapfile(swapfile_gb: int) -> Generator[ConfigGroup]:
       Swapfile("/swapfile", swapfile_gb * 1024 ** 3),  # 8GB
     ]
   )
-
-
-def pacman_conf_for_cachyos(model: ConfigModel) -> str:
-  return "\n\n".join([
-    pacman_header(model),
-    pacman_source("cachyos-v3", "/etc/pacman.d/cachyos-v3-mirrorlist", "http://pacoloco.fritz.box/repo/cachyos-v3/$arch_v3/$repo"),
-    pacman_source("cachyos-core-v3", "/etc/pacman.d/cachyos-v3-mirrorlist", "http://pacoloco.fritz.box/repo/cachyos-v3/$arch_v3/$repo"),
-    pacman_source("cachyos-extra-v3", "/etc/pacman.d/cachyos-v3-mirrorlist", "http://pacoloco.fritz.box/repo/cachyos-v3/$arch_v3/$repo"),
-    pacman_source("cachyos", "/etc/pacman.d/cachyos-mirrorlist", "http://pacoloco.fritz.box/repo/cachyos/$arch/$repo"),
-    pacman_source("core"),
-    pacman_source("extra"),
-    pacman_source("multilib"),
-  ])
-
-
-def pacman_conf_for_arch(model: ConfigModel) -> str:
-  return "\n\n".join([
-    pacman_header(model),
-    pacman_source("core"),
-    pacman_source("extra"),
-    pacman_source("multilib"),
-    pacman_source("cachyos-v3", "/etc/pacman.d/cachyos-v3-mirrorlist", "http://pacoloco.fritz.box/repo/cachyos-v3/$arch_v3/$repo"),
-    pacman_source("cachyos", "/etc/pacman.d/cachyos-mirrorlist", "http://pacoloco.fritz.box/repo/cachyos/$arch/$repo"),
-  ])
-
-
-def pacman_header(model: ConfigModel) -> str:
-  return cleandoc(f'''
-    [options]
-    HoldPkg = pacman glibc
-    Architecture = auto x86_64_v3
-    NoExtract = {" ".join(model.item(Option[str]("/etc/pacman.conf/NoExtract")).distinct())}
-    NoUpgrade = {" ".join(model.item(Option[str]("/etc/pacman.conf/NoUpgrade")).distinct())}
-    Color
-    CheckSpace
-    VerbosePkgLists
-    ParallelDownloads = 8
-    DownloadUser = alpm
-    SigLevel = Required DatabaseOptional
-    LocalFileSigLevel = Optional
-  ''')
-
-
-def pacman_source(name: str, mirrorlist: str = "/etc/pacman.d/mirrorlist", pacoloco_url: str = "http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch") -> str:
-  return cleandoc(f'''
-    [{name}]
-    CacheServer = {pacoloco_url}
-    Include = {mirrorlist}
-  ''')

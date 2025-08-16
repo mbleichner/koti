@@ -18,7 +18,7 @@ from modules.systray import systray
 
 # Configuration for my DAN A4-SFX desktop machine (Ryzen 5800X3D, RTX3080)
 def dan() -> Generator[ConfigGroup | None]:
-  yield from base(prefer_cachyos_sources = True)
+  yield from base()
   yield from cpufreq(min_freq = 2000, max_freq = 4500, governor = "performance")
   yield from throttle_after_boot(2000)
   yield from swapfile(12)
@@ -31,7 +31,7 @@ def dan() -> Generator[ConfigGroup | None]:
   yield from nvme_thermal_throttling()
   yield from nvidia_undervolting()
   yield from ryzen_undervolting()
-  yield from ollama_aichat(cuda = True)
+  # yield from ollama_aichat(cuda = True)
   yield from network_manager()
 
   yield ConfigGroup(
@@ -40,8 +40,7 @@ def dan() -> Generator[ConfigGroup | None]:
       Package("linux-firmware-other"),
       Package("linux-firmware-intel"),
       Package("linux-firmware-nvidia"),
-      Package("linux-cachyos-nvidia-open"),
-      Package("nvidia-open"),
+      Package("nvidia-open-dkms"),
     ]
   )
 

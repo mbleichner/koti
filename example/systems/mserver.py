@@ -22,7 +22,7 @@ def DockerComposeService(composefile: File, *other: ConfigItem) -> list[ConfigIt
 
 # Configuration for my 7700K homelab server
 def mserver() -> Generator[ConfigGroup | None]:
-  yield from base(prefer_cachyos_sources = False)
+  yield from base()
   yield from cpufreq(min_freq = 800, max_freq = 4200, governor = "powersave")
   yield from swapfile(8)
   yield from kernel_lts(1)

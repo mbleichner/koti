@@ -14,7 +14,7 @@ from modules.systray import systray
 
 # Configuration for my Lenovo X13 laptop
 def lenovo() -> Generator[ConfigGroup | None]:
-  yield from base(prefer_cachyos_sources = False)
+  yield from base()
   yield from cpufreq(min_freq = 1000, max_freq = 4500, governor = "powersave")
   yield from throttle_after_boot(1500)
   yield from swapfile(4)
@@ -24,7 +24,7 @@ def lenovo() -> Generator[ConfigGroup | None]:
   yield from desktop(nvidia = False, autologin = True)
   yield from systray(ryzen = True, nvidia = False)
   yield from gaming()
-  yield from ollama_aichat(cuda = False)
+  # yield from ollama_aichat(cuda = False)
   yield from network_manager()
 
   yield ConfigGroup(
@@ -33,6 +33,8 @@ def lenovo() -> Generator[ConfigGroup | None]:
       Package("linux-firmware-other"),
       Package("linux-firmware-amdgpu"),
       Package("linux-firmware-realtek"),
+      Package('vulkan-radeon'),
+      Package('lib32-vulkan-radeon'),
     ]
   )
 
