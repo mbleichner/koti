@@ -193,6 +193,7 @@ def base() -> Generator[ConfigGroup]:
 
       PostHook(
         name = "run reflector to update pacman mirrorlist",
+        trigger = File("/etc/xdg/reflector/reflector.conf"),
         execute = lambda: shell("systemctl start reflector"),
       ),
     ]
