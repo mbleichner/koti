@@ -69,7 +69,7 @@ def gaming() -> Generator[ConfigGroup]:
     description = "lossless scaling + frame generation",
     requires = [File("/etc/pacman.conf")],
     provides = [
-      Package("lsfg-vk"),
+      # Package("lsfg-vk"),
 
       File("/home/manuel/.config/lsfg-vk/conf.toml", permissions = "rw-", owner = "manuel", content = cleandoc(f'''
         version = 1

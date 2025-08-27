@@ -1,7 +1,6 @@
 from inspect import cleandoc
 
 from koti import *
-from koti.items.flatpak_repo import FlatpakRepo
 from koti.utils import *
 
 

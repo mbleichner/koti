@@ -20,7 +20,7 @@ def cpufreq(min_freq: int, max_freq: int, governor: str) -> Generator[ConfigGrou
 
 def throttle_after_boot(freq: int) -> Generator[ConfigGroup]:
   yield ConfigGroup(
-    description = f"set up cpu throttling to {freq}MHz after boot",
+    description = f"throttle CPU to {freq}MHz after boot",
     provides = [
       Package("cpupower"),
 

@@ -70,15 +70,10 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
       Package("libva-utils"),
       Package("vdpauinfo") if nvidia else None,
       Package("libva-nvidia-driver") if nvidia else None,
-      FlatpakPackage("com.visualstudio.code"),
+      Package("xwaylandvideobridge"),
       FlatpakPackage("us.zoom.Zoom"),
       SystemdUnit("coolercontrold.service"),
       SystemdUnit("bluetooth.service"),
-
-      # File("/usr/lib/firefox/defaults/pref/autoconfig.js", permissions = "r--",content = cleandoc(f'''
-      #   pref("media.ffmpeg.allow-openh264", false);
-      #   pref("media.ffmpeg.disable-software-fallback", true);
-      # ''')),
     ]
   )
 
@@ -134,11 +129,7 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
 
   yield ConfigGroup(
     description = "ananicy-cpp and configuration",
-    requires = [
-      Package("cachyos-mirrorlist"),
-      Package("cachyos-v3-mirrorlist"),
-      File("/etc/pacman.conf"),
-    ],
+    requires = [File("/etc/pacman.conf")],
     provides = [
       Package("ananicy-cpp"),
       SystemdUnit("ananicy-cpp.service"),

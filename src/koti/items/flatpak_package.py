@@ -26,3 +26,8 @@ class FlatpakPackage(ManagedConfigItem):
       id = self.id,
       tags = self.tags.union(other.tags),
     )
+
+
+# noinspection PyPep8Naming
+def FlatpakPackages(*names: str) -> list[FlatpakPackage]:
+  return [FlatpakPackage(name) for name in names]

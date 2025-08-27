@@ -30,21 +30,13 @@ def mserver() -> Generator[ConfigGroup | None]:
   yield from fish()
 
   yield ConfigGroup(
-    description = "firmware + drivers",
+    description = "firmware, drivers and filesystems for lenovo",
+    tags = ["CRITICAL"],
+    requires = [Swapfile("/swapfile")],
     provides = [
       Package("linux-firmware-other"),
       Package("linux-firmware-intel"),
       Package("linux-firmware-realtek"),
-    ]
-  )
-
-  yield ConfigGroup(
-    description = "fstab (mserver)",
-    tags = ["CRITICAL"],
-    requires = [
-      Swapfile("/swapfile"),
-    ],
-    provides = [
       File("/etc/fstab", permissions = "r--", content = cleandoc('''
         UUID=77abf8d1-814f-4b0f-b3be-0b5f128f2e34  /      ext4  rw,noatime 0 1
         UUID=b964a65f-8230-4281-8401-d525b48c2a66  /opt   ext4  rw,noatime 0 1
@@ -82,18 +74,6 @@ def mserver() -> Generator[ConfigGroup | None]:
   )
 
   yield ConfigGroup(
-    description = "docker-update script",
-    provides = [
-      File("/usr/local/bin/docker-update", permissions = "r-x", content = cleandoc('''
-        #!/bin/bash -e
-        for DIR in homeassistant nextcloud pihole pyanodon-mapshot pacoloco traefik; do
-          cd /opt/$DIR && sudo docker compose pull && sudo docker compose up -d
-        done
-      ''')),
-    ]
-  )
-
-  yield ConfigGroup(
     description = "docker and services",
     tags = ["CRITICAL"],
     provides = [
@@ -101,6 +81,13 @@ def mserver() -> Generator[ConfigGroup | None]:
       Package("docker-compose"),
       Package("containerd"),
       SystemdUnit("docker.service"),
+
+      File("/usr/local/bin/docker-update", permissions = "r-x", content = cleandoc('''
+        #!/bin/bash -e
+        for DIR in homeassistant nextcloud pihole pyanodon-mapshot pacoloco traefik; do
+          cd /opt/$DIR && sudo docker compose pull && sudo docker compose up -d
+        done
+      ''')),
 
       *DockerComposeService(
         File("/opt/traefik/docker-compose.yml", permissions = "r--", source = "files/traefik/docker-compose.yml"),

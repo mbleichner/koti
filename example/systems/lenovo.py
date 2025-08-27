@@ -7,8 +7,8 @@ from modules.desktop import desktop
 from modules.fish import fish
 from modules.gaming import gaming
 from modules.kernel import kernel_cachyos, kernel_stock
+from modules.koti_dev import koti_dev
 from modules.networking import network_manager
-from modules.ollama_aichat import ollama_aichat
 from modules.systray import systray
 
 
@@ -26,25 +26,18 @@ def lenovo() -> Generator[ConfigGroup | None]:
   yield from gaming()
   # yield from ollama_aichat(cuda = False)
   yield from network_manager()
+  yield from koti_dev()
 
   yield ConfigGroup(
-    description = "firmware + drivers",
+    description = "firmware, drivers and filesystems for lenovo",
+    tags = ["CRITICAL"],
+    requires = [Swapfile("/swapfile")],
     provides = [
       Package("linux-firmware-other"),
       Package("linux-firmware-amdgpu"),
       Package("linux-firmware-realtek"),
       Package('vulkan-radeon'),
       Package('lib32-vulkan-radeon'),
-    ]
-  )
-
-  yield ConfigGroup(
-    description = "fstab (lenovo)",
-    tags = ["CRITICAL"],
-    requires = [
-      Swapfile("/swapfile"),
-    ],
-    provides = [
       File("/etc/fstab", permissions = "r--", content = cleandoc('''
         UUID=79969cb9-9b6e-48e2-a672-4aee50f04c56  /      ext4  rw,noatime 0 1
         UUID=1CA6-490D                             /boot  vfat  rw,defaults 0 2
