@@ -32,6 +32,22 @@ class Koti:
     self.check_config_item_consistency(result)
     return result
 
+  def create_cleanup_phase(self, model: ConfigModel) -> CleanupPhase:
+    items_to_install = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
+    identifiers_to_install = [item.identifier() for item in items_to_install]
+    steps: list[CleanupStep] = []
+    for manager in self.get_cleanup_phase_manager_order(self.managers):
+      installed_items = manager.installed(model)
+      if not installed_items:
+        continue  # only add the manager to the cleanup phase if there are any items that could potentially be uninstalled
+      items_to_uninstall = [item for item in installed_items if item.identifier() not in identifiers_to_install]
+      steps.append(CleanupStep(
+        manager = manager,
+        items_to_uninstall = items_to_uninstall,
+        items_to_keep = [item for item in items_to_install if item.__class__ in manager.managed_classes],
+      ))
+    return CleanupPhase(steps)
+
   def plan(self, groups: bool = True, items: bool = False) -> bool:
 
     # plan installation phases
@@ -135,22 +151,6 @@ class Koti:
       for phase in model.phases for install_step in phase.steps for item in install_step.items_to_install
     }
     store.put("item_tags", result)
-
-  def create_cleanup_phase(self, model: ConfigModel) -> CleanupPhase:
-    items_to_install = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
-    identifiers_to_install = [item.identifier() for item in items_to_install]
-    steps: list[CleanupStep] = []
-    for manager in self.get_cleanup_phase_manager_order(self.managers):
-      installed_items = manager.installed(model)
-      if not installed_items:
-        continue  # only add the manager to the cleanup phase if there are any items that could potentially be uninstalled
-      items_to_uninstall = [item for item in installed_items if item.identifier() not in identifiers_to_install]
-      steps.append(CleanupStep(
-        manager = manager,
-        items_to_uninstall = items_to_uninstall,
-        items_to_keep = [item for item in items_to_install if item.__class__ in manager.managed_classes],
-      ))
-    return CleanupPhase(steps)
 
   @classmethod
   def get_cleanup_phase_manager_order(cls, managers: Sequence[ConfigManager]) -> Sequence[ConfigManager]:
