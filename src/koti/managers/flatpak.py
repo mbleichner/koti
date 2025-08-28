@@ -4,7 +4,7 @@ import re
 from koti import shell_success
 from koti.utils.shell import shell, shell_output
 from koti.items.flatpak_package import FlatpakPackage
-from koti.core import ConfigManager, ConfigModel
+from koti.core import ConfigManager, ConfigModel, SystemState
 from koti.items.flatpak_repo import FlatpakRepo
 
 
@@ -16,7 +16,7 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage]):
       assert item.spec_url is not None, "missing spec_url"
       assert item.repo_url is not None, "missing repo_url"
 
-  def install(self, items: list[FlatpakRepo | FlatpakPackage], model: ConfigModel):
+  def install(self, items: list[FlatpakRepo | FlatpakPackage], model: ConfigModel, state: SystemState):
     repo_items = [item for item in items if isinstance(item, FlatpakRepo)]
     package_items = [item for item in items if isinstance(item, FlatpakPackage)]
 
@@ -57,7 +57,7 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage]):
       installed = flatpak_available and self.is_package_installed(item.id)
       return sha256(str(installed).encode()).hexdigest()
 
-  def checksum_target(self, item: FlatpakRepo | FlatpakPackage, model: ConfigModel) -> str:
+  def checksum_target(self, item: FlatpakRepo | FlatpakPackage, model: ConfigModel, state: SystemState) -> str:
     if isinstance(item, FlatpakRepo):
       assert item.repo_url is not None
       return sha256(item.repo_url.encode()).hexdigest()

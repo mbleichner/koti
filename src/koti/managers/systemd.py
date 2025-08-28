@@ -1,6 +1,6 @@
 from hashlib import sha256
 
-from koti.core import ConfigManager, ConfigModel
+from koti.core import ConfigManager, ConfigModel, SystemState
 from koti.items.systemd import SystemdUnit
 from koti.managers.pacman import shell
 from koti.utils import shell_success
@@ -19,7 +19,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
   def check_configuration(self, item: SystemdUnit, model: ConfigModel):
     pass
 
-  def install(self, items: list[SystemdUnit], model: ConfigModel):
+  def install(self, items: list[SystemdUnit], model: ConfigModel, state: SystemState):
     if len(items) > 0: shell(f"systemctl daemon-reload")
     users = set([item.user for item in items])
     for user in users:
@@ -52,7 +52,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
     enabled: bool = shell_success(f"{self.systemctl_for_user(item.user)} is-enabled {item.name}")
     return sha256(str(enabled).encode()).hexdigest()
 
-  def checksum_target(self, item: SystemdUnit, model: ConfigModel) -> str:
+  def checksum_target(self, item: SystemdUnit, model: ConfigModel, state: SystemState) -> str:
     return sha256(str(True).encode()).hexdigest()
 
   def systemctl_for_user(self, user: str | None):

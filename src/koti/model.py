@@ -63,6 +63,14 @@ class UnmanagedConfigItem(ConfigItem, metaclass = ABCMeta):
   pass
 
 
+class SystemState(metaclass = ABCMeta):
+  """Represents a state of the system at a specific time. Might be the real system state, but
+  might also be a 'simulated' state used to predict updates in later steps."""
+
+  def checksum(self, item: ManagedConfigItem) -> str | None:
+    pass
+
+
 class ConfigManager[T: ManagedConfigItem](metaclass = ABCMeta):
   managed_classes: list[Type] = []
   order_in_cleanup_phase: Literal["reverse_install_order", "first", "last"] = "reverse_install_order"
@@ -83,14 +91,17 @@ class ConfigManager[T: ManagedConfigItem](metaclass = ABCMeta):
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.checksum_current()")
 
   @abstractmethod
-  def checksum_target(self, item: T, model: ConfigModel) -> str:
+  def checksum_target(self, item: T, model: ConfigModel, state: SystemState) -> str:
     """Returns the checksum that the item will have after installation/updating.
-    Can depend on the config model, as there might be e.g. Option()s that need to be considered."""
+    Can depend on the config model, as there might be e.g. Option()s that need to be considered.
+    Can also depend on the system state, as e.g. PostHooks need to be triggered in response to other changes."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.checksum_target()")
 
   @abstractmethod
-  def install(self, items: list[T], model: ConfigModel):
-    """Installs one or multiple items on the system."""
+  def install(self, items: list[T], model: ConfigModel, state: SystemState):
+    """Installs one or multiple items on the system.
+    Can depend on the config model, as there might be e.g. Option()s that need to be considered.
+    Can also depend on the system state, as e.g. PostHooks need to be triggered in response to other changes."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.install()")
 
   @abstractmethod

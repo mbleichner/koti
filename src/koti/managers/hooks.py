@@ -4,7 +4,7 @@ from random import random
 from hashlib import sha256
 
 from koti import ConfigItem
-from koti.core import ConfigManager, ConfigModel, ManagedConfigItem
+from koti.core import ConfigManager, ConfigModel, SystemState
 from koti.items.hooks import PostHook
 from koti.utils import JsonMapping, JsonStore
 
@@ -27,10 +27,10 @@ class PostHookManager(ConfigManager[PostHook]):
       assert exec_order_item is None or exec_order_item < exec_order_hook
       if exec_order_item is not None and not exec_order_item < exec_order_hook: f"{hook} has trigger that is evaluated too late: {item}"
 
-  def install(self, items: list[PostHook], model: ConfigModel):
+  def install(self, items: list[PostHook], model: ConfigModel, state: SystemState):
     for hook in items:
       assert hook.execute is not None
-      target_checksum = self.checksum_target(hook, model)
+      target_checksum = self.checksum_target(hook, model, state)
       hook.execute()
       self.checksum_store.put(hook.name, str(target_checksum))
 
@@ -46,7 +46,7 @@ class PostHookManager(ConfigManager[PostHook]):
     return None
 
   def installed(self, model: ConfigModel) -> list[PostHook]:
-    return []
+    return [PostHook(name) for name in self.checksum_store.keys()]
 
   def uninstall(self, items: list[PostHook], model: ConfigModel):
     pass
@@ -54,21 +54,13 @@ class PostHookManager(ConfigManager[PostHook]):
   def checksum_current(self, hook: PostHook) -> str:
     return self.checksum_store.get(hook.name, "n/a")
 
-  def checksum_target(self, hook: PostHook, model: ConfigModel) -> str:
+  def checksum_target(self, hook: PostHook, model: ConfigModel, state: SystemState) -> str:
     if not hook.trigger:
       return str(random())
-    checksums = self.get_current_checksums_for_items(hook.trigger, model)
+    checksums = [state.checksum(trigger_item) for trigger_item in hook.trigger]
     sha256_hash = sha256()
     for idx, trigger in enumerate(hook.trigger):
       checksum = checksums[idx]
       sha256_hash.update(trigger.identifier().encode())
       sha256_hash.update(str(checksum).encode())
     return sha256_hash.hexdigest()
-
-  def get_current_checksums_for_items(self, dependent_items: list[ManagedConfigItem], model: ConfigModel) -> list[str]:
-    result: list[str] = []
-    for manager in model.managers:
-      managed_items = [item for item in dependent_items if item.__class__ in manager.managed_classes]
-      for item in managed_items:
-        result.append(manager.checksum_current(item))
-    return result
