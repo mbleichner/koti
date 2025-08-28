@@ -1,5 +1,6 @@
 from hashlib import sha256
 
+from koti import DebugMessage
 from koti.core import ConfigManager, ConfigModel, SystemState
 from koti.items.package import Package
 from koti.items.pacman_key import PacmanKey
@@ -55,6 +56,7 @@ class PacmanPackageManager(ConfigManager[Package]):
   explicit_packages_on_system: set[str]  # holds the list of explicitly installed packages on the system; will be updated whenever the manager adds/removes explicit packages.
 
   def __init__(self, delegate: PacmanAdapter, keep_unmanaged_packages: bool):
+    super().__init__()
     store = JsonStore("/var/cache/koti/PacmanPackageManager.json")
     self.managed_packages_store = store.collection("managed_packages")
     self.delegate = delegate
@@ -62,7 +64,8 @@ class PacmanPackageManager(ConfigManager[Package]):
     self.explicit_packages_on_system = set(self.delegate.list_explicit_packages())
 
   def check_configuration(self, item: Package, model: ConfigModel):
-    pass
+    if item.url is not None:
+      self.log.append(DebugMessage(f"{item.identifier()} is installed from URL and might be reverted if also present in repos"))
 
   def checksum_current(self, item: Package) -> str:
     installed: bool = item.name in self.explicit_packages_on_system

@@ -5,27 +5,45 @@ from typing import Any, Literal
 
 class LogMessage:
   text: str
-  source: Any
-  level: Literal["info", "warn", "debug"]
+  level: Literal["info", "warn", "debug", "error"]
 
-  def __init__(self, text: str, source: Any, level: Literal["info", "warn", "debug"], ):
+  def __init__(self, level: Literal["info", "warn", "debug", "error"], text: str):
     self.level = level
-    self.source = source
     self.text = text
 
 
-class Logger:
-  source: Any
-  messages: list[LogMessage] = []
+class WarnMessage(LogMessage):
+  def __init__(self, text: str):
+    super().__init__("warn", text)
 
-  def __init__(self, source: Any):
-    self.source = source
 
-  def info(self, msg: str):
-    self.messages.append(LogMessage(msg, self.source, "info"))
+class InfoMessage(LogMessage):
+  def __init__(self, text: str):
+    super().__init__("info", text)
 
-  def warn(self, msg: str):
-    self.messages.append(LogMessage(msg, self.source, "warn"))
 
-  def debug(self, msg: str):
-    self.messages.append(LogMessage(msg, self.source, "debug"))
+class DebugMessage(LogMessage):
+  def __init__(self, text: str):
+    super().__init__("debug", text)
+
+
+class ErrorMessage(LogMessage):
+  def __init__(self, text: str):
+    super().__init__("error", text)
+
+
+# class Logger:
+#   source: Any
+#   messages: list[LogMessage] = []
+#
+#   def __init__(self, source: Any):
+#     self.source = source
+#
+#   def info(self, msg: str):
+#     self.messages.append(LogMessage(msg, self.source, "info"))
+#
+#   def warn(self, msg: str):
+#     self.messages.append(LogMessage(msg, self.source, "warn"))
+#
+#   def debug(self, msg: str):
+#     self.messages.append(LogMessage(msg, self.source, "debug"))

@@ -74,6 +74,10 @@ class SystemState(metaclass = ABCMeta):
 class ConfigManager[T: ManagedConfigItem](metaclass = ABCMeta):
   managed_classes: list[Type] = []
   order_in_cleanup_phase: Literal["reverse_install_order", "first", "last"] = "reverse_install_order"
+  log: list[LogMessage]
+
+  def __init__(self):
+    self.log = []
 
   @abstractmethod
   def check_configuration(self, item: T, model: ConfigModel):

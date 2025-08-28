@@ -13,6 +13,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
   user_list_store: JsonCollection[str]
 
   def __init__(self):
+    super().__init__()
     self.store = JsonStore("/var/cache/koti/SystemdUnitManager.json")
     self.user_list_store = self.store.collection("users")
 

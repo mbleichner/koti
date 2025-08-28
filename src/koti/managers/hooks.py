@@ -15,6 +15,7 @@ class PostHookManager(ConfigManager[PostHook]):
   order_in_cleanup_phase = "last"
 
   def __init__(self):
+    super().__init__()
     store = JsonStore("/var/cache/koti/PostHookManager.json")
     self.checksum_store = store.mapping("checksums")
 

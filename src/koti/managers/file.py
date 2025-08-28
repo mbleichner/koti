@@ -16,6 +16,7 @@ class FileManager(ConfigManager[File | Directory]):
   managed_dirs_store: JsonCollection[str]
 
   def __init__(self):
+    super().__init__()
     store = JsonStore("/var/cache/koti/FileManager.json")
     self.managed_files_store = store.collection("managed_files")
     self.managed_dirs_store = store.collection("managed_dirs")

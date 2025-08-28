@@ -49,6 +49,9 @@ class Koti:
     return CleanupPhase(steps)
 
   def plan(self, groups: bool = True, items: bool = False) -> bool:
+    for manager in self.managers:
+      manager.log.clear()
+
     model = self.create_model()
     state = SystemStateImpl(self.managers)
 
@@ -86,6 +89,20 @@ class Koti:
                 printc(f"- {item.description()}")
         print()
 
+    logs = [message for manager in self.managers for message in manager.log]
+    if logs:
+      printc(f"Logs:", BOLD)
+      for message in logs:
+        if message.level == "error":
+          printc(f"- {message.text}", RED)
+        if message.level == "warn":
+          printc(f"- {message.text}", YELLOW)
+        if message.level == "info":
+          printc(f"- {message.text}")
+        if message.level == "debug":
+          printc(f"- {message.text}")
+      print()
+
     count = len(items_outdated) + len(items_to_uninstall)
     if count > 0:
       maxlen = max((len(item.identifier()) for item in [*items_outdated, *items_to_uninstall]))
@@ -105,6 +122,9 @@ class Koti:
     return count > 0
 
   def apply(self):
+    for manager in self.managers:
+      manager.log.clear()
+
     model = self.create_model()
     state = SystemStateImpl(self.managers)
 
@@ -122,6 +142,8 @@ class Koti:
       manager.uninstall(step.items_to_uninstall, model)
 
     self.save_tags(self.store, model)
+
+    # FIXME: Logging
 
   @classmethod
   def print_install_step_log(cls, model: ConfigModel, phase_idx: int, step: InstallStep, items_to_update: Sequence[ManagedConfigItem]):

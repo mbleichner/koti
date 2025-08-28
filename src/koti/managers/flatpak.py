@@ -11,6 +11,9 @@ from koti.items.flatpak_repo import FlatpakRepo
 class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage]):
   managed_classes = [FlatpakRepo, FlatpakPackage]
 
+  def __init__(self):
+    super().__init__()
+
   def check_configuration(self, item: FlatpakRepo | FlatpakPackage, model: ConfigModel):
     if isinstance(item, FlatpakRepo):
       assert item.spec_url is not None, "missing spec_url"

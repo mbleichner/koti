@@ -13,6 +13,7 @@ class SwapfileManager(ConfigManager[Swapfile]):
   managed_files_store: JsonCollection[str]
 
   def __init__(self):
+    super().__init__()
     store = JsonStore("/var/cache/koti/SwapfileManager.json")
     self.managed_files_store = store.collection("managed_files")
 
