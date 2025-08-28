@@ -65,7 +65,7 @@ class PacmanPackageManager(ConfigManager[Package]):
 
   def check_configuration(self, item: Package, model: ConfigModel):
     if item.url is not None:
-      self.log.append(DebugMessage(f"{item.identifier()} is installed from URL and might be reverted if also present in repos"))
+      self.log.append(DebugMessage(f"{item.identifier()} is installed via URL and might get updated to a different version by pacman, if the package is also part of a package repository"))
 
   def checksum_current(self, item: Package) -> str:
     installed: bool = item.name in self.explicit_packages_on_system
