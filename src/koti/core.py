@@ -49,11 +49,11 @@ class Koti:
     return CleanupPhase(steps)
 
   def plan(self, groups: bool = True, items: bool = False) -> bool:
+    planning = True
     for manager in self.managers:
       manager.log.clear()
 
     model = self.create_model()
-    state = SystemStateImpl(self.managers)
 
     # plan installation phases
     items_total = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
@@ -62,10 +62,7 @@ class Koti:
     for phase in model.phases:
       for step in phase.steps:
         manager = step.manager
-        items_to_update = [item for item in step.items_to_install if manager.checksum_current(item) != manager.checksum_target(item, model, state)]
-        for item in items_to_update:
-          items_outdated.append(item)
-          state.override(item, manager.checksum_target(item, model, state))
+        items_outdated += [item for item in step.items_to_install if manager.checksum_current(item) != manager.checksum_target(item, model, planning)]
 
     # plan cleanup phase
     cleanup_phase = self.create_cleanup_phase(model)
@@ -122,18 +119,18 @@ class Koti:
     return count > 0
 
   def apply(self):
+    planning = False
     for manager in self.managers:
       manager.log.clear()
 
     model = self.create_model()
-    state = SystemStateImpl(self.managers)
 
     for phase_idx, phase in enumerate(model.phases):
       for step in phase.steps:
         manager = step.manager
-        items_to_update = [item for item in step.items_to_install if manager.checksum_current(item) != manager.checksum_target(item, model, state)]
+        items_to_update = [item for item in step.items_to_install if manager.checksum_current(item) != manager.checksum_target(item, model, planning)]
         self.print_install_step_log(model, phase_idx, step, items_to_update)
-        manager.install(items_to_update, model, state) or []
+        manager.install(items_to_update, model, planning) or []
 
     cleanup_phase = self.create_cleanup_phase(model)
     for step in cleanup_phase.steps:
@@ -307,24 +304,4 @@ class Koti:
         for group_item in group.provides:
           if group_item.identifier() == required_item.identifier():
             return idx_phase, group
-    return None
-
-
-class SystemStateImpl(SystemState):
-  managers: list[ConfigManager]
-  overrides: list[tuple[ManagedConfigItem, str]] = []
-
-  def __init__(self, managers: list[ConfigManager]):
-    self.managers = managers
-
-  def override(self, item: ManagedConfigItem, checksum: str):
-    self.overrides.append((item, checksum))
-
-  def checksum(self, item: ManagedConfigItem) -> str | None:
-    for (other, chk) in self.overrides:
-      if item.identifier() == other.identifier():
-        return chk
-    for manager in self.managers:
-      if item.__class__ in manager.managed_classes:
-        return manager.checksum_current(item)
     return None

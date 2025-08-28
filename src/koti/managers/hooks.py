@@ -3,8 +3,8 @@ from __future__ import annotations
 from random import random
 from hashlib import sha256
 
-from koti import ConfigItem
-from koti.core import ConfigManager, ConfigModel, SystemState
+from koti import ConfigItem, ManagedConfigItem
+from koti.core import ConfigManager, ConfigModel
 from koti.items.hooks import PostHook
 from koti.utils import JsonMapping, JsonStore
 
@@ -28,10 +28,10 @@ class PostHookManager(ConfigManager[PostHook]):
       assert exec_order_item is None or exec_order_item < exec_order_hook
       if exec_order_item is not None and not exec_order_item < exec_order_hook: f"{hook} has trigger that is evaluated too late: {item}"
 
-  def install(self, items: list[PostHook], model: ConfigModel, state: SystemState):
+  def install(self, items: list[PostHook], model: ConfigModel):
     for hook in items:
       assert hook.execute is not None
-      target_checksum = self.checksum_target(hook, model, state)
+      target_checksum = self.checksum_target(hook, model, planning = False)
       hook.execute()
       self.checksum_store.put(hook.name, str(target_checksum))
 
@@ -55,13 +55,26 @@ class PostHookManager(ConfigManager[PostHook]):
   def checksum_current(self, hook: PostHook) -> str:
     return self.checksum_store.get(hook.name, "n/a")
 
-  def checksum_target(self, hook: PostHook, model: ConfigModel, state: SystemState) -> str:
+  def checksum_target(self, hook: PostHook, model: ConfigModel, planning: bool) -> str:
     if not hook.trigger:
       return str(random())
-    checksums = [state.checksum(trigger_item) for trigger_item in hook.trigger]
+    checksums = [self.checksum_for_trigger_ref(ref, model, planning) for ref in hook.trigger]
     sha256_hash = sha256()
     for idx, trigger in enumerate(hook.trigger):
       checksum = checksums[idx]
       sha256_hash.update(trigger.identifier().encode())
       sha256_hash.update(str(checksum).encode())
     return sha256_hash.hexdigest()
+
+  @staticmethod
+  def checksum_for_trigger_ref(reference: ManagedConfigItem, model: ConfigModel, planning: bool):
+    manager: ConfigManager = model.manager(reference)
+
+    # during planning, assume that the trigger item will already have been
+    # updated to its target state (if managed by koti)
+    if planning:
+      trigger_item = model.item(reference, optional=True)
+      if trigger_item is not None:
+        return manager.checksum_target(trigger_item, model, planning)
+
+    return manager.checksum_current(reference)

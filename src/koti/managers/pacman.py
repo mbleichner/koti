@@ -1,7 +1,7 @@
 from hashlib import sha256
 
 from koti import DebugMessage
-from koti.core import ConfigManager, ConfigModel, SystemState
+from koti.core import ConfigManager, ConfigModel
 from koti.items.package import Package
 from koti.items.pacman_key import PacmanKey
 from koti.utils import JsonCollection, JsonStore
@@ -71,10 +71,10 @@ class PacmanPackageManager(ConfigManager[Package]):
     installed: bool = item.name in self.explicit_packages_on_system
     return sha256(str(installed).encode()).hexdigest()
 
-  def checksum_target(self, item: Package, model: ConfigModel, state: SystemState) -> str:
+  def checksum_target(self, item: Package, model: ConfigModel, planning: bool) -> str:
     return sha256(str(True).encode()).hexdigest()
 
-  def install(self, items: list[Package], model: ConfigModel, state: SystemState):
+  def install(self, items: list[Package], model: ConfigModel):
     url_items = [item for item in items if item.url is not None]
     repo_items = [item for item in items if item.url is None]
     installed_packages = self.delegate.list_installed_packages()
@@ -120,7 +120,7 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
   def check_configuration(self, item: PacmanKey, model: ConfigModel):
     pass
 
-  def install(self, items: list[PacmanKey], model: ConfigModel, state: SystemState):
+  def install(self, items: list[PacmanKey], model: ConfigModel):
     for item in items:
       print(f"installing pacman-key {item.key_id} from {item.key_server}")
       shell(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
@@ -136,5 +136,5 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
     installed: bool = shell_success(f"pacman-key --list-keys | grep {item.key_id}")
     return sha256(str(installed).encode()).hexdigest()
 
-  def checksum_target(self, item: PacmanKey, model: ConfigModel, state: SystemState) -> str:
+  def checksum_target(self, item: PacmanKey, model: ConfigModel, planning: bool) -> str:
     return sha256(str(True).encode()).hexdigest()

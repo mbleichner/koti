@@ -3,7 +3,7 @@ import pwd
 import shutil
 from hashlib import sha256
 
-from koti.core import ConfigManager, ConfigModel, SystemState
+from koti.core import ConfigManager, ConfigModel
 from koti.items.file import File
 from koti.items.directory import Directory
 from koti.utils import JsonCollection
@@ -27,7 +27,7 @@ class FileManager(ConfigManager[File | Directory]):
     if isinstance(item, Directory):
       assert len(item.files) > 0, "directory contains no files"
 
-  def install(self, items: list[File | Directory], model: ConfigModel, state: SystemState):
+  def install(self, items: list[File | Directory], model: ConfigModel):
     for item in items:
       if isinstance(item, File):
         self.install_file(item, model)
@@ -41,7 +41,7 @@ class FileManager(ConfigManager[File | Directory]):
       if isinstance(item, Directory):
         self.uninstall_dir(item, model)
 
-  def checksum_target(self, item: File | Directory, model: ConfigModel, state: SystemState) -> str:
+  def checksum_target(self, item: File | Directory, model: ConfigModel, planning: bool) -> str:
     return self.checksum_file_target(item, model) if isinstance(item, File) else self.checksum_dir_target(item, model)
 
   def checksum_current(self, item: File | Directory) -> str:
@@ -131,7 +131,7 @@ class FileManager(ConfigManager[File | Directory]):
     getpwnam = pwd.getpwnam(item.owner)
     (uid, gid) = (getpwnam.pw_uid, getpwnam.pw_gid)
     if item.content is None:
-      raise AssertionError(f"{item}: content missing")
+      raise AssertionError(f"{item.description()}: content missing")
     sha256_hash = sha256()
     sha256_hash.update(str(uid).encode())
     sha256_hash.update(str(gid).encode())

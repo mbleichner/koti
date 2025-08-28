@@ -63,14 +63,6 @@ class UnmanagedConfigItem(ConfigItem, metaclass = ABCMeta):
   pass
 
 
-class SystemState(metaclass = ABCMeta):
-  """Represents a state of the system at a specific time. Might be the real system state, but
-  might also be a 'simulated' state used to predict updates in later steps."""
-
-  def checksum(self, item: ManagedConfigItem) -> str | None:
-    pass
-
-
 class ConfigManager[T: ManagedConfigItem](metaclass = ABCMeta):
   managed_classes: list[Type] = []
   order_in_cleanup_phase: Literal["reverse_install_order", "first", "last"] = "reverse_install_order"
@@ -95,17 +87,15 @@ class ConfigManager[T: ManagedConfigItem](metaclass = ABCMeta):
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.checksum_current()")
 
   @abstractmethod
-  def checksum_target(self, item: T, model: ConfigModel, state: SystemState) -> str:
+  def checksum_target(self, item: T, model: ConfigModel, planning: bool) -> str:
     """Returns the checksum that the item will have after installation/updating.
-    Can depend on the config model, as there might be e.g. Option()s that need to be considered.
-    Can also depend on the system state, as e.g. PostHooks need to be triggered in response to other changes."""
+    Can depend on the config model, as there might be e.g. Option()s that need to be considered."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.checksum_target()")
 
   @abstractmethod
-  def install(self, items: list[T], model: ConfigModel, state: SystemState):
+  def install(self, items: list[T], model: ConfigModel):
     """Installs one or multiple items on the system.
-    Can depend on the config model, as there might be e.g. Option()s that need to be considered.
-    Can also depend on the system state, as e.g. PostHooks need to be triggered in response to other changes."""
+    Can depend on the config model, as there might be e.g. Option()s that need to be considered."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.install()")
 
   @abstractmethod
@@ -148,6 +138,15 @@ class ConfigModel:
     ), None)
     assert result is not None or optional, f"Item not found: {reference.identifier()}"
     return result
+
+  def contains(self, reference: ConfigItem) -> bool:
+    return self.item(reference, optional=True) is not None
+
+  def manager[T: ManagedConfigItem](self, reference: T) -> ConfigManager[T]:
+    for manager in self.managers:
+      if reference.__class__ in manager.managed_classes:
+        return manager
+    raise AssertionError(f"manager not found for {reference.identifier()}")
 
   def tags(self, *args: ManagedConfigItem) -> set[str]:
     return reduce(lambda a, b: a.union(b), (self.__tags(arg) for arg in args), set())
