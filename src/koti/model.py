@@ -89,7 +89,9 @@ class ConfigManager[T: ManagedConfigItem](metaclass = ABCMeta):
   @abstractmethod
   def checksum_target(self, item: T, model: ConfigModel, planning: bool) -> str:
     """Returns the checksum that the item will have after installation/updating.
-    Can depend on the config model, as there might be e.g. Option()s that need to be considered."""
+    Can depend on the config model, as there might be e.g. Option()s that need to be considered.
+    Also, the method can behave different during planning (e.g. PostHooks assume that their triggers
+    have already been updated to their respective target states)."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.checksum_target()")
 
   @abstractmethod
