@@ -70,14 +70,11 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
   def state_current(self, item: Swapfile) -> SwapfileState | None:
     if not os.path.isfile(item.filename):
       return None
-    return SwapfileState(
-      size_bytes = os.stat(item.filename).st_size
-    )
+    return SwapfileState(size_bytes = os.stat(item.filename).st_size)
 
   def state_target(self, item: Swapfile, model: ConfigModel, planning: bool) -> SwapfileState:
-    return SwapfileState(
-      size_bytes = item.size_bytes
-    )
+    assert item.size_bytes is not None
+    return SwapfileState(size_bytes = item.size_bytes)
 
   def describe_change(self, item: Swapfile, state_current: SwapfileState | None, state_target: SwapfileState) -> list[str]:
     if state_current is None:
