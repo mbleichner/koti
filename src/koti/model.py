@@ -63,7 +63,15 @@ class UnmanagedConfigItem(ConfigItem, metaclass = ABCMeta):
   pass
 
 
-class ConfigManager[T: ManagedConfigItem](metaclass = ABCMeta):
+class ConfigItemState(metaclass = ABCMeta):
+  @abstractmethod
+  def hash(self) -> str:
+    """Method that condenses the whole state into a hash-string that can easily be stored or
+    used by foreign managers without having to inspect the implementation of the item state."""
+    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.hash()")
+
+
+class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMeta):
   managed_classes: list[Type] = []
   order_in_cleanup_phase: Literal["reverse_install_order", "first", "last"] = "reverse_install_order"
   log: list[LogMessage]
@@ -82,12 +90,12 @@ class ConfigManager[T: ManagedConfigItem](metaclass = ABCMeta):
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.installed()")
 
   @abstractmethod
-  def checksum_current(self, item: T) -> str:
+  def state_current(self, item: T) -> S | None:
     """Returns the checksum of a currently installed item on the system."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.checksum_current()")
 
   @abstractmethod
-  def checksum_target(self, item: T, model: ConfigModel, planning: bool) -> str:
+  def state_target(self, item: T, model: ConfigModel, planning: bool) -> S:
     """Returns the checksum that the item will have after installation/updating.
     Can depend on the config model, as there might be e.g. Option()s that need to be considered.
     Also, the method can behave different during planning (e.g. PostHooks assume that their triggers
@@ -102,6 +110,11 @@ class ConfigManager[T: ManagedConfigItem](metaclass = ABCMeta):
 
   @abstractmethod
   def uninstall(self, items: list[T], model: ConfigModel):
+    """Removes one or multiple items from the system."""
+    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.uninstall()")
+
+  @abstractmethod
+  def describe_change(self, item: T, state_current: S | None, state_target: S) -> list[str]:
     """Removes one or multiple items from the system."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.uninstall()")
 
@@ -142,9 +155,9 @@ class ConfigModel:
     return result
 
   def contains(self, reference: ConfigItem) -> bool:
-    return self.item(reference, optional=True) is not None
+    return self.item(reference, optional = True) is not None
 
-  def manager[T: ManagedConfigItem](self, reference: T) -> ConfigManager[T]:
+  def manager[T: ManagedConfigItem](self, reference: T) -> ConfigManager[T, ConfigItemState]:
     for manager in self.managers:
       if reference.__class__ in manager.managed_classes:
         return manager

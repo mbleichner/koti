@@ -1,14 +1,24 @@
 import os.path
 from hashlib import sha256
 
-from koti.core import ConfigManager, ConfigModel
+from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.swapfile import Swapfile
 from koti.utils import JsonCollection
 from koti.utils.json_store import JsonStore
 from koti.utils.shell import shell, shell_success
 
 
-class SwapfileManager(ConfigManager[Swapfile]):
+class SwapfileState(ConfigItemState):
+  def __init__(self, size_bytes: int):
+    self.size_bytes = size_bytes
+
+  def hash(self) -> str:
+    sha256_hash = sha256()
+    sha256_hash.update(str(self.size_bytes).encode())
+    return sha256_hash.hexdigest()
+
+
+class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
   managed_classes = [Swapfile]
   managed_files_store: JsonCollection[str]
 
@@ -57,16 +67,21 @@ class SwapfileManager(ConfigManager[Swapfile]):
         os.unlink(item.filename)
       self.managed_files_store.remove(item.filename)
 
-  def checksum_current(self, item: Swapfile) -> str:
-    exists = os.path.isfile(item.filename)
-    current_size = os.stat(item.filename).st_size if exists else 0
-    sha256_hash = sha256()
-    sha256_hash.update(str(exists).encode())
-    sha256_hash.update(str(current_size).encode())
-    return sha256_hash.hexdigest()
+  def state_current(self, item: Swapfile) -> SwapfileState | None:
+    if not os.path.isfile(item.filename):
+      return None
+    return SwapfileState(
+      size_bytes = os.stat(item.filename).st_size
+    )
 
-  def checksum_target(self, item: Swapfile, model: ConfigModel, planning: bool) -> str:
-    sha256_hash = sha256()
-    sha256_hash.update(str(True).encode())
-    sha256_hash.update(str(item.size_bytes).encode())
-    return sha256_hash.hexdigest()
+  def state_target(self, item: Swapfile, model: ConfigModel, planning: bool) -> SwapfileState:
+    return SwapfileState(
+      size_bytes = item.size_bytes
+    )
+
+  def describe_change(self, item: Swapfile, state_current: SwapfileState | None, state_target: SwapfileState) -> list[str]:
+    if state_current is None:
+      return ["swapfile will be created"]
+    return [change for change in (
+      f"change size from {state_current.size_bytes} to {state_target.size_bytes}" if state_current.size_bytes != state_target.size_bytes else None,
+    ) if change is not None]

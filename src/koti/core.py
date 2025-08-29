@@ -62,7 +62,16 @@ class Koti:
     for phase in model.phases:
       for step in phase.steps:
         manager = step.manager
-        items_outdated += [item for item in step.items_to_install if manager.checksum_current(item) != manager.checksum_target(item, model, planning)]
+        for item in step.items_to_install:
+          changes = manager.describe_change(
+            item = item,
+            state_current = manager.state_current(item),
+            state_target = manager.state_target(item, model, planning)
+          )
+          if changes:
+            items_outdated.append(item)
+            for change in changes:
+              printc(f"~~ {item.description()}: {change}", CYAN)
 
     # plan cleanup phase
     cleanup_phase = self.create_cleanup_phase(model)
@@ -128,9 +137,15 @@ class Koti:
     for phase_idx, phase in enumerate(model.phases):
       for step in phase.steps:
         manager = step.manager
-        items_to_update = [item for item in step.items_to_install if manager.checksum_current(item) != manager.checksum_target(item, model, planning)]
+        items_to_update = [
+          item for item in step.items_to_install if manager.describe_change(
+            item = item,
+            state_current = manager.state_current(item),
+            state_target = manager.state_target(item, model, planning)
+          )
+        ]
         self.print_install_step_log(model, phase_idx, step, items_to_update)
-        manager.install(items_to_update, model, planning) or []
+        manager.install(items_to_update, model) or []
 
     cleanup_phase = self.create_cleanup_phase(model)
     for step in cleanup_phase.steps:
@@ -139,8 +154,6 @@ class Koti:
       manager.uninstall(step.items_to_uninstall, model)
 
     self.save_tags(self.store, model)
-
-    # FIXME: Logging
 
   @classmethod
   def print_install_step_log(cls, model: ConfigModel, phase_idx: int, step: InstallStep, items_to_update: Sequence[ManagedConfigItem]):

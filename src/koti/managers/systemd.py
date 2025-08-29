@@ -1,13 +1,16 @@
-from hashlib import sha256
-
-from koti.core import ConfigManager, ConfigModel
+from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.systemd import SystemdUnit
 from koti.managers.pacman import shell
 from koti.utils import shell_success
 from koti.utils.json_store import JsonCollection, JsonStore
 
 
-class SystemdUnitManager(ConfigManager[SystemdUnit]):
+class SystemdUnitState(ConfigItemState):
+  def hash(self) -> str:
+    return "-"
+
+
+class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
   managed_classes = [SystemdUnit]
   store: JsonStore
   user_list_store: JsonCollection[str]
@@ -49,12 +52,15 @@ class SystemdUnitManager(ConfigManager[SystemdUnit]):
         shell(f"{self.systemctl_for_user(user)} disable --now {" ".join(unit_names)}")
         units_store.remove_all(unit_names)
 
-  def checksum_current(self, item: SystemdUnit) -> str:
+  def state_current(self, item: SystemdUnit) -> SystemdUnitState | None:
     enabled: bool = shell_success(f"{self.systemctl_for_user(item.user)} is-enabled {item.name}")
-    return sha256(str(enabled).encode()).hexdigest()
+    return SystemdUnitState() if enabled else None
 
-  def checksum_target(self, item: SystemdUnit, model: ConfigModel, planning: bool) -> str:
-    return sha256(str(True).encode()).hexdigest()
+  def state_target(self, item: SystemdUnit, model: ConfigModel, planning: bool) -> SystemdUnitState:
+    return SystemdUnitState()
+
+  def describe_change(self, item: SystemdUnit, state_current: SystemdUnitState | None, state_target: SystemdUnitState) -> list[str]:
+    return ["unit will be enabled"] if state_current is None else []
 
   def systemctl_for_user(self, user: str | None):
     return f"systemctl --user -M {user}@" if user is not None else "systemctl"

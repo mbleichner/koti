@@ -16,7 +16,7 @@ class Directory(ManagedConfigItem):
     self,
     dirname: str,
     source: str | None = None,
-    mask: int | str = "rwx",
+    mask: int | str | None = "rwx",
     owner: str = "root",
     tags: Iterable[str] | None = None,
   ):

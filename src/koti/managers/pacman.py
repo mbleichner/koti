@@ -1,7 +1,5 @@
-from hashlib import sha256
-
-from koti import DebugMessage
-from koti.core import ConfigManager, ConfigModel
+from koti.logging import DebugMessage
+from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.package import Package
 from koti.items.pacman_key import PacmanKey
 from koti.utils import JsonCollection, JsonStore
@@ -48,7 +46,17 @@ class PacmanAdapter:
     return [pkg for pkg in output.split("\n") if pkg]
 
 
-class PacmanPackageManager(ConfigManager[Package]):
+class PackageState(ConfigItemState):
+  def hash(self) -> str:
+    return "-"
+
+
+class PacmanKeyState(ConfigItemState):
+  def hash(self) -> str:
+    return "-"
+
+
+class PacmanPackageManager(ConfigManager[Package, PackageState]):
   managed_classes = [Package]
   delegate: PacmanAdapter
   ignore_manually_installed_packages: bool
@@ -67,12 +75,15 @@ class PacmanPackageManager(ConfigManager[Package]):
     if item.url is not None:
       self.log.append(DebugMessage(f"{item.identifier()} is installed via URL and might get updated to a different version by pacman, if the package is also part of a package repository"))
 
-  def checksum_current(self, item: Package) -> str:
+  def state_current(self, item: Package) -> PackageState | None:
     installed: bool = item.name in self.explicit_packages_on_system
-    return sha256(str(installed).encode()).hexdigest()
+    return PackageState() if installed else None
 
-  def checksum_target(self, item: Package, model: ConfigModel, planning: bool) -> str:
-    return sha256(str(True).encode()).hexdigest()
+  def state_target(self, item: Package, model: ConfigModel, planning: bool) -> PackageState:
+    return PackageState()
+
+  def describe_change(self, item: Package, state_current: PackageState | None, state_target: PackageState) -> list[str]:
+    return ["package will be installed / set to explicit"] if state_current is None else []
 
   def install(self, items: list[Package], model: ConfigModel):
     url_items = [item for item in items if item.url is not None]
@@ -114,7 +125,7 @@ class PacmanPackageManager(ConfigManager[Package]):
     self.explicit_packages_on_system = set(self.delegate.list_explicit_packages())
 
 
-class PacmanKeyManager(ConfigManager[PacmanKey]):
+class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
   managed_classes = [PacmanKey]
 
   def check_configuration(self, item: PacmanKey, model: ConfigModel):
@@ -132,9 +143,12 @@ class PacmanKeyManager(ConfigManager[PacmanKey]):
   def installed(self, model: ConfigModel) -> list[PacmanKey]:
     return []
 
-  def checksum_current(self, item: PacmanKey) -> str:
+  def state_current(self, item: PacmanKey) -> PacmanKeyState | None:
     installed: bool = shell_success(f"pacman-key --list-keys | grep {item.key_id}")
-    return sha256(str(installed).encode()).hexdigest()
+    return PacmanKeyState() if installed else None
 
-  def checksum_target(self, item: PacmanKey, model: ConfigModel, planning: bool) -> str:
-    return sha256(str(True).encode()).hexdigest()
+  def state_target(self, item: PacmanKey, model: ConfigModel, planning: bool) -> PacmanKeyState:
+    return PacmanKeyState()
+
+  def describe_change(self, item: PacmanKey, state_current: PacmanKeyState | None, state_target: PacmanKeyState) -> list[str]:
+    return ["pacman key will be installed"] if state_current is None else []

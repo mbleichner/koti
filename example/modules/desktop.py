@@ -7,13 +7,13 @@ from koti.utils import shell
 
 
 def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
-  yield ConfigGroup(
-    description = "flatpak + flathub",
-    provides = [
-      Package("flatpak"),
-      FlatpakRepo("flathub", spec_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"),
-    ]
-  )
+  # yield ConfigGroup(
+  #   description = "flatpak + flathub",
+  #   provides = [
+  #     Package("flatpak"),
+  #     FlatpakRepo("flathub", spec_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"),
+  #   ]
+  # )
 
   yield ConfigGroup(
     description = "optional dependencies for desktop",
@@ -31,7 +31,7 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
     requires = [
       Checkpoint("desktop-optional-dependencies"),  # avoid pacman asking for possible alternatives
       File("/etc/pacman.conf"),  # Damit NoExtract bei der ersten Ausführung angewendet wird
-      FlatpakRepo("flathub"),
+      # FlatpakRepo("flathub"),
     ],
     provides = [
       Option("/etc/pacman.conf/NoExtract", "etc/xdg/autostart/org.kde.discover.notifier.desktop"),
@@ -71,7 +71,7 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
       Package("vdpauinfo") if nvidia else None,
       Package("libva-nvidia-driver") if nvidia else None,
       Package("xwaylandvideobridge"),
-      FlatpakPackage("us.zoom.Zoom"),
+      # FlatpakPackage("us.zoom.Zoom"),
       SystemdUnit("coolercontrold.service"),
       SystemdUnit("bluetooth.service"),
     ]

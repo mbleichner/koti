@@ -1,14 +1,29 @@
 from hashlib import sha256
 import re
+from typing import cast
 
-from koti import shell_success
-from koti.utils.shell import shell, shell_output
+from koti.utils.shell import shell, shell_output, shell_success
 from koti.items.flatpak_package import FlatpakPackage
-from koti.core import ConfigManager, ConfigModel
+from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.flatpak_repo import FlatpakRepo
 
 
-class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage]):
+class FlatpakRepoState(ConfigItemState):
+  def __init__(self, repo_url: str):
+    self.repo_url = repo_url
+
+  def hash(self) -> str:
+    sha256_hash = sha256()
+    sha256_hash.update(self.repo_url.encode())
+    return sha256_hash.hexdigest()
+
+
+class FlatpakPackageState(ConfigItemState):
+  def hash(self) -> str:
+    return "-"
+
+
+class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoState | FlatpakPackageState]):
   managed_classes = [FlatpakRepo, FlatpakPackage]
 
   def __init__(self):
@@ -31,7 +46,7 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage]):
         shell(f"flatpak remote-add '{item.name}' '{item.spec_url}'")
 
     if package_items:
-      shell(f"flatpak install {" ".join(item.id for item in package_items)}", check = False)
+      shell(f"flatpak install {" ".join(item.id for item in package_items)}")
 
   def uninstall(self, items: list[FlatpakRepo | FlatpakPackage], model: ConfigModel):
     repo_items = [item for item in items if isinstance(item, FlatpakRepo)]
@@ -51,21 +66,37 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage]):
     else:
       return []
 
-  def checksum_current(self, item: FlatpakRepo | FlatpakPackage) -> str:
+  def state_current(self, item: FlatpakRepo | FlatpakPackage) -> FlatpakRepoState | FlatpakPackageState | None:
     flatpak_available = shell_success("flatpak --version")
+    if not flatpak_available:
+      return None
     if isinstance(item, FlatpakRepo):
-      url = self.get_installed_repo_url(item) if flatpak_available else None
-      return sha256((url or "-").encode()).hexdigest()
+      url = self.get_installed_repo_url(item)
+      return FlatpakRepoState(repo_url = url) if url else None
     else:
-      installed = flatpak_available and self.is_package_installed(item.id)
-      return sha256(str(installed).encode()).hexdigest()
+      installed = self.is_package_installed(item.id)
+      return FlatpakPackageState() if installed else None
 
-  def checksum_target(self, item: FlatpakRepo | FlatpakPackage, model: ConfigModel, planning: bool) -> str:
+  def state_target(self, item: FlatpakRepo | FlatpakPackage, model: ConfigModel, planning: bool) -> FlatpakRepoState | FlatpakPackageState:
     if isinstance(item, FlatpakRepo):
       assert item.repo_url is not None
-      return sha256(item.repo_url.encode()).hexdigest()
+      return FlatpakRepoState(repo_url = item.repo_url)
     else:
-      return sha256(str(True).encode()).hexdigest()
+      return FlatpakPackageState()
+
+  def describe_change(self, item: FlatpakRepo | FlatpakPackage, state_current: FlatpakRepoState | FlatpakPackageState | None, state_target: FlatpakRepoState | FlatpakPackageState) -> list[str]:
+    if isinstance(item, FlatpakRepo):
+      state_current = cast(FlatpakRepoState | None, state_current)
+      state_target = cast(FlatpakRepoState, state_target)
+      if state_current is None:
+        return ["repo will be installed"]
+      return [change for change in [
+        f"change repo_url from {state_current.repo_url} to {state_target.repo_url}" if state_current.repo_url != state_target.repo_url else None
+      ] if change is not None]
+    else:
+      state_current = cast(FlatpakPackageState | None, state_current)
+      state_target = cast(FlatpakPackageState, state_target)
+      return ["package will be installed"] if state_current is None else []
 
   def get_installed_repo_url(self, item: FlatpakRepo) -> str | None:
     for line in shell_output("flatpak remotes --columns name,url").splitlines():
