@@ -235,10 +235,10 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     if state_target is None:
       return ["file will be deleted"]
     return [change for change in [
-      f"change uid from {state_current.uid} to {state_target.uid}" if state_current.uid != state_current.uid else None,
-      f"change gid from {state_current.gid} to {state_target.gid}" if state_current.gid != state_current.gid else None,
-      f"change mode from {oct(state_current.mode)} to {oct(state_target.mode)}" if state_current.mode != state_current.mode else None,
-      f"update file content" if state_current.content_hash != state_current.content_hash else None,
+      f"change uid from {state_current.uid} to {state_target.uid}" if state_current.uid != state_target.uid else None,
+      f"change gid from {state_current.gid} to {state_target.gid}" if state_current.gid != state_target.gid else None,
+      f"change mode from {oct(state_current.mode)} to {oct(state_target.mode)}" if state_current.mode != state_target.mode else None,
+      f"update file content" if state_current.content_hash != state_target.content_hash else None,
     ] if change is not None]
 
   def dir_diff(self, state_current: DirectoryState | None, state_target: DirectoryState | None) -> list[str]:
@@ -248,8 +248,8 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       return ["directory will be deleted"]
     filenames = set(state_current.files.keys()).union(state_target.files.keys())
     return [change for change in [
-      f"change uid from {state_current.uid} to {state_target.uid}" if state_current.uid != state_current.uid else None,
-      f"change gid from {state_current.gid} to {state_target.gid}" if state_current.gid != state_current.gid else None,
+      f"change uid from {state_current.uid} to {state_target.uid}" if state_current.uid != state_target.uid else None,
+      f"change gid from {state_current.gid} to {state_target.gid}" if state_current.gid != state_target.gid else None,
       *(
         f"{filename}: {change}" for filename in filenames
         for change in self.diff(state_current.files.get(filename, None), state_target.files.get(filename, None))
