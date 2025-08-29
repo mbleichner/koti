@@ -59,8 +59,12 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
   def state_target(self, item: SystemdUnit, model: ConfigModel, planning: bool) -> SystemdUnitState:
     return SystemdUnitState()
 
-  def describe_change(self, item: SystemdUnit, state_current: SystemdUnitState | None, state_target: SystemdUnitState) -> list[str]:
-    return ["unit will be enabled"] if state_current is None else []
+  def diff(self, state_current: SystemdUnitState | None, state_target: SystemdUnitState | None) -> list[str]:
+    if state_current is None:
+      return ["unit will be enabled"]
+    if state_target is None:
+      return ["unit will be disabled"]
+    return []
 
   def systemctl_for_user(self, user: str | None):
     return f"systemctl --user -M {user}@" if user is not None else "systemctl"

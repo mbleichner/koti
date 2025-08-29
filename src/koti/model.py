@@ -103,6 +103,11 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.checksum_target()")
 
   @abstractmethod
+  def diff(self, state_current: S | None, state_target: S | None) -> Sequence[str]:
+    """Removes one or multiple items from the system."""
+    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.diff()")
+
+  @abstractmethod
   def install(self, items: list[T], model: ConfigModel):
     """Installs one or multiple items on the system.
     Can depend on the config model, as there might be e.g. Option()s that need to be considered."""
@@ -110,11 +115,6 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
 
   @abstractmethod
   def uninstall(self, items: list[T], model: ConfigModel):
-    """Removes one or multiple items from the system."""
-    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.uninstall()")
-
-  @abstractmethod
-  def describe_change(self, item: T, state_current: S | None, state_target: S) -> list[str]:
     """Removes one or multiple items from the system."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.uninstall()")
 

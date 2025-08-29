@@ -82,8 +82,12 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
   def state_target(self, item: Package, model: ConfigModel, planning: bool) -> PackageState:
     return PackageState()
 
-  def describe_change(self, item: Package, state_current: PackageState | None, state_target: PackageState) -> list[str]:
-    return ["package will be installed / set to explicit"] if state_current is None else []
+  def diff(self, state_current: PackageState | None, state_target: PackageState | None) -> list[str]:
+    if state_current is None:
+      return ["package will be installed / set to explicit"]
+    if state_target is None:
+      return ["package will be removed"]
+    return []
 
   def install(self, items: list[Package], model: ConfigModel):
     url_items = [item for item in items if item.url is not None]
@@ -150,5 +154,9 @@ class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
   def state_target(self, item: PacmanKey, model: ConfigModel, planning: bool) -> PacmanKeyState:
     return PacmanKeyState()
 
-  def describe_change(self, item: PacmanKey, state_current: PacmanKeyState | None, state_target: PacmanKeyState) -> list[str]:
-    return ["pacman key will be installed"] if state_current is None else []
+  def diff(self, state_current: PacmanKeyState | None, state_target: PacmanKeyState | None) -> list[str]:
+    if state_current is None:
+      return ["pacman key will be installed"]
+    if state_target is None:
+      return ["pacman key will be removed (TODO)"]
+    return []

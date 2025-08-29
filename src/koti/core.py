@@ -63,8 +63,8 @@ class Koti:
       for step in phase.steps:
         manager = step.manager
         for item in step.items_to_install:
-          changes = manager.describe_change(
-            item = item,
+          # FIXME: hash sollte maßgeblich sein
+          changes = manager.diff(
             state_current = manager.state_current(item),
             state_target = manager.state_target(item, model, planning)
           )
@@ -138,8 +138,7 @@ class Koti:
       for step in phase.steps:
         manager = step.manager
         items_to_update = [
-          item for item in step.items_to_install if manager.describe_change(
-            item = item,
+          item for item in step.items_to_install if manager.diff(
             state_current = manager.state_current(item),
             state_target = manager.state_target(item, model, planning)
           )

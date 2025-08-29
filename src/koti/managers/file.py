@@ -77,11 +77,15 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     else:
       return self.dir_state_current(item)
 
-  def describe_change(self, item: File | Directory, state_current: ConfigItemState | None, state_target: ConfigItemState) -> list[str]:
-    if isinstance(item, File):
-      return self.describe_file_change(item, state_current, state_target)
+  def diff(self, state_current: FileState | DirectoryState | None, state_target: FileState | DirectoryState | None) -> list[str]:
+    if isinstance(state_current, FileState) or isinstance(state_target, FileState):
+      state_current = cast(FileState | None, state_current)
+      state_target = cast(FileState, state_target)
+      return self.file_diff(state_current, state_target)
     else:
-      return self.describe_dir_change(item, state_current, state_target)
+      state_current = cast(DirectoryState | None, state_current)
+      state_target = cast(DirectoryState | None, state_target)
+      return self.dir_diff(state_current, state_target)
 
   def install(self, items: list[File | Directory], model: ConfigModel):
     for item in items:
@@ -225,11 +229,11 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     getpwnam = pwd.getpwnam(owner)
     os.chown(dirname, uid = getpwnam.pw_uid, gid = getpwnam.pw_gid)
 
-  def describe_file_change(self, item: File, state_current: ConfigItemState | None, state_target: ConfigItemState) -> list[str]:
-    state_current = cast(FileState | None, state_current)
-    state_target = cast(FileState, state_target)
+  def file_diff(self, state_current: FileState | None, state_target: FileState | None) -> list[str]:
     if state_current is None:
       return ["file will be created"]
+    if state_target is None:
+      return ["file will be deleted"]
     return [change for change in [
       f"change uid from {state_current.uid} to {state_target.uid}" if state_current.uid != state_current.uid else None,
       f"change gid from {state_current.gid} to {state_target.gid}" if state_current.gid != state_current.gid else None,
@@ -237,16 +241,17 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       f"update file content" if state_current.content_hash != state_current.content_hash else None,
     ] if change is not None]
 
-  def describe_dir_change(self, item: Directory, state_current: ConfigItemState | None, state_target: ConfigItemState) -> list[str]:
-    state_current = cast(DirectoryState | None, state_current)
-    state_target = cast(DirectoryState, state_target)
+  def dir_diff(self, state_current: DirectoryState | None, state_target: DirectoryState | None) -> list[str]:
     if state_current is None:
       return ["directory will be created"]
+    if state_target is None:
+      return ["directory will be deleted"]
+    filenames = set(state_current.files.keys()).union(state_target.files.keys())
     return [change for change in [
       f"change uid from {state_current.uid} to {state_target.uid}" if state_current.uid != state_current.uid else None,
       f"change gid from {state_current.gid} to {state_target.gid}" if state_current.gid != state_current.gid else None,
       *(
-        f"{file.filename}: {change}" for file in item.files
-        for change in self.describe_change(file, state_current.files.get(file.filename, None), state_target.files[file.filename])
+        f"{filename}: {change}" for filename in filenames
+        for change in self.diff(state_current.files.get(filename, None), state_target.files.get(filename, None))
       )
     ] if change is not None]

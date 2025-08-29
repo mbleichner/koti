@@ -51,12 +51,11 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
   def uninstall(self, items: list[FlatpakRepo | FlatpakPackage], model: ConfigModel):
     repo_items = [item for item in items if isinstance(item, FlatpakRepo)]
     package_items = [item for item in items if isinstance(item, FlatpakPackage)]
-
-    for item in repo_items:
-      shell(f"flatpak remote-delete --force '{item.name}'", check = False)
     if package_items:
       shell(f"flatpak uninstall {" ".join(item.id for item in package_items)}")
       shell("flatpak uninstall --unused")
+    for item in repo_items:
+      shell(f"flatpak remote-delete --force '{item.name}'", check=False)
 
   def installed(self, model: ConfigModel) -> list[FlatpakRepo | FlatpakPackage]:
     if shell_success("flatpak --version"):
@@ -84,19 +83,25 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     else:
       return FlatpakPackageState()
 
-  def describe_change(self, item: FlatpakRepo | FlatpakPackage, state_current: FlatpakRepoState | FlatpakPackageState | None, state_target: FlatpakRepoState | FlatpakPackageState) -> list[str]:
-    if isinstance(item, FlatpakRepo):
+  def diff(self, state_current: FlatpakRepoState | FlatpakPackageState | None, state_target: FlatpakRepoState | FlatpakPackageState | None) -> list[str]:
+    if isinstance(state_current, FlatpakRepoState) or isinstance(state_target, FlatpakRepoState):
       state_current = cast(FlatpakRepoState | None, state_current)
-      state_target = cast(FlatpakRepoState, state_target)
+      state_target = cast(FlatpakRepoState | None, state_target)
       if state_current is None:
         return ["repo will be installed"]
+      if state_target is None:
+        return ["repo will be removed (TODO)"]
       return [change for change in [
         f"change repo_url from {state_current.repo_url} to {state_target.repo_url}" if state_current.repo_url != state_target.repo_url else None
       ] if change is not None]
     else:
       state_current = cast(FlatpakPackageState | None, state_current)
-      state_target = cast(FlatpakPackageState, state_target)
-      return ["package will be installed"] if state_current is None else []
+      state_target = cast(FlatpakPackageState | None, state_target)
+      if state_current is None:
+        return ["package will be installed"]
+      if state_target is None:
+        return ["package will be removed"]
+      return []
 
   def get_installed_repo_url(self, item: FlatpakRepo) -> str | None:
     for line in shell_output("flatpak remotes --columns name,url").splitlines():
