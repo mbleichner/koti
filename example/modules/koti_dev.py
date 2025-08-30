@@ -13,7 +13,6 @@ def koti_dev() -> Generator[ConfigGroup]:
       Package("distrobox"),
       Package("docker"),
       Package("containerd"),
-      SystemdUnit("docker.service"),
       SystemdUnit("docker.socket"),
     ]
   )

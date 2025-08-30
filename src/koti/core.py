@@ -179,7 +179,7 @@ class Koti:
     if 0 < len(items_to_update) < 5:
       details = f"items to install or update: {", ".join([item.description() for item in items_to_update])}"
     else:
-      details = f"{len(items_to_update) or "no"} outdated items"
+      details = f"{len(items_to_update) or "no"} items to update/install"
     print(f"Phase {phase_idx + 1}  |  {manager_name.ljust(manager_name_maxlen)}  |  {str(len(step.items_to_install)).rjust(3)} items total  |  {details}")
 
   @classmethod
