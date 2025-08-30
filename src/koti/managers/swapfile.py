@@ -85,3 +85,7 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
     return [change for change in (
       f"{YELLOW}change size from {current.size_bytes} to {target.size_bytes}" if current.size_bytes != target.size_bytes else None,
     ) if change is not None]
+
+  def finalize(self, model: ConfigModel):
+    swapfiles = [item.filename for phase in model.phases for item in phase.items if isinstance(item, Swapfile)]
+    self.managed_files_store.replace_all(swapfiles)

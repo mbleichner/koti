@@ -103,4 +103,14 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
       trigger for trigger in all_triggers
       if current.trigger_hashes.get(trigger, None) != target.trigger_hashes.get(trigger, None)
     ]
-    return [f"{YELLOW}hook will be triggered due to changed dependencies: {", ".join(changed_triggers)}"] if changed_triggers else []
+    if changed_triggers:
+      return [f"{YELLOW}hook will be triggered due to changed dependencies"]
+    else:
+      return []
+
+  def finalize(self, model: ConfigModel):
+    currently_installed = [item.name for phase in model.phases for item in phase.items if isinstance(item, PostHook)]
+    previously_installed = self.trigger_hash_store.keys()
+    for name in previously_installed:
+      if name not in currently_installed:
+        self.trigger_hash_store.remove(name)

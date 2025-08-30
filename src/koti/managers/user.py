@@ -140,3 +140,7 @@ class UserManager(ConfigManager[User, UserState]):
       self.warnings.append(f"{YELLOW}home directory of user '{user.username}' won't get removed by koti to prevent accidental data loss - please delete it manually")
       shell(f"userdel {user.username}")
       self.managed_users_store.remove(user.username)
+
+  def finalize(self, model: ConfigModel):
+    usernames = [item.username for phase in model.phases for item in phase.items if isinstance(item, User)]
+    self.managed_users_store.replace_all(usernames)

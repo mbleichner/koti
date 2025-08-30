@@ -116,3 +116,6 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
 
   def is_package_installed(self, package: str) -> bool:
     return package in shell_output("flatpak list --app --columns application").splitlines()
+
+  def finalize(self, model: ConfigModel):
+    pass

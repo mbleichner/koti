@@ -138,6 +138,7 @@ class Koti:
     for manager in self.managers:
       manager.warnings.clear()
 
+    # execute install phases
     for phase_idx, phase in enumerate(model.phases):
       for install_step in phase.steps:
         manager = install_step.manager
@@ -150,13 +151,17 @@ class Koti:
         self.print_install_step_log(model, phase_idx, install_step, items_to_update)
         manager.install(items_to_update, model) or []
 
+    # execute cleanup phase
     cleanup_phase = self.create_cleanup_phase(model)
     for cleanup_step in cleanup_phase.steps:
       manager = cleanup_step.manager
       self.print_cleanup_step_log(model, cleanup_step)
       manager.uninstall(cleanup_step.items_to_uninstall)
 
+    # updating persistent data
     self.save_tags(self.store, model)
+    for manager in self.managers:
+      manager.finalize(model)
 
     warnings = [message for manager in self.managers for message in manager.warnings]
     if warnings:

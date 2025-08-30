@@ -72,3 +72,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
 
   def store_key_for_user(self, user: str | None):
     return user if user is not None else "$system"
+
+  def finalize(self, model: ConfigModel):
+    users = [item.user for phase in model.phases for item in phase.items if isinstance(item, SystemdUnit) if item.user is not None]
+    self.user_list_store.replace_all(users)

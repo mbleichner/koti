@@ -33,7 +33,7 @@ class JsonStore:
     Path(os.path.dirname(self.store_file)).mkdir(parents = True, exist_ok = True)
     with open(self.store_file, 'w+', encoding = 'utf-8') as fh:
       # noinspection PyTypeChecker
-      json.dump(self.store, fh)
+      json.dump(self.store, fh, indent = 2)
 
 
 class JsonMapping[K, V]:
@@ -85,6 +85,9 @@ class JsonCollection[T]:
     collection = self.store.get(self.name, [])
     new_collection = set(collection).union({value})
     self.store.put(self.name, list(new_collection))
+
+  def replace_all(self, values: Sequence[T]):
+    self.store.put(self.name, list(values))
 
   def add_all(self, values: Sequence[T]):
     collection = self.store.get(self.name, [])

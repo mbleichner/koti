@@ -128,6 +128,10 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     self.delegate.prune_unneeded()
     self.explicit_packages_on_system = set(self.delegate.list_explicit_packages())
 
+  def finalize(self, model: ConfigModel):
+    packages = [item.name for phase in model.phases for item in phase.items if isinstance(item, Package)]
+    self.managed_packages_store.replace_all(packages)
+
 
 class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
   managed_classes = [PacmanKey]
@@ -160,3 +164,6 @@ class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
     if target is None:
       return [f"{CYAN}pacman key has been removed from the config, but will remain on the system"]
     return []
+
+  def finalize(self, model: ConfigModel):
+    pass

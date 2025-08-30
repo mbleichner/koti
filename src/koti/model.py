@@ -115,7 +115,7 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
   @abstractmethod
   def check_configuration(self, item: T, model: ConfigModel):
     """Used to check if an item has a consistent configuration suitable for later installation."""
-    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.check_configuration()")
+    pass
 
   @abstractmethod
   def installed(self, model: ConfigModel) -> Sequence[T]:
@@ -123,12 +123,12 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     be beneficial to check if newly added ConfigItems already exist on the system and display them accordingly.
     In case the installed items cannot be queried from the system (e.g. due to missing tools), a warning should
     be logged and an empty list should be returned."""
-    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.installed()")
+    pass
 
   @abstractmethod
   def state_current(self, item: T) -> S | None:
     """Returns an object representing the state of a currently installed item on the system."""
-    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.checksum_current()")
+    pass
 
   @abstractmethod
   def state_target(self, item: T, model: ConfigModel, planning: bool) -> S:
@@ -136,27 +136,31 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     Can depend on the config model, as there might be e.g. Option()s that need to be considered.
     Also the method can behave different during planning (e.g. PostHooks assume that their triggers
     have already been updated to their respective target states)."""
-    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.checksum_target()")
+    pass
 
   @abstractmethod
   def diff(self, current: S | None, target: S | None) -> Sequence[str]:
     """Describes the changes between current and target state in a human-friendly fashion.
     Each returned list entry will be printed in a separate line and may contain colors for better readability."""
-    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.diff()")
+    pass
 
   @abstractmethod
   def install(self, items: list[T], model: ConfigModel):
     """Installs one or multiple items on the system. Can depend on the config model, as there might
     be e.g. Option()s that need to be considered. If the install fails for some reason, a python error
     should be raised, so the whole process gets halted (to avoid getting into inconsistent states)."""
-    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.install()")
+    pass
 
   @abstractmethod
   def uninstall(self, items: list[T]):
     """Removes one or multiple items from the system. If the uninstall fails for some reason, the manager
     can decide to kill the process by raising a python error or just log a warning in case the failed
     uninstall is unlikely to cause any problems."""
-    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.uninstall()")
+    pass
+
+  @abstractmethod
+  def finalize(self, model: ConfigModel):
+    pass
 
 
 class ConfigModel:

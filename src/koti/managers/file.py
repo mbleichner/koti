@@ -246,7 +246,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     if current.content_hash != target.content_hash:
       with NamedTemporaryFile(prefix = "koti.", delete = False) as tmp:
         tmp.write(target.content)
-      result.append(f"{YELLOW}file content changed; preview new content in {tmp.name}")
+      result.append(f"{YELLOW}file content changed{ENDC} - preview new content in {tmp.name}")
     return result
 
   def dir_diff(self, current: DirectoryState | None, target: DirectoryState | None) -> list[str]:
@@ -263,3 +263,9 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         for change in self.diff(current.files.get(filename, None), target.files.get(filename, None))
       )
     ] if change is not None]
+
+  def finalize(self, model: ConfigModel):
+    filenames = [item.filename for phase in model.phases for item in phase.items if isinstance(item, File)]
+    dirnames = [item.dirname for phase in model.phases for item in phase.items if isinstance(item, Directory)]
+    self.managed_files_store.replace_all(filenames)
+    self.managed_dirs_store.replace_all(dirnames)
