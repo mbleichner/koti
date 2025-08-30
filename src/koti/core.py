@@ -26,11 +26,6 @@ class Koti:
 
   def create_model(self) -> ConfigModel:
     merged_configs = self.merge_configs(self.configs)
-    for group in merged_configs:
-      for item in group.provides:
-        if item.identifier() == "Option('/etc/pacman.conf/NoExtract')":
-          print(item.values())
-
     phases_with_duplicates = self.resolve_dependencies(merged_configs)
     phases_without_duplicates = self.remove_duplicates(phases_with_duplicates)
     tags_archive = self.load_tags(self.store)
