@@ -33,7 +33,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
 
   def installed(self, model: ConfigModel) -> list[SystemdUnit]:
     result: list[SystemdUnit] = []
-    managed_users = self.store.keys()
+    managed_users = [(username if username != "$system" else None) for username in self.store.keys()]
     for username in managed_users:
       units_store: JsonCollection[str] = self.store.collection(username or "$system")
       result += [SystemdUnit(name, username) for name in units_store.elements()]
