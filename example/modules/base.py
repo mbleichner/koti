@@ -196,6 +196,20 @@ def base() -> Generator[ConfigGroup]:
   )
 
   yield ConfigGroup(
+    description = "tools for koti development",
+    provides = [
+      Package("python"),
+      Package("pyenv"),
+      Package("mypy"),
+      Package("python-urllib3"),
+      Package("distrobox"),
+      Package("docker"),
+      Package("containerd"),
+      SystemdUnit("docker.socket"),
+    ]
+  )
+
+  yield ConfigGroup(
     description = "sudo + /etc/sudoers",
     provides = [
       Package("sudo"),

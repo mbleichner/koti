@@ -26,7 +26,6 @@ def lenovo() -> Generator[ConfigGroup | None]:
   yield from gaming()
   # yield from ollama_aichat(cuda = False)
   yield from network_manager()
-  yield from koti_dev()
 
   yield ConfigGroup(
     description = "firmware, drivers and filesystems for lenovo",

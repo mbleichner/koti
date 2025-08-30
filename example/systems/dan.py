@@ -32,7 +32,6 @@ def dan() -> Generator[ConfigGroup | None]:
   yield from ryzen_undervolting()
   # yield from ollama_aichat(cuda = True)
   yield from network_manager()
-  yield from koti_dev()
 
   yield ConfigGroup(
     description = "firmware, drivers and filesystems for dan",
