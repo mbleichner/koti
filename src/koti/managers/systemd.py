@@ -21,7 +21,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
     self.store = JsonStore("/var/cache/koti/SystemdUnitManager.json")
     self.user_list_store = self.store.collection("users")
 
-  def check_configuration(self, item: SystemdUnit, model: ConfigModel):
+  def assert_installable(self, item: SystemdUnit, model: ConfigModel):
     pass
 
   def install(self, items: list[SystemdUnit], model: ConfigModel):

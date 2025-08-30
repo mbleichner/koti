@@ -22,10 +22,10 @@ class Koti:
     self.store = JsonStore("/var/cache/koti/Koti.json")
     self.configs = [c for c in configs if c is not None]
     self.managers = [m for m in managers if m is not None]
+    self.assert_manager_consistency(self.managers, self.configs)
 
   def create_model(self) -> ConfigModel:
     merged_configs = self.merge_configs(self.configs)
-    self.check_manager_consistency(self.managers, merged_configs)
     phases_with_duplicates = self.resolve_dependencies(merged_configs)
     phases_without_duplicates = self.remove_duplicates(phases_with_duplicates)
     tags_archive = self.load_tags(self.store)
@@ -34,7 +34,8 @@ class Koti:
       phases = [self.create_install_phase(self.managers, groups_in_phase) for groups_in_phase in phases_without_duplicates],
       tags_archive = tags_archive
     )
-    self.check_config_item_consistency(model)
+
+    self.assert_config_items_installable(model)
     return model
 
   def create_cleanup_phase(self, model: ConfigModel) -> CleanupPhase:
@@ -216,17 +217,19 @@ class Koti:
     ]
 
   @classmethod
-  def check_config_item_consistency(cls, model: ConfigModel):
+  def assert_config_items_installable(cls, model: ConfigModel):
+    """Checks that every item is actually installable (fully configured according to their manager)"""
     for phase in model.phases:
       for install_step in phase.steps:
         for item in install_step.items_to_install:
           try:
-            install_step.manager.check_configuration(item, model)
+            install_step.manager.assert_installable(item, model)
           except Exception as e:
             raise AssertionError(f"{install_step.manager.__class__.__name__}: {e}")
 
   @classmethod
-  def check_manager_consistency(cls, managers: Sequence[ConfigManager], configs: Sequence[ConfigGroup]):
+  def assert_manager_consistency(cls, managers: Sequence[ConfigManager], configs: Sequence[ConfigGroup]):
+    """Checks that every item has a manager and only one manager"""
     for group in configs:
       for item in (x for x in group.provides if x is not None and isinstance(x, ManagedConfigItem)):
         matching_managers = [manager for manager in managers if item.__class__ in manager.managed_classes]

@@ -61,7 +61,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     self.managed_files_store = store.collection("managed_files")
     self.managed_dirs_store = store.collection("managed_dirs")
 
-  def check_configuration(self, item: File | Directory, model: ConfigModel):
+  def assert_installable(self, item: File | Directory, model: ConfigModel):
     if isinstance(item, File):
       assert item.content is not None, "missing either content or content_from_file"
     if isinstance(item, Directory):

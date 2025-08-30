@@ -71,7 +71,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     self.ignore_manually_installed_packages = keep_unmanaged_packages
     self.explicit_packages_on_system = set(self.delegate.list_explicit_packages())
 
-  def check_configuration(self, item: Package, model: ConfigModel):
+  def assert_installable(self, item: Package, model: ConfigModel):
     if item.url is not None:
       self.warnings.append(f"the package '{item.name}' is installed via URL, but might later get {CYAN}updated to a different version by pacman{ENDC} if also contained in a package repository")
 
@@ -136,7 +136,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
 class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
   managed_classes = [PacmanKey]
 
-  def check_configuration(self, item: PacmanKey, model: ConfigModel):
+  def assert_installable(self, item: PacmanKey, model: ConfigModel):
     pass
 
   def install(self, items: list[PacmanKey], model: ConfigModel):

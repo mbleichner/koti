@@ -30,7 +30,7 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
   def __init__(self):
     super().__init__()
 
-  def check_configuration(self, item: FlatpakRepo | FlatpakPackage, model: ConfigModel):
+  def assert_installable(self, item: FlatpakRepo | FlatpakPackage, model: ConfigModel):
     if isinstance(item, FlatpakRepo):
       assert item.spec_url is not None, "missing spec_url"
       assert item.repo_url is not None, "missing repo_url"

@@ -32,7 +32,7 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
     store = JsonStore("/var/cache/koti/PostHookManager.json")
     self.trigger_hash_store = store.mapping("checksums")
 
-  def check_configuration(self, hook: PostHook, model: ConfigModel):
+  def assert_installable(self, hook: PostHook, model: ConfigModel):
     assert hook.execute is not None, "missing execute parameter"
     for item in hook.trigger:
       exec_order_item = PostHookManager.index_in_execution_order(model, item)  # can be None in case the item isn't set up by koti (i.e. files created by pacman hooks or such)

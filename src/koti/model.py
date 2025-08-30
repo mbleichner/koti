@@ -113,8 +113,9 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     self.warnings = []
 
   @abstractmethod
-  def check_configuration(self, item: T, model: ConfigModel):
-    """Used to check if an item has a consistent configuration suitable for later installation."""
+  def assert_installable(self, item: T, model: ConfigModel):
+    """Used to check if an item has a consistent configuration suitable for later installation.
+    Can depend on the model, as some items may need to inspect their execution order, such as PostHooks."""
     pass
 
   @abstractmethod
@@ -160,6 +161,8 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
 
   @abstractmethod
   def finalize(self, model: ConfigModel):
+    """Called at the end of a successful run. This method is primarily used to synchronise internal persistent
+    state with the model (e.g. the list of koti-managed files currently installed on the system)."""
     pass
 
 

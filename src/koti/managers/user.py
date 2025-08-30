@@ -44,7 +44,7 @@ class UserManager(ConfigManager[User, UserState]):
     store = JsonStore("/var/cache/koti/UserManager.json")
     self.managed_users_store = store.collection("managed_users")
 
-  def check_configuration(self, item: User, model: ConfigModel):
+  def assert_installable(self, item: User, model: ConfigModel):
     pass
 
   def installed(self, model: ConfigModel) -> list[User]:

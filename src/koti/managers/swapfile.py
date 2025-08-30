@@ -28,7 +28,7 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
     store = JsonStore("/var/cache/koti/SwapfileManager.json")
     self.managed_files_store = store.collection("managed_files")
 
-  def check_configuration(self, item: Swapfile, model: ConfigModel):
+  def assert_installable(self, item: Swapfile, model: ConfigModel):
     assert item.size_bytes is not None, "missing size_bytes parameter"
 
   def install(self, items: list[Swapfile], model: ConfigModel):
