@@ -235,10 +235,10 @@ class CleanupPhase:
   items_to_keep: Sequence[ManagedConfigItem]
   steps: Sequence[CleanupStep]
 
-  def __init__(self, order: list[CleanupStep]):
-    self.items_to_uninstall = [item for step in order for item in step.items_to_uninstall]
-    self.items_to_keep = [item for step in order for item in step.items_to_keep]
-    self.steps = order
+  def __init__(self, steps: list[CleanupStep]):
+    self.items_to_uninstall = [item for step in steps for item in step.items_to_uninstall]
+    self.items_to_keep = [item for step in steps for item in step.items_to_keep]
+    self.steps = steps
 
 
 class CleanupStep:

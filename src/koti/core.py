@@ -64,7 +64,6 @@ class Koti:
       for step in phase.steps:
         manager = step.manager
         for item in step.items_to_install:
-          # FIXME: hash sollte maßgeblich sein
           current = manager.state_current(item)
           target = manager.state_target(item, model, planning)
           if current is None or current.hash() != target.hash():
@@ -138,22 +137,22 @@ class Koti:
     model = self.create_model()
 
     for phase_idx, phase in enumerate(model.phases):
-      for step in phase.steps:
-        manager = step.manager
-        items_to_update = [
-          item for item in step.items_to_install if manager.diff(
-            current = manager.state_current(item),
-            target = manager.state_target(item, model, planning)
-          )
-        ]
-        self.print_install_step_log(model, phase_idx, step, items_to_update)
+      for install_step in phase.steps:
+        manager = install_step.manager
+        items_to_update: list[ManagedConfigItem] = []
+        for item in install_step.items_to_install:
+          current = manager.state_current(item)
+          target = manager.state_target(item, model, planning)
+          if current is None or current.hash() != target.hash():
+            items_to_update.append(item)
+        self.print_install_step_log(model, phase_idx, install_step, items_to_update)
         manager.install(items_to_update, model) or []
 
     cleanup_phase = self.create_cleanup_phase(model)
-    for step in cleanup_phase.steps:
-      manager = step.manager
-      self.print_cleanup_step_log(model, step)
-      manager.uninstall(step.items_to_uninstall, model)
+    for cleanup_step in cleanup_phase.steps:
+      manager = cleanup_step.manager
+      self.print_cleanup_step_log(model, cleanup_step)
+      manager.uninstall(cleanup_step.items_to_uninstall, model)
 
     self.save_tags(self.store, model)
 
