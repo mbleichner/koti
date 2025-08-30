@@ -77,15 +77,15 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     else:
       return self.dir_state_current(item)
 
-  def diff(self, state_current: FileState | DirectoryState | None, state_target: FileState | DirectoryState | None) -> list[str]:
-    if isinstance(state_current, FileState) or isinstance(state_target, FileState):
-      state_current = cast(FileState | None, state_current)
-      state_target = cast(FileState, state_target)
-      return self.file_diff(state_current, state_target)
+  def diff(self, current: FileState | DirectoryState | None, target: FileState | DirectoryState | None) -> list[str]:
+    if isinstance(current, FileState) or isinstance(target, FileState):
+      current = cast(FileState | None, current)
+      target = cast(FileState, target)
+      return self.file_diff(current, target)
     else:
-      state_current = cast(DirectoryState | None, state_current)
-      state_target = cast(DirectoryState | None, state_target)
-      return self.dir_diff(state_current, state_target)
+      current = cast(DirectoryState | None, current)
+      target = cast(DirectoryState | None, target)
+      return self.dir_diff(current, target)
 
   def install(self, items: list[File | Directory], model: ConfigModel):
     for item in items:
@@ -198,16 +198,19 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
   def dir_state_current(self, item: Directory) -> DirectoryState | None:
     if not os.path.isdir(item.dirname):
       return None
+
+    file_states: dict[str, FileState] = {}
+    files_current = [f"{base}/{subfile}" for base, subdirs, subfiles in os.walk(item.dirname) for subfile in subfiles]
+    for filename in files_current:
+      file_state = self.file_state_current(File(filename))
+      if file_state is not None:
+        file_states[filename] = file_state
+
     stat = os.stat(item.dirname)
-    files: dict[str, FileState] = {}
-    for file in item.files:
-      state = self.file_state_current(file)
-      if state is not None:
-        files[file.filename] = state
     return DirectoryState(
       uid = stat.st_uid,
       gid = stat.st_gid,
-      files = files,
+      files = file_states,
     )
 
   def dir_state_target(self, item: Directory, model: ConfigModel) -> DirectoryState:

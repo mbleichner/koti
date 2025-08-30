@@ -129,7 +129,6 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
 
   yield ConfigGroup(
     description = "ananicy-cpp and configuration",
-    requires = [File("/etc/pacman.conf")],
     provides = [
       Package("ananicy-cpp"),
       SystemdUnit("ananicy-cpp.service"),

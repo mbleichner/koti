@@ -76,11 +76,11 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
     assert item.size_bytes is not None
     return SwapfileState(size_bytes = item.size_bytes)
 
-  def diff(self, state_current: SwapfileState | None, state_target: SwapfileState | None) -> list[str]:
-    if state_current is None:
+  def diff(self, current: SwapfileState | None, target: SwapfileState | None) -> list[str]:
+    if current is None:
       return ["swapfile will be created"]
-    if state_target is None:
+    if target is None:
       return ["swapfile will be deleted"]
     return [change for change in (
-      f"change size from {state_current.size_bytes} to {state_target.size_bytes}" if state_current.size_bytes != state_target.size_bytes else None,
+      f"change size from {current.size_bytes} to {target.size_bytes}" if current.size_bytes != target.size_bytes else None,
     ) if change is not None]

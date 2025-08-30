@@ -82,10 +82,10 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
   def state_target(self, item: Package, model: ConfigModel, planning: bool) -> PackageState:
     return PackageState()
 
-  def diff(self, state_current: PackageState | None, state_target: PackageState | None) -> list[str]:
-    if state_current is None:
+  def diff(self, current: PackageState | None, target: PackageState | None) -> list[str]:
+    if current is None:
       return ["package will be installed / set to explicit"]
-    if state_target is None:
+    if target is None:
       return ["package will be removed"]
     return []
 
@@ -154,9 +154,9 @@ class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
   def state_target(self, item: PacmanKey, model: ConfigModel, planning: bool) -> PacmanKeyState:
     return PacmanKeyState()
 
-  def diff(self, state_current: PacmanKeyState | None, state_target: PacmanKeyState | None) -> list[str]:
-    if state_current is None:
+  def diff(self, current: PacmanKeyState | None, target: PacmanKeyState | None) -> list[str]:
+    if current is None:
       return ["pacman key will be installed"]
-    if state_target is None:
+    if target is None:
       return ["pacman key will be removed (TODO)"]
     return []

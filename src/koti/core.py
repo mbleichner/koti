@@ -54,6 +54,7 @@ class Koti:
       manager.log.clear()
 
     model = self.create_model()
+    changes_descriptions: list[str] = []
 
     # plan installation phases
     items_total = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
@@ -64,19 +65,25 @@ class Koti:
         manager = step.manager
         for item in step.items_to_install:
           # FIXME: hash sollte maßgeblich sein
-          changes = manager.diff(
-            state_current = manager.state_current(item),
-            state_target = manager.state_target(item, model, planning)
-          )
-          if changes:
+          current = manager.state_current(item)
+          target = manager.state_target(item, model, planning)
+          if current is None or current.hash() != target.hash():
             items_outdated.append(item)
-            for change in changes:
-              printc(f"~~ {item.description()}: {change}", CYAN)
+            for change in (manager.diff(current, target) or ["item will be installed/updated"]):
+              changes_descriptions.append(f"{item.description()}: {change}")
 
     # plan cleanup phase
     cleanup_phase = self.create_cleanup_phase(model)
-    items_to_uninstall = cleanup_phase.items_to_uninstall
+    items_to_uninstall: list[ManagedConfigItem] = []
+    for cleanup_step in cleanup_phase.steps:
+      manager = cleanup_step.manager
+      for item in cleanup_step.items_to_uninstall:
+        items_to_uninstall.append(item)
+        current = manager.state_current(item)
+        for change in (manager.diff(current, None) or ["item will be uninstalled"]):
+          changes_descriptions.append(f"{item.description()}: {change}")
 
+    # list all groups
     if groups or items:
       for phase_idx, phase in enumerate(model.phases):
         printc(f"Phase {phase_idx + 1}:", BOLD)
@@ -95,9 +102,10 @@ class Koti:
                 printc(f"- {item.description()}")
         print()
 
+    # print warnings generated during evaluation
     logs = [message for manager in self.managers for message in manager.log]
     if logs:
-      printc(f"Logs:", BOLD)
+      printc(f"Evaluation warnings:", BOLD)
       for message in logs:
         if message.level == "error":
           printc(f"- {message.text}", RED)
@@ -109,21 +117,16 @@ class Koti:
           printc(f"- {message.text}")
       print()
 
+    # list all changed items
     count = len(items_outdated) + len(items_to_uninstall)
     if count > 0:
-      maxlen = max((len(item.identifier()) for item in [*items_outdated, *items_to_uninstall]))
-      print(f"{len(items_total)} items total, {count} items to update:")
-      for item in items_outdated:
-        if item.identifier() in installed_identifiers:
-          printc(f"~ {item.description().ljust(maxlen)}  update   {", ".join(item.tags)}", YELLOW)
-        else:
-          printc(f"+ {item.description().ljust(maxlen)}  install  {", ".join(item.tags)}", GREEN)
-      for item in items_to_uninstall:
-        printc(f"- {item.description().ljust(maxlen)}  remove   {", ".join(item.tags)}", RED)
+      printc(f"{len(items_total)} items total, {count} items to update:", BOLD)
+      for change in changes_descriptions:
+        printc(f"- {change}", CYAN)
       print()
       print("// additional updates may be triggered by PostHooks")
     else:
-      print(f"{len(items_total)} items total, everything up to date")
+      printc(f"{len(items_total)} items total, everything up to date", BOLD)
 
     return count > 0
 
@@ -139,8 +142,8 @@ class Koti:
         manager = step.manager
         items_to_update = [
           item for item in step.items_to_install if manager.diff(
-            state_current = manager.state_current(item),
-            state_target = manager.state_target(item, model, planning)
+            current = manager.state_current(item),
+            target = manager.state_target(item, model, planning)
           )
         ]
         self.print_install_step_log(model, phase_idx, step, items_to_update)
@@ -295,10 +298,14 @@ class Koti:
       items = merged_items_in_phase
     )
 
+  # FIXME: Refactoring
+  # FIXME: Zuerst mergen, dann Dependencies auflösen
   @classmethod
   def find_dependency_violation(cls, phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup] | None:
     for phase_idx, phase in enumerate(phases):
       for group in phase:
+
+        # check requires
         for required_item in group.requires:
           required_phase_and_group = cls.find_required_group(required_item, phases)
           if required_phase_and_group is None:
@@ -307,6 +314,21 @@ class Koti:
           if required_phase_idx >= phase_idx:
             if group == required_group: raise AssertionError(f"group with dependency to itself")
             return required_phase_idx, required_group
+
+        # check after
+        for item in group.provides:
+          for other_phase_idx, other_phase in enumerate(phases):
+            for other_group in other_phase:
+              if other_group.after(item) and phase_idx >= other_phase_idx:
+                return phase_idx, group
+
+        # check before
+        for item in group.provides:
+          for other_phase_idx, other_phase in enumerate(phases):
+            for other_group in other_phase:
+              if other_group.before(item) and other_phase_idx >= phase_idx:
+                return other_phase_idx, other_group
+
     return None
 
   @classmethod

@@ -44,7 +44,7 @@ def base() -> Generator[ConfigGroup]:
       Package("python"),
       Package("pyenv"),
       Package("mypy"),
-      Package("python-urllib3"), # koti dev
+      Package("python-urllib3"),  # koti dev
 
       # Networking
       Package("bind"),
@@ -78,36 +78,20 @@ def base() -> Generator[ConfigGroup]:
   )
 
   yield ConfigGroup(
-    description = "cachyos keyring and mirrorlist",
+    description = "setup pacman repos + config",
     tags = ["CRITICAL"],
+    before = lambda item: isinstance(item, Package) and item.url is None,
     provides = [
       PacmanKey("F3B607488DB35A47", comment = "cachyos"),
       Package("cachyos-keyring", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst"),
       Package("cachyos-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst"),
       Package("cachyos-v3-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst"),
-    ]
-  )
-
-  yield ConfigGroup(
-    description = "pacman.conf and related utilities",
-    tags = ["CRITICAL"],
-    requires = [
-      Package("cachyos-mirrorlist"),
-      Package("cachyos-v3-mirrorlist"),
-    ],
-    provides = [
-      Package("pacman-contrib"),
-      Package("pacutils"),
-      Package("paru"),
-      Package("base-devel"),
-      Package("reflector"),
-      Package("lostfiles"),
 
       # Declare options for pacman.conf (so I don't have to null-check later)
       Option[str]("/etc/pacman.conf/NoExtract"),
       Option[str]("/etc/pacman.conf/NoUpgrade"),
 
-      File("/etc/pacman.conf", permissions = "r--", content = lambda model: cleandoc(f'''
+      File("/etc/pacman.conf", permissions = "rw-", content = lambda model: cleandoc(f'''
         [options]
         HoldPkg = pacman glibc
         Architecture = auto x86_64_v3
@@ -120,39 +104,53 @@ def base() -> Generator[ConfigGroup]:
         DownloadUser = alpm
         SigLevel = Required DatabaseOptional
         LocalFileSigLevel = Optional
-  
+    
+    
         [core]
         CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
         Include = /etc/pacman.d/mirrorlist
-        
+    
         [extra]
         CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
         Include = /etc/pacman.d/mirrorlist
-        
+    
         [multilib]
         CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
         Include = /etc/pacman.d/mirrorlist
-  
+    
         [core-testing]
         CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
         Include = /etc/pacman.d/mirrorlist
-        
+    
         [extra-testing]
         CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
         Include = /etc/pacman.d/mirrorlist
-        
+    
         [multilib-testing]
         CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
         Include = /etc/pacman.d/mirrorlist
-        
+    
         [cachyos-v3]
         CacheServer = http://pacoloco.fritz.box/repo/cachyos-v3/$arch_v3/$repo
         Include = /etc/pacman.d/cachyos-v3-mirrorlist
-        
+    
         [cachyos]
         CacheServer = http://pacoloco.fritz.box/repo/cachyos/$arch/$repo
         Include = /etc/pacman.d/cachyos-mirrorlist
       ''')),
+    ]
+  )
+
+  yield ConfigGroup(
+    description = "pacman related utilities",
+    tags = ["CRITICAL"],
+    provides = [
+      Package("pacman-contrib"),
+      Package("pacutils"),
+      Package("paru"),
+      Package("base-devel"),
+      Package("reflector"),
+      Package("lostfiles"),
 
       File("/etc/paru.conf", permissions = "r--", content = cleandoc('''
         [options]

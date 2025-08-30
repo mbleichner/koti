@@ -12,7 +12,6 @@ def kernel_cachyos(sortkey: int) -> Generator[ConfigGroup]:
   yield ConfigGroup(
     description = "CachyOS kernel + systemd-boot entry",
     tags = ["CRITICAL"],
-    requires = [File("/etc/pacman.conf")],
     provides = [
       *Packages("linux-cachyos", "linux-cachyos-headers"),
       *SystemdBootLoader(

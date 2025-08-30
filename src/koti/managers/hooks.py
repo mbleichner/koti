@@ -93,14 +93,14 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
 
     return manager.state_current(reference)
 
-  def diff(self, state_current: PostHookState | None, state_target: PostHookState | None) -> list[str]:
-    if state_current is None:
+  def diff(self, current: PostHookState | None, target: PostHookState | None) -> list[str]:
+    if current is None:
       return ["hook will be called for the first time"]
-    if state_target is None:
+    if target is None:
       return ["hook will no longer be monitored"]
-    all_triggers = set(state_current.trigger_hashes.keys()).union(state_target.trigger_hashes.keys())
+    all_triggers = set(current.trigger_hashes.keys()).union(target.trigger_hashes.keys())
     changed_triggers = [
       trigger for trigger in all_triggers
-      if state_current.trigger_hashes.get(trigger, None) != state_target.trigger_hashes.get(trigger, None)
+      if current.trigger_hashes.get(trigger, None) != target.trigger_hashes.get(trigger, None)
     ]
     return [f"changed triggers: {", ".join(changed_triggers)}"] if changed_triggers else []

@@ -83,23 +83,23 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     else:
       return FlatpakPackageState()
 
-  def diff(self, state_current: FlatpakRepoState | FlatpakPackageState | None, state_target: FlatpakRepoState | FlatpakPackageState | None) -> list[str]:
-    if isinstance(state_current, FlatpakRepoState) or isinstance(state_target, FlatpakRepoState):
-      state_current = cast(FlatpakRepoState | None, state_current)
-      state_target = cast(FlatpakRepoState | None, state_target)
-      if state_current is None:
+  def diff(self, current: FlatpakRepoState | FlatpakPackageState | None, target: FlatpakRepoState | FlatpakPackageState | None) -> list[str]:
+    if isinstance(current, FlatpakRepoState) or isinstance(target, FlatpakRepoState):
+      current = cast(FlatpakRepoState | None, current)
+      target = cast(FlatpakRepoState | None, target)
+      if current is None:
         return ["repo will be installed"]
-      if state_target is None:
+      if target is None:
         return ["repo will be removed (TODO)"]
       return [change for change in [
-        f"change repo_url from {state_current.repo_url} to {state_target.repo_url}" if state_current.repo_url != state_target.repo_url else None
+        f"change repo_url from {current.repo_url} to {target.repo_url}" if current.repo_url != target.repo_url else None
       ] if change is not None]
     else:
-      state_current = cast(FlatpakPackageState | None, state_current)
-      state_target = cast(FlatpakPackageState | None, state_target)
-      if state_current is None:
+      current = cast(FlatpakPackageState | None, current)
+      target = cast(FlatpakPackageState | None, target)
+      if current is None:
         return ["package will be installed"]
-      if state_target is None:
+      if target is None:
         return ["package will be removed"]
       return []
 

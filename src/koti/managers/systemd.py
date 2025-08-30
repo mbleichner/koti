@@ -59,10 +59,10 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
   def state_target(self, item: SystemdUnit, model: ConfigModel, planning: bool) -> SystemdUnitState:
     return SystemdUnitState()
 
-  def diff(self, state_current: SystemdUnitState | None, state_target: SystemdUnitState | None) -> list[str]:
-    if state_current is None:
+  def diff(self, current: SystemdUnitState | None, target: SystemdUnitState | None) -> list[str]:
+    if current is None:
       return ["unit will be enabled"]
-    if state_target is None:
+    if target is None:
       return ["unit will be disabled"]
     return []
 

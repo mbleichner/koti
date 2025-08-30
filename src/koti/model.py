@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
 from functools import reduce
-from typing import Iterable, Sequence, Type, cast, overload
+from typing import Callable, Iterable, Sequence, Type, cast, overload
 
 from koti.logging import *
 
@@ -15,17 +15,36 @@ class ConfigGroup:
   description: str
   requires: Sequence[ConfigItem]
   provides: Sequence[ConfigItem]
+  before: Callable[[ConfigItem], bool]
+  after: Callable[[ConfigItem], bool]
 
   def __init__(
     self,
     description: str,
     provides: Sequence[ConfigItem | None],
     requires: Sequence[ConfigItem | None] | None = None,
+    before: Callable[[ConfigItem], bool] | Sequence[ConfigItem | None] | None = None,
+    after: Callable[[ConfigItem], bool] | Sequence[ConfigItem | None] | None = None,
     tags: Iterable[str] | None = None,
   ):
     self.description = description
     self.requires = [item for item in (requires or []) if item is not None]
     self.provides = [item for item in (provides or []) if item is not None]
+
+    if callable(before):
+      self.before = before
+    elif isinstance(before, Sequence):
+      self.before = lambda item: item in before
+    else:
+      self.before = lambda item: False
+
+    if callable(after):
+      self.after = after
+    elif isinstance(after, Sequence):
+      self.after = lambda item: item in after
+    else:
+      self.after = lambda item: False
+
     for item in self.provides:
       for tag in tags or set():
         item.tags.add(tag)
@@ -50,6 +69,12 @@ class ConfigItem(metaclass = ABCMeta):
     """This function is called whenever there are multiple items with the same identifier. It can
     attempt to merge those definitions together (or throw an error if they're incompatible)."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.merge()")
+
+  def __eq__(self, other: Any) -> bool:
+    return self.identifier() == other.identifier() if other.__class__ == self.__class__ else False
+
+  def __hash__(self):
+    return hash(self.identifier())
 
 
 class ManagedConfigItem(ConfigItem, metaclass = ABCMeta):
@@ -103,7 +128,7 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.checksum_target()")
 
   @abstractmethod
-  def diff(self, state_current: S | None, state_target: S | None) -> Sequence[str]:
+  def diff(self, current: S | None, target: S | None) -> Sequence[str]:
     """Removes one or multiple items from the system."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.diff()")
 

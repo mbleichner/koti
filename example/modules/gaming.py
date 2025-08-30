@@ -9,7 +9,6 @@ from koti.utils import shell
 def gaming() -> Generator[ConfigGroup]:
   yield ConfigGroup(
     description = "game launchers and utilities",
-    requires = [File("/etc/pacman.conf")],
     provides = [
       Package("discord"),
       Package("gamescope"),
@@ -32,7 +31,6 @@ def gaming() -> Generator[ConfigGroup]:
 
   yield ConfigGroup(
     description = "proton/wine + configs",
-    requires = [File("/etc/pacman.conf")],
     provides = [
       Package("proton-ge-custom-bin"),
       Package("protontricks"),
@@ -67,7 +65,6 @@ def gaming() -> Generator[ConfigGroup]:
 
   yield ConfigGroup(
     description = "lossless scaling + frame generation",
-    requires = [File("/etc/pacman.conf")],
     provides = [
       # Package("lsfg-vk"),
 
