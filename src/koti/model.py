@@ -47,16 +47,6 @@ class ConfigGroup:
       for tag in tags or set():
         item.tags.add(tag)
 
-  # @classmethod
-  # def derive_from(cls, other: ConfigGroup, provides: list[ConfigItem]):
-  #   return ConfigGroup(
-  #     provides = provides,
-  #     description = other.description,
-  #     requires = other.requires,
-  #     before = other.before,
-  #     after = other.after,
-  #   )
-
 
 class ConfigItem(metaclass = ABCMeta):
   tags: set[str] = set()

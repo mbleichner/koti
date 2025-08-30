@@ -26,6 +26,11 @@ class Koti:
 
   def create_model(self) -> ConfigModel:
     merged_configs = self.merge_configs(self.configs)
+    for group in merged_configs:
+      for item in group.provides:
+        if item.identifier() == "Option('/etc/pacman.conf/NoExtract')":
+          print(item.values())
+
     phases_with_duplicates = self.resolve_dependencies(merged_configs)
     phases_without_duplicates = self.remove_duplicates(phases_with_duplicates)
     tags_archive = self.load_tags(self.store)
@@ -240,17 +245,22 @@ class Koti:
 
   @classmethod
   def merge_configs(cls, configs: list[ConfigGroup]) -> list[ConfigGroup]:
-    items_by_identifier: dict[str, ConfigItem] = {}
+    # merge all items with the same identifier
+    merged_items: dict[str, ConfigItem] = {}
+    for group in configs:
+      for idx, item in enumerate(group.provides):
+        item_prev = merged_items.get(item.identifier(), None)
+        item_merged = item_prev.merge(item) if item_prev is not None else item
+        merged_items[item.identifier()] = item_merged
+
+    # create new groups with the items replaced by their merged versions
     result: list[ConfigGroup] = []
     for group in configs:
-      provides = list(group.provides)  # copy for maniputation
-      for idx, item in enumerate(provides):
-        item_prev = items_by_identifier.get(item.identifier(), None)
-        item_merged = item_prev.merge(item) if item_prev is not None else item
-        items_by_identifier[item.identifier()] = item_merged
-        provides[idx] = item_merged
+      provides_updated = list(group.provides)
+      for idx, item in enumerate(provides_updated):
+        provides_updated[idx] = merged_items[item.identifier()]
       new_group = copy(group)
-      new_group.provides = provides
+      new_group.provides = provides_updated
       result.append(new_group)
     return result
 
