@@ -3,12 +3,12 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 
 class JsonStore:
   store_file: str
-  store: dict
+  store: dict[str, Any]
 
   # noinspection PyBroadException
   def __init__(self, store_file: str):
@@ -25,14 +25,23 @@ class JsonStore:
   def collection[T](self, name) -> JsonCollection[T]:
     return JsonCollection[T](self, name)
 
+  def keys(self) -> Sequence[str]:
+    return list(self.store.keys())
+
   def get(self, key, default = None):
     return self.store.get(key, default)
 
   def put(self, key, value):
     self.store[key] = value
+    self.save()
+
+  def remove(self, key):
+    del self.store[key]
+    self.save()
+
+  def save(self):
     Path(os.path.dirname(self.store_file)).mkdir(parents = True, exist_ok = True)
     with open(self.store_file, 'w+', encoding = 'utf-8') as fh:
-      # noinspection PyTypeChecker
       json.dump(self.store, fh, indent = 2)
 
 
