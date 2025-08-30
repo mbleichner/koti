@@ -38,17 +38,13 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
   def installed(self, model: ConfigModel) -> list[FlatpakRepo | FlatpakPackage]:
     if not shell_success("flatpak --version"):
       if model.contains(lambda item: isinstance(item, FlatpakPackage)):
-        self.warnings.append(f"{RED}could not get installed flatpak packages due to missing flatpak installation")
+        self.warnings.append(f"{RED}could not query installed flatpak packages due to missing flatpak installation")
       return []
     installed_packages = [FlatpakPackage(name) for name in shell_output("flatpak list --app --columns application").splitlines()]
     installed_repos = [FlatpakRepo(name) for name in shell_output("flatpak remotes --columns name").splitlines()]
     return [*installed_repos, *installed_packages]
 
   def install(self, items: list[FlatpakRepo | FlatpakPackage], model: ConfigModel):
-    if not shell_success("flatpak --version"):
-      self.warnings.append(f"{RED}could not install flatpak packages due to missing flatpak installation")
-      return
-
     repo_items = [item for item in items if isinstance(item, FlatpakRepo)]
     package_items = [item for item in items if isinstance(item, FlatpakPackage)]
     if repo_items:

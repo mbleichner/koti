@@ -114,12 +114,15 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
 
   @abstractmethod
   def check_configuration(self, item: T, model: ConfigModel):
+    """Used to check if an item has a consistent configuration suitable for later installation."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.check_configuration()")
 
   @abstractmethod
   def installed(self, model: ConfigModel) -> Sequence[T]:
     """Returns a list of all items currently installed on the system. This may depend on the model, as it may
-    be beneficial to check if newly added ConfigItems already exist on the system and display them accordingly."""
+    be beneficial to check if newly added ConfigItems already exist on the system and display them accordingly.
+    In case the installed items cannot be queried from the system (e.g. due to missing tools), a warning should
+    be logged and an empty list should be returned."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.installed()")
 
   @abstractmethod
@@ -143,13 +146,16 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
 
   @abstractmethod
   def install(self, items: list[T], model: ConfigModel):
-    """Installs one or multiple items on the system.
-    Can depend on the config model, as there might be e.g. Option()s that need to be considered."""
+    """Installs one or multiple items on the system. Can depend on the config model, as there might
+    be e.g. Option()s that need to be considered. If the install fails for some reason, a python error
+    should be raised, so the whole process gets halted (to avoid getting into inconsistent states)."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.install()")
 
   @abstractmethod
   def uninstall(self, items: list[T]):
-    """Removes one or multiple items from the system."""
+    """Removes one or multiple items from the system. If the uninstall fails for some reason, the manager
+    can decide to kill the process by raising a python error or just log a warning in case the failed
+    uninstall is unlikely to cause any problems."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.uninstall()")
 
 
@@ -189,19 +195,19 @@ class ConfigModel:
     return result
 
   @overload
-  def contains(self, reference: ConfigItem) -> bool:
+  def contains(self, needle: ConfigItem) -> bool:
     pass
 
   @overload
-  def contains(self, predicate: Callable[[ConfigItem], bool]) -> bool:
+  def contains(self, needle: Callable[[ConfigItem], bool]) -> bool:
     pass
 
   def contains(self, needle: ConfigItem | Callable[[ConfigItem], bool]) -> bool:
-    if isinstance(needle, ConfigItem):
-      return self.item(needle, optional = True) is not None
     for phase in self.phases:
       for item in phase.items:
-        if needle(item):
+        if isinstance(needle, ConfigItem) and needle.identifier() == item.identifier():
+          return True
+        if callable(needle) and needle(item):
           return True
     return False
 

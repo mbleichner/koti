@@ -73,7 +73,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
 
   def check_configuration(self, item: Package, model: ConfigModel):
     if item.url is not None:
-      self.warnings.append(f"the package '{item.name}' is installed via URL, but might later get {CYAN}updated to a different version by pacman{ENDC}, if also contained in a package repository")
+      self.warnings.append(f"the package '{item.name}' is installed via URL, but might later get {CYAN}updated to a different version by pacman{ENDC} if also contained in a package repository")
 
   def state_current(self, item: Package) -> PackageState | None:
     installed: bool = item.name in self.explicit_packages_on_system

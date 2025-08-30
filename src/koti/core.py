@@ -59,7 +59,8 @@ class Koti:
 
     # plan installation phases
     items_total = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
-    items_outdated: list[ManagedConfigItem] = []
+    items_to_install: list[ManagedConfigItem] = []
+    items_to_update: list[ManagedConfigItem] = []
     for phase in model.phases:
       for step in phase.steps:
         manager = step.manager
@@ -67,7 +68,10 @@ class Koti:
           current = manager.state_current(item)
           target = manager.state_target(item, model, planning = True)
           if current is None or current.hash() != target.hash():
-            items_outdated.append(item)
+            if current is None:
+              items_to_install.append(item)
+            else:
+              items_to_update.append(item)
             for change_text in (manager.diff(current, target) or ["item will be installed/updated"]):
               changes.append((item, change_text))
 
@@ -88,13 +92,14 @@ class Koti:
         printc(f"Phase {phase_idx + 1}:", BOLD)
         if groups:
           for group in phase.groups:
-            needs_update = len([item for item in group.provides if item in items_outdated]) > 0
-            printc(f"{"~" if needs_update else "-"} {group.description}", YELLOW if needs_update else None)
+            group_contains_change = len([item for item in group.provides if item in items_to_install or item in items_to_update]) > 0
+            printc(f"{"~" if group_contains_change else "-"} {group.description}", YELLOW if group_contains_change else None)
         if items:
           for install_step in phase.steps:
             for item in install_step.items_to_install:
-              needs_update = item in items_outdated or item in items_outdated
-              if needs_update:
+              if item in items_to_install:
+                printc(f"+ {item.description()}", GREEN)
+              elif item in items_to_update:
                 printc(f"~ {item.description()}", YELLOW)
               else:
                 printc(f"- {item.description()}")
@@ -109,9 +114,9 @@ class Koti:
       print()
 
     # list all changed items
-    count = len(items_outdated) + len(items_to_uninstall)
-    if count > 0:
-      printc(f"{len(items_total)} items total, {count} items to update:", BOLD)
+    changed_item_count = len(items_to_install) + len(items_to_update) + len(items_to_uninstall)
+    if changed_item_count > 0:
+      printc(f"{len(items_total)} items total, {changed_item_count} items to update:", BOLD)
       maxlen = max([len(item.description()) for item, change in changes])
       for changed_item, change_text in changes:
         printc(f"- {changed_item.description().ljust(maxlen)}  {change_text}")
@@ -119,7 +124,7 @@ class Koti:
       printc(f"{len(items_total)} items total, everything up to date", BOLD)
     print()
 
-    return count > 0
+    return changed_item_count > 0
 
   def apply(self):
     model = self.create_model()
