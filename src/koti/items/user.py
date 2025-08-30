@@ -1,0 +1,38 @@
+from __future__ import annotations
+
+from koti.model import ConfigItem, ManagedConfigItem
+
+
+class User(ManagedConfigItem):
+  username: str
+  groups: list[str]
+  shell: str | None
+  home: str | None
+
+  def __init__(
+    self,
+    username: str,
+    groups: list[str] | None = None,
+    shell: str | None = None,
+    home: str | None = None,
+  ):
+    self.username = username
+    self.groups = groups or []
+    self.shell = shell
+    self.home = home
+
+  def identifier(self):
+    return f"User('{self.username}')"
+
+  def merge(self, other: ConfigItem):
+    assert isinstance(other, User)
+    if self.shell is not None and other.shell is not None:
+      assert self.shell == other.shell, f"User('{self.username}') has conflicting shell parameter"
+    if self.home is not None and other.home is not None:
+      assert self.home == other.home, f"User('{self.username}') has conflicting home parameter"
+    return User(
+      username = self.username,
+      groups = list(set(self.groups).union(other.groups)),
+      shell = self.shell or other.shell or None,
+      home = self.home or other.home or None,
+    )

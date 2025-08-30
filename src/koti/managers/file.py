@@ -111,14 +111,14 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       *self.managed_files_store.elements(),
       *(item.filename for phase in model.phases for item in phase.items if isinstance(item, File))
     }
-    return [File(filename) for filename in filenames if os.path.isfile(filename)]
+    return [File(filename) for filename in filenames]
 
   def installed_dirs(self, model: ConfigModel) -> list[Directory]:
     dirnames = {
       *self.managed_dirs_store.elements(),
       *(item.dirname for phase in model.phases for item in phase.items if isinstance(item, Directory))
     }
-    return [Directory(dirname) for dirname in dirnames if os.path.isdir(dirname)]
+    return [Directory(dirname) for dirname in dirnames]
 
   def install_file(self, item: File, model: ConfigModel):
     self.update_file(item, model)

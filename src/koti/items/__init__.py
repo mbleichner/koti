@@ -9,3 +9,4 @@ from koti.items.swapfile import Swapfile
 from koti.items.systemd import SystemdUnit, SystemdUnits
 from koti.items.flatpak_package import FlatpakPackage
 from koti.items.flatpak_repo import FlatpakRepo
+from koti.items.user import User

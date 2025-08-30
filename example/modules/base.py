@@ -76,7 +76,7 @@ def base() -> Generator[ConfigGroup]:
   )
 
   yield ConfigGroup(
-    description = "setup pacman repos + config",
+    description = "basic bootstrapping of pacman and keyrings",
     tags = ["CRITICAL"],
     before = lambda item: isinstance(item, Package) and item.url is None,
     provides = [
@@ -84,6 +84,8 @@ def base() -> Generator[ConfigGroup]:
       Package("cachyos-keyring", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst"),
       Package("cachyos-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst"),
       Package("cachyos-v3-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst"),
+
+      User("manuel", home = "/home/manuel", shell = "/usr/bin/fish", groups = ["games", "wheel", "gamemode"]),
 
       # Declare options for pacman.conf (so I don't have to null-check later)
       Option[str]("/etc/pacman.conf/NoExtract"),

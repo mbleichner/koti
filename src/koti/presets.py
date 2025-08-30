@@ -1,3 +1,4 @@
+from koti.managers.user import UserManager
 from koti.model import ConfigManager
 from koti.managers import *
 
@@ -10,6 +11,7 @@ class ConfigManagerPresets:
     keep_unmanaged_packages: bool = False,
   ) -> list[ConfigManager]:
     return [
+      UserManager(),
       PacmanKeyManager(),
       PacmanPackageManager(
         delegate = pacman_adapter,

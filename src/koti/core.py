@@ -26,9 +26,14 @@ class Koti:
   def create_model(self) -> ConfigModel:
     merged_configs = self.merge_configs(self.configs)
     self.check_manager_consistency(self.managers, merged_configs)
-    install_phases = self.create_install_phases(self.managers, merged_configs)
+    phases_with_duplicates = self.resolve_dependencies(merged_configs)
+    phases_without_duplicates = self.remove_duplicates(phases_with_duplicates)
     tags_archive = self.load_tags(self.store)
-    model = ConfigModel(self.managers, install_phases, tags_archive)
+    model = ConfigModel(
+      managers = self.managers,
+      phases = [self.create_install_phase(self.managers, groups_in_phase) for groups_in_phase in phases_without_duplicates],
+      tags_archive = tags_archive
+    )
     self.check_config_item_consistency(model)
     return model
 
@@ -37,7 +42,7 @@ class Koti:
     identifiers_to_install = [item.identifier() for item in items_to_install]
     steps: list[CleanupStep] = []
     for manager in self.get_cleanup_phase_manager_order(self.managers):
-      installed_items = manager.installed(model)
+      installed_items = [item for item in manager.installed(model) if manager.state_current(item) is not None]
       if not installed_items:
         continue  # only add the manager to the cleanup phase if there are any items that could potentially be uninstalled
       items_to_uninstall = [item for item in installed_items if item.identifier() not in identifiers_to_install]
@@ -206,13 +211,6 @@ class Koti:
     ]
 
   @classmethod
-  def create_install_phases(cls, managers: Sequence[ConfigManager], merged_groups: list[ConfigGroup]) -> list[InstallPhase]:
-    return [
-      cls.create_install_phase(managers, groups_in_phase)
-      for groups_in_phase in cls.separate_into_phases(merged_groups)
-    ]
-
-  @classmethod
   def check_config_item_consistency(cls, model: ConfigModel):
     for phase in model.phases:
       for install_step in phase.steps:
@@ -249,6 +247,24 @@ class Koti:
     return result
 
   @classmethod
+  def remove_duplicates(cls, phases: list[list[ConfigGroup]]) -> list[list[ConfigGroup]]:
+    seen_item_identifiers: set[str] = set()
+    phases_filtered: list[list[ConfigGroup]] = []
+    for phase in phases:
+      phase_filtered: list[ConfigGroup] = []
+      for group in phase:
+        filtered_provides: list[ConfigItem] = []
+        for item in group.provides:
+          if item.identifier() not in seen_item_identifiers:
+            filtered_provides.append(item)
+            seen_item_identifiers.add(item.identifier())
+        group_filtered = copy(group)
+        group_filtered.provides = filtered_provides
+        phase_filtered.append(group_filtered)
+      phases_filtered.append(phase_filtered)
+    return phases_filtered
+
+  @classmethod
   def reduce_items(cls, items: list[ConfigItem]) -> ConfigItem:
     if len(items) == 1:
       return items[0]
@@ -256,7 +272,7 @@ class Koti:
     return cls.reduce_items([merged_item, *items[2:]])
 
   @classmethod
-  def separate_into_phases(cls, groups: list[ConfigGroup]) -> list[list[ConfigGroup]]:
+  def resolve_dependencies(cls, groups: list[ConfigGroup]) -> list[list[ConfigGroup]]:
     result: list[list[ConfigGroup]] = [list(groups)]
     while True:
       violation = cls.find_dependency_violation(result)
@@ -290,7 +306,6 @@ class Koti:
     )
 
   # FIXME: Refactoring
-  # FIXME: Zuerst mergen, dann Dependencies auflösen
   @classmethod
   def find_dependency_violation(cls, phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup] | None:
     for phase_idx, phase in enumerate(phases):
