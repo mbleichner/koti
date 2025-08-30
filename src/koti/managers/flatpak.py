@@ -2,6 +2,7 @@ from hashlib import sha256
 import re
 from typing import cast
 
+from koti.utils.colors import *
 from koti.utils.shell import shell, shell_output, shell_success
 from koti.items.flatpak_package import FlatpakPackage
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
@@ -55,7 +56,7 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
       shell(f"flatpak uninstall {" ".join(item.id for item in package_items)}")
       shell("flatpak uninstall --unused")
     for item in repo_items:
-      shell(f"flatpak remote-delete --force '{item.name}'", check=False)
+      shell(f"flatpak remote-delete --force '{item.name}'", check = False)
 
   def installed(self, model: ConfigModel) -> list[FlatpakRepo | FlatpakPackage]:
     if shell_success("flatpak --version"):
@@ -88,19 +89,19 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
       current = cast(FlatpakRepoState | None, current)
       target = cast(FlatpakRepoState | None, target)
       if current is None:
-        return ["repo will be installed"]
+        return [f"{GREEN}repo will be installed"]
       if target is None:
-        return ["repo will be removed (TODO)"]
+        return [f"{RED}repo will be removed (TODO)"]
       return [change for change in [
-        f"change repo_url from {current.repo_url} to {target.repo_url}" if current.repo_url != target.repo_url else None
+        f"{YELLOW}change repo_url from {current.repo_url} to {target.repo_url}" if current.repo_url != target.repo_url else None
       ] if change is not None]
     else:
       current = cast(FlatpakPackageState | None, current)
       target = cast(FlatpakPackageState | None, target)
       if current is None:
-        return ["package will be installed"]
+        return [f"{GREEN}package will be installed"]
       if target is None:
-        return ["package will be removed"]
+        return [f"{RED}package will be removed"]
       return []
 
   def get_installed_repo_url(self, item: FlatpakRepo) -> str | None:

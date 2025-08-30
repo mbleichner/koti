@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from hashlib import sha256
 
+from koti.utils.colors import *
 from koti.model import ConfigItem, ConfigItemState, ConfigManager, ConfigModel, ManagedConfigItem
 from koti.items.hooks import PostHook
 from koti.utils import JsonMapping, JsonStore
@@ -62,7 +63,8 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
     return [PostHook(name) for name in self.trigger_hash_store.keys()]
 
   def uninstall(self, items: list[PostHook], model: ConfigModel):
-    pass
+    for hook in items:
+      self.trigger_hash_store.remove(hook.name)
 
   def state_current(self, hook: PostHook) -> PostHookState | None:
     stored_value = self.trigger_hash_store.get(hook.name, None)
@@ -93,12 +95,12 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
 
   def diff(self, current: PostHookState | None, target: PostHookState | None) -> list[str]:
     if current is None:
-      return ["hook will be called for the first time"]
+      return [f"{GREEN}hook will be called for the first time"]
     if target is None:
-      return ["hook will no longer be monitored"]
+      return [f"{RED}hook has been removed from config"]
     all_triggers = set(current.trigger_hashes.keys()).union(target.trigger_hashes.keys())
     changed_triggers = [
       trigger for trigger in all_triggers
       if current.trigger_hashes.get(trigger, None) != target.trigger_hashes.get(trigger, None)
     ]
-    return [f"changed triggers: {", ".join(changed_triggers)}"] if changed_triggers else []
+    return [f"{YELLOW}hook will be triggered due to changed dependencies: {", ".join(changed_triggers)}"] if changed_triggers else []

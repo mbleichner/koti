@@ -4,6 +4,7 @@ from koti.items.package import Package
 from koti.items.pacman_key import PacmanKey
 from koti.utils import JsonCollection, JsonStore
 from koti.utils.shell import shell, shell_output, shell_success
+from koti.utils.colors import *
 
 
 class PacmanAdapter:
@@ -84,9 +85,9 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
 
   def diff(self, current: PackageState | None, target: PackageState | None) -> list[str]:
     if current is None:
-      return ["package will be installed / set to explicit"]
+      return [f"{GREEN}package will be installed (i.e. set to explicit)"]
     if target is None:
-      return ["package will be removed"]
+      return [f"{RED}package will be removed"]
     return []
 
   def install(self, items: list[Package], model: ConfigModel):

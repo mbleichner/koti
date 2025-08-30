@@ -6,6 +6,7 @@ from koti.items.swapfile import Swapfile
 from koti.utils import JsonCollection
 from koti.utils.json_store import JsonStore
 from koti.utils.shell import shell, shell_success
+from koti.utils.colors import *
 
 
 class SwapfileState(ConfigItemState):
@@ -78,9 +79,9 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
 
   def diff(self, current: SwapfileState | None, target: SwapfileState | None) -> list[str]:
     if current is None:
-      return ["swapfile will be created"]
+      return [f"{GREEN}swapfile will be created"]
     if target is None:
-      return ["swapfile will be deleted"]
+      return [f"{RED}swapfile will be deleted"]
     return [change for change in (
-      f"change size from {current.size_bytes} to {target.size_bytes}" if current.size_bytes != target.size_bytes else None,
+      f"{YELLOW}change size from {current.size_bytes} to {target.size_bytes}" if current.size_bytes != target.size_bytes else None,
     ) if change is not None]

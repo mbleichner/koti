@@ -4,8 +4,10 @@ import os
 import pwd
 import shutil
 from hashlib import sha256
+from tempfile import NamedTemporaryFile
 from typing import cast
 
+from koti.utils.colors import *
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.file import File
 from koti.items.directory import Directory
@@ -14,11 +16,14 @@ from koti.utils.json_store import JsonStore
 
 
 class FileState(ConfigItemState):
-  def __init__(self, content_hash: str, uid: int, gid: int, mode: int):
-    self.content_hash = content_hash
+  def __init__(self, content: bytes, uid: int, gid: int, mode: int):
+    self.content = content
     self.uid = uid
     self.gid = gid
     self.mode = mode
+    sha256_hash = sha256()
+    sha256_hash.update(content)
+    self.content_hash = sha256_hash.hexdigest()
 
   def hash(self) -> str:
     sha256_hash = sha256()
@@ -170,13 +175,11 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
   def file_state_current(self, item: File) -> FileState | None:
     if not os.path.isfile(item.filename):
       return None
-    sha256_hash = sha256()
     with open(item.filename, "rb") as f:
-      for byte_block in iter(lambda: f.read(4096), b""):
-        sha256_hash.update(byte_block)
+      content = f.read()
     stat = os.stat(item.filename)
     return FileState(
-      content_hash = sha256_hash.hexdigest(),
+      content = content,
       uid = stat.st_uid,
       gid = stat.st_gid,
       mode = stat.st_mode & 0o777,
@@ -186,10 +189,8 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     if item.content is None:
       raise AssertionError(f"{item.description()}: content missing")
     getpwnam = pwd.getpwnam(item.owner)
-    sha256_hash = sha256()
-    sha256_hash.update(item.content(model))
     return FileState(
-      content_hash = sha256_hash.hexdigest(),
+      content = item.content(model),
       uid = getpwnam.pw_uid,
       gid = getpwnam.pw_gid,
       mode = item.permissions & 0o777,
@@ -232,29 +233,33 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     getpwnam = pwd.getpwnam(owner)
     os.chown(dirname, uid = getpwnam.pw_uid, gid = getpwnam.pw_gid)
 
-  def file_diff(self, state_current: FileState | None, state_target: FileState | None) -> list[str]:
-    if state_current is None:
-      return ["file will be created"]
-    if state_target is None:
-      return ["file will be deleted"]
-    return [change for change in [
-      f"change uid from {state_current.uid} to {state_target.uid}" if state_current.uid != state_target.uid else None,
-      f"change gid from {state_current.gid} to {state_target.gid}" if state_current.gid != state_target.gid else None,
-      f"change mode from {oct(state_current.mode)} to {oct(state_target.mode)}" if state_current.mode != state_target.mode else None,
-      f"update file content" if state_current.content_hash != state_target.content_hash else None,
+  def file_diff(self, current: FileState | None, target: FileState | None) -> list[str]:
+    if current is None:
+      return [f"{GREEN}file will be created"]
+    if target is None:
+      return [f"{RED}file will be deleted"]
+    result = [change for change in [
+      f"{YELLOW}change uid from {current.uid} to {target.uid}" if current.uid != target.uid else None,
+      f"{YELLOW}change gid from {current.gid} to {target.gid}" if current.gid != target.gid else None,
+      f"{YELLOW}change mode from {oct(current.mode)} to {oct(target.mode)}" if current.mode != target.mode else None,
     ] if change is not None]
+    if current.content_hash != target.content_hash:
+      with NamedTemporaryFile(prefix = "koti.", delete = False) as tmp:
+        tmp.write(target.content)
+      result.append(f"{YELLOW}file content changed; preview new content in {tmp.name}")
+    return result
 
-  def dir_diff(self, state_current: DirectoryState | None, state_target: DirectoryState | None) -> list[str]:
-    if state_current is None:
-      return ["directory will be created"]
-    if state_target is None:
-      return ["directory will be deleted"]
-    filenames = set(state_current.files.keys()).union(state_target.files.keys())
+  def dir_diff(self, current: DirectoryState | None, target: DirectoryState | None) -> list[str]:
+    if current is None:
+      return [f"{GREEN}directory will be created"]
+    if target is None:
+      return [f"{RED}directory will be deleted"]
+    filenames = set(current.files.keys()).union(target.files.keys())
     return [change for change in [
-      f"change uid from {state_current.uid} to {state_target.uid}" if state_current.uid != state_target.uid else None,
-      f"change gid from {state_current.gid} to {state_target.gid}" if state_current.gid != state_target.gid else None,
+      f"{YELLOW}change uid from {current.uid} to {target.uid}" if current.uid != target.uid else None,
+      f"{YELLOW}change gid from {current.gid} to {target.gid}" if current.gid != target.gid else None,
       *(
-        f"{filename}: {change}" for filename in filenames
-        for change in self.diff(state_current.files.get(filename, None), state_target.files.get(filename, None))
+        f"{YELLOW}{filename}: {change}" for filename in filenames
+        for change in self.diff(current.files.get(filename, None), target.files.get(filename, None))
       )
     ] if change is not None]

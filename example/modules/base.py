@@ -36,6 +36,7 @@ def base() -> Generator[ConfigGroup]:
       Package("iotop"),
       Package("ncdu"),
       Package("bandwhich"),
+      Package("nload"),
 
       # Development und Libraries
       Package("git"),
@@ -43,8 +44,6 @@ def base() -> Generator[ConfigGroup]:
       Package("tig"),
       Package("python"),
       Package("pyenv"),
-      Package("mypy"),
-      Package("python-urllib3"),  # koti dev
 
       # Networking
       Package("bind"),
@@ -54,7 +53,6 @@ def base() -> Generator[ConfigGroup]:
       Package("wget"),
       Package("ethtool"),
       Package("tcpdump"),
-      Package("nload"),
 
       # Hardware Utilities
       Package("cpupower"),
@@ -188,7 +186,7 @@ def base() -> Generator[ConfigGroup]:
       ''')),
 
       PostHook(
-        name = "run reflector to update pacman mirrorlist",
+        name = "reflector: update mirrorlist",
         trigger = File("/etc/xdg/reflector/reflector.conf"),
         execute = lambda: shell("systemctl start reflector"),
       ),

@@ -54,7 +54,7 @@ class Koti:
       manager.log.clear()
 
     model = self.create_model()
-    changes_descriptions: list[str] = []
+    changes: list[tuple[ConfigItem, str]] = []
 
     # plan installation phases
     items_total = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
@@ -68,8 +68,8 @@ class Koti:
           target = manager.state_target(item, model, planning)
           if current is None or current.hash() != target.hash():
             items_outdated.append(item)
-            for change in (manager.diff(current, target) or ["item will be installed/updated"]):
-              changes_descriptions.append(f"{item.description()}: {change}")
+            for change_text in (manager.diff(current, target) or ["item will be installed/updated"]):
+              changes.append((item, change_text))
 
     # plan cleanup phase
     cleanup_phase = self.create_cleanup_phase(model)
@@ -79,8 +79,8 @@ class Koti:
       for item in cleanup_step.items_to_uninstall:
         items_to_uninstall.append(item)
         current = manager.state_current(item)
-        for change in (manager.diff(current, None) or ["item will be uninstalled"]):
-          changes_descriptions.append(f"{item.description()}: {change}")
+        for change_text in (manager.diff(current, None) or ["item will be uninstalled"]):
+          changes.append((item, change_text))
 
     # list all groups
     if groups or items:
@@ -120,10 +120,9 @@ class Koti:
     count = len(items_outdated) + len(items_to_uninstall)
     if count > 0:
       printc(f"{len(items_total)} items total, {count} items to update:", BOLD)
-      for change in changes_descriptions:
-        printc(f"- {change}", CYAN)
-      print()
-      print("// additional updates may be triggered by PostHooks")
+      maxlen = max([len(item.description()) for item, change in changes])
+      for changed_item, change_text in changes:
+        printc(f"- {changed_item.description().ljust(maxlen)}  {change_text}")
     else:
       printc(f"{len(items_total)} items total, everything up to date", BOLD)
 

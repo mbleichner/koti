@@ -3,6 +3,7 @@ from koti.items.systemd import SystemdUnit
 from koti.managers.pacman import shell
 from koti.utils import shell_success
 from koti.utils.json_store import JsonCollection, JsonStore
+from koti.utils.colors import *
 
 
 class SystemdUnitState(ConfigItemState):
@@ -61,9 +62,9 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
 
   def diff(self, current: SystemdUnitState | None, target: SystemdUnitState | None) -> list[str]:
     if current is None:
-      return ["unit will be enabled"]
+      return [f"{GREEN}unit will be enabled"]
     if target is None:
-      return ["unit will be disabled"]
+      return [f"{RED}unit will be disabled"]
     return []
 
   def systemctl_for_user(self, user: str | None):
