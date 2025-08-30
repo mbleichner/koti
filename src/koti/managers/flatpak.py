@@ -35,21 +35,36 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
       assert item.spec_url is not None, "missing spec_url"
       assert item.repo_url is not None, "missing repo_url"
 
+  def installed(self, model: ConfigModel) -> list[FlatpakRepo | FlatpakPackage]:
+    if not shell_success("flatpak --version"):
+      if model.contains(lambda item: isinstance(item, FlatpakPackage)):
+        self.warnings.append(f"{RED}could not get installed flatpak packages due to missing flatpak installation")
+      return []
+    installed_packages = [FlatpakPackage(name) for name in shell_output("flatpak list --app --columns application").splitlines()]
+    installed_repos = [FlatpakRepo(name) for name in shell_output("flatpak remotes --columns name").splitlines()]
+    return [*installed_repos, *installed_packages]
+
   def install(self, items: list[FlatpakRepo | FlatpakPackage], model: ConfigModel):
+    if not shell_success("flatpak --version"):
+      self.warnings.append(f"{RED}could not install flatpak packages due to missing flatpak installation")
+      return
+
     repo_items = [item for item in items if isinstance(item, FlatpakRepo)]
     package_items = [item for item in items if isinstance(item, FlatpakPackage)]
-
     if repo_items:
       installed_remotes = shell_output("flatpak remotes --columns name").splitlines()
       for item in repo_items:
         if item.name in installed_remotes:
           shell(f"flatpak remote-delete --force '{item.name}'")
         shell(f"flatpak remote-add '{item.name}' '{item.spec_url}'")
-
     if package_items:
       shell(f"flatpak install {" ".join(item.id for item in package_items)}")
 
-  def uninstall(self, items: list[FlatpakRepo | FlatpakPackage], model: ConfigModel):
+  def uninstall(self, items: list[FlatpakRepo | FlatpakPackage]):
+    if not shell_success("flatpak --version"):
+      self.warnings.append(f"{RED}could not uninstall flatpak packages due to missing flatpak installation")
+      return
+
     repo_items = [item for item in items if isinstance(item, FlatpakRepo)]
     package_items = [item for item in items if isinstance(item, FlatpakPackage)]
     if package_items:
@@ -57,14 +72,6 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
       shell("flatpak uninstall --unused")
     for item in repo_items:
       shell(f"flatpak remote-delete --force '{item.name}'", check = False)
-
-  def installed(self, model: ConfigModel) -> list[FlatpakRepo | FlatpakPackage]:
-    if shell_success("flatpak --version"):
-      installed_packages = [FlatpakPackage(name) for name in shell_output("flatpak list --app --columns application").splitlines()]
-      installed_repos = [FlatpakRepo(name) for name in shell_output("flatpak remotes --columns name").splitlines()]
-      return [*installed_repos, *installed_packages]
-    else:
-      return []
 
   def state_current(self, item: FlatpakRepo | FlatpakPackage) -> FlatpakRepoState | FlatpakPackageState | None:
     flatpak_available = shell_success("flatpak --version")

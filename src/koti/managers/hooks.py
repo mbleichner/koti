@@ -62,7 +62,7 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
   def installed(self, model: ConfigModel) -> list[PostHook]:
     return [PostHook(name) for name in self.trigger_hash_store.keys()]
 
-  def uninstall(self, items: list[PostHook], model: ConfigModel):
+  def uninstall(self, items: list[PostHook]):
     for hook in items:
       self.trigger_hash_store.remove(hook.name)
 

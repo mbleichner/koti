@@ -99,12 +99,12 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       if isinstance(item, Directory):
         self.install_dir(item, model)
 
-  def uninstall(self, items: list[File | Directory], model: ConfigModel):
+  def uninstall(self, items: list[File | Directory]):
     for item in items:
       if isinstance(item, File):
-        self.uninstall_file(item, model)
+        self.uninstall_file(item)
       if isinstance(item, Directory):
-        self.uninstall_dir(item, model)
+        self.uninstall_dir(item)
 
   def installed_files(self, model: ConfigModel) -> list[File]:
     filenames = {
@@ -162,12 +162,12 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     os.chmod(item.filename, mode)
     assert mode == (os.stat(item.filename).st_mode & 0o777), "cannot apply file permissions (incompatible file system?)"
 
-  def uninstall_file(self, item: File, model: ConfigModel):
+  def uninstall_file(self, item: File):
     if os.path.isfile(item.filename):
       os.unlink(item.filename)
     self.managed_files_store.remove(item.filename)
 
-  def uninstall_dir(self, item: Directory, model: ConfigModel):
+  def uninstall_dir(self, item: Directory):
     if os.path.isdir(item.dirname):
       shutil.rmtree(item.dirname)
     self.managed_dirs_store.remove(item.dirname)

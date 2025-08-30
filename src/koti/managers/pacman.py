@@ -1,4 +1,3 @@
-from koti.logging import DebugMessage
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.package import Package
 from koti.items.pacman_key import PacmanKey
@@ -74,7 +73,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
 
   def check_configuration(self, item: Package, model: ConfigModel):
     if item.url is not None:
-      self.log.append(DebugMessage(f"{item.identifier()} is installed via URL and might get updated to a different version by pacman, if the package is also part of a package repository"))
+      self.warnings.append(f"the package '{item.name}' is installed via URL, but might later get {CYAN}updated to a different version by pacman{ENDC}, if also contained in a package repository")
 
   def state_current(self, item: Package) -> PackageState | None:
     installed: bool = item.name in self.explicit_packages_on_system
@@ -85,9 +84,9 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
 
   def diff(self, current: PackageState | None, target: PackageState | None) -> list[str]:
     if current is None:
-      return [f"{GREEN}package will be installed (i.e. set to explicit)"]
+      return [f"{GREEN}package will be installed (--asexplicit)"]
     if target is None:
-      return [f"{RED}package will be removed"]
+      return [f"{RED}package will be removed (--asdeps)"]
     return []
 
   def install(self, items: list[Package], model: ConfigModel):
@@ -122,7 +121,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     }
     return [Package(pkg) for pkg in package_names]
 
-  def uninstall(self, items: list[Package], model: ConfigModel):
+  def uninstall(self, items: list[Package]):
     package_names = [pkg.name for pkg in items]
     self.delegate.mark_as_dependency(package_names)
     self.managed_packages_store.remove_all(package_names)
@@ -142,7 +141,7 @@ class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
       shell(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
       shell(f"sudo pacman-key --lsign-key {item.key_id}")
 
-  def uninstall(self, items: list[PacmanKey], model: ConfigModel):
+  def uninstall(self, items: list[PacmanKey]):
     pass
 
   def installed(self, model: ConfigModel) -> list[PacmanKey]:
@@ -157,7 +156,7 @@ class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
 
   def diff(self, current: PacmanKeyState | None, target: PacmanKeyState | None) -> list[str]:
     if current is None:
-      return ["pacman key will be installed"]
+      return [f"{GREEN}pacman key will be installed"]
     if target is None:
-      return ["pacman key will be removed (TODO)"]
+      return [f"{CYAN}pacman key has been removed from the config, but will remain on the system"]
     return []

@@ -43,7 +43,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
       result += [SystemdUnit(name, user) for name in units_store.elements()]
     return result
 
-  def uninstall(self, items: list[SystemdUnit], model: ConfigModel):
+  def uninstall(self, items: list[SystemdUnit]):
     distinct_users = {item.user for item in items}
     for user in distinct_users:
       units_store: JsonCollection[str] = self.store.collection(self.store_key_for_user(user))

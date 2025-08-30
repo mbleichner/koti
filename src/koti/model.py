@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
 from functools import reduce
-from typing import Callable, Iterable, Sequence, Type, cast, overload
-
-from koti.logging import *
+from typing import Any, Callable, Iterable, Literal, Sequence, Type, cast, overload
 
 
 class ConfigGroup:
@@ -109,10 +107,10 @@ class ConfigItemState(metaclass = ABCMeta):
 class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMeta):
   managed_classes: list[Type] = []
   order_in_cleanup_phase: Literal["reverse_install_order", "first", "last"] = "reverse_install_order"
-  log: list[LogMessage]
+  warnings: list[str]  # collects warnings during evaluation and execution
 
   def __init__(self):
-    self.log = []
+    self.warnings = []
 
   @abstractmethod
   def check_configuration(self, item: T, model: ConfigModel):
@@ -126,20 +124,21 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
 
   @abstractmethod
   def state_current(self, item: T) -> S | None:
-    """Returns the checksum of a currently installed item on the system."""
+    """Returns an object representing the state of a currently installed item on the system."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.checksum_current()")
 
   @abstractmethod
   def state_target(self, item: T, model: ConfigModel, planning: bool) -> S:
-    """Returns the checksum that the item will have after installation/updating.
+    """Returns an object representing the state that the item will have after installation/updating.
     Can depend on the config model, as there might be e.g. Option()s that need to be considered.
-    Also, the method can behave different during planning (e.g. PostHooks assume that their triggers
+    Also the method can behave different during planning (e.g. PostHooks assume that their triggers
     have already been updated to their respective target states)."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.checksum_target()")
 
   @abstractmethod
   def diff(self, current: S | None, target: S | None) -> Sequence[str]:
-    """Removes one or multiple items from the system."""
+    """Describes the changes between current and target state in a human-friendly fashion.
+    Each returned list entry will be printed in a separate line and may contain colors for better readability."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.diff()")
 
   @abstractmethod
@@ -149,7 +148,7 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.install()")
 
   @abstractmethod
-  def uninstall(self, items: list[T], model: ConfigModel):
+  def uninstall(self, items: list[T]):
     """Removes one or multiple items from the system."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.uninstall()")
 
@@ -189,8 +188,22 @@ class ConfigModel:
     assert result is not None or optional, f"Item not found: {reference.identifier()}"
     return result
 
+  @overload
   def contains(self, reference: ConfigItem) -> bool:
-    return self.item(reference, optional = True) is not None
+    pass
+
+  @overload
+  def contains(self, predicate: Callable[[ConfigItem], bool]) -> bool:
+    pass
+
+  def contains(self, needle: ConfigItem | Callable[[ConfigItem], bool]) -> bool:
+    if isinstance(needle, ConfigItem):
+      return self.item(needle, optional = True) is not None
+    for phase in self.phases:
+      for item in phase.items:
+        if needle(item):
+          return True
+    return False
 
   def manager[T: ManagedConfigItem](self, reference: T) -> ConfigManager[T, ConfigItemState]:
     for manager in self.managers:

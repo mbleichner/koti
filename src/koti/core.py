@@ -49,23 +49,23 @@ class Koti:
     return CleanupPhase(steps)
 
   def plan(self, groups: bool = True, items: bool = False) -> bool:
-    planning = True
+
+    # clear warnings from previous runs
     for manager in self.managers:
-      manager.log.clear()
+      manager.warnings.clear()
 
     model = self.create_model()
     changes: list[tuple[ConfigItem, str]] = []
 
     # plan installation phases
     items_total = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
-    installed_identifiers = [item.identifier() for manager in model.managers for item in manager.installed(model)]
     items_outdated: list[ManagedConfigItem] = []
     for phase in model.phases:
       for step in phase.steps:
         manager = step.manager
         for item in step.items_to_install:
           current = manager.state_current(item)
-          target = manager.state_target(item, model, planning)
+          target = manager.state_target(item, model, planning = True)
           if current is None or current.hash() != target.hash():
             items_outdated.append(item)
             for change_text in (manager.diff(current, target) or ["item will be installed/updated"]):
@@ -95,25 +95,17 @@ class Koti:
             for item in install_step.items_to_install:
               needs_update = item in items_outdated or item in items_outdated
               if needs_update:
-                new = item.identifier() not in installed_identifiers
-                printc(f"{"~" if new else "+"} {item.description()}", GREEN if new else YELLOW)
+                printc(f"~ {item.description()}", YELLOW)
               else:
                 printc(f"- {item.description()}")
         print()
 
     # print warnings generated during evaluation
-    logs = [message for manager in self.managers for message in manager.log]
-    if logs:
+    warnings = [message for manager in self.managers for message in manager.warnings]
+    if warnings:
       printc(f"Evaluation warnings:", BOLD)
-      for message in logs:
-        if message.level == "error":
-          printc(f"- {message.text}", RED)
-        if message.level == "warn":
-          printc(f"- {message.text}", YELLOW)
-        if message.level == "info":
-          printc(f"- {message.text}")
-        if message.level == "debug":
-          printc(f"- {message.text}")
+      for message in warnings:
+        printc(f"- {message}")
       print()
 
     # list all changed items
@@ -125,15 +117,16 @@ class Koti:
         printc(f"- {changed_item.description().ljust(maxlen)}  {change_text}")
     else:
       printc(f"{len(items_total)} items total, everything up to date", BOLD)
+    print()
 
     return count > 0
 
   def apply(self):
-    planning = False
-    for manager in self.managers:
-      manager.log.clear()
-
     model = self.create_model()
+
+    # clear warnings before execution
+    for manager in self.managers:
+      manager.warnings.clear()
 
     for phase_idx, phase in enumerate(model.phases):
       for install_step in phase.steps:
@@ -141,7 +134,7 @@ class Koti:
         items_to_update: list[ManagedConfigItem] = []
         for item in install_step.items_to_install:
           current = manager.state_current(item)
-          target = manager.state_target(item, model, planning)
+          target = manager.state_target(item, model, planning = False)
           if current is None or current.hash() != target.hash():
             items_to_update.append(item)
         self.print_install_step_log(model, phase_idx, install_step, items_to_update)
@@ -151,9 +144,17 @@ class Koti:
     for cleanup_step in cleanup_phase.steps:
       manager = cleanup_step.manager
       self.print_cleanup_step_log(model, cleanup_step)
-      manager.uninstall(cleanup_step.items_to_uninstall, model)
+      manager.uninstall(cleanup_step.items_to_uninstall)
 
     self.save_tags(self.store, model)
+
+    warnings = [message for manager in self.managers for message in manager.warnings]
+    if warnings:
+      print()
+      printc(f"Warnings during execution:", BOLD)
+      for message in warnings:
+        printc(f"- {message}")
+      print()
 
   @classmethod
   def print_install_step_log(cls, model: ConfigModel, phase_idx: int, step: InstallStep, items_to_update: Sequence[ManagedConfigItem]):

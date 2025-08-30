@@ -60,7 +60,7 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
   def installed(self, model: ConfigModel) -> list[Swapfile]:
     return [Swapfile(filename) for filename in self.managed_files_store.elements()]
 
-  def uninstall(self, items: list[Swapfile], model: ConfigModel):
+  def uninstall(self, items: list[Swapfile]):
     for item in items:
       if os.path.isfile(item.filename):
         if self.is_mounted(item.filename):
