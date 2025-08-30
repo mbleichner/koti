@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from hashlib import sha256
-from typing import cast
 
 from koti.model import ConfigItem, ConfigItemState, ConfigManager, ConfigModel, ManagedConfigItem
 from koti.items.hooks import PostHook
@@ -73,15 +72,14 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
     return PostHookState(trigger_hashes)
 
   def state_target(self, hook: PostHook, model: ConfigModel, planning: bool) -> PostHookState:
-    return PostHookState(
-      trigger_hashes = dict(
-        (ref.identifier(), self.state_for_trigger(ref, model, planning).hash())
-        for ref in hook.trigger
-      )
-    )
+    trigger_hashes: dict[str, str] = {}
+    for ref in hook.trigger:
+      trigger_state = self.state_for_trigger(ref, model, planning)
+      if trigger_state is not None:
+        trigger_hashes[ref.identifier()] = trigger_state.hash()
+    return PostHookState(trigger_hashes)
 
-  @staticmethod
-  def state_for_trigger(reference: ManagedConfigItem, model: ConfigModel, planning: bool) -> ConfigItemState | None:
+  def state_for_trigger(self, reference: ManagedConfigItem, model: ConfigModel, planning: bool) -> ConfigItemState | None:
     manager: ConfigManager = model.manager(reference)
 
     # during planning, assume that the trigger item will already have been

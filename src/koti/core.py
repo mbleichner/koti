@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import copy
 from os import getuid
 from typing import Iterator
 
@@ -23,14 +24,13 @@ class Koti:
     self.managers = [m for m in managers if m is not None]
 
   def create_model(self) -> ConfigModel:
-    self.check_manager_consistency(self.managers, self.configs)
-    result = ConfigModel(
-      managers = self.managers,
-      phases = self.create_install_phases(self.managers, self.configs),
-      tags_archive = self.load_tags(self.store),
-    )
-    self.check_config_item_consistency(result)
-    return result
+    merged_configs = self.merge_configs(self.configs)
+    self.check_manager_consistency(self.managers, merged_configs)
+    install_phases = self.create_install_phases(self.managers, merged_configs)
+    tags_archive = self.load_tags(self.store)
+    model = ConfigModel(self.managers, install_phases, tags_archive)
+    self.check_config_item_consistency(model)
+    return model
 
   def create_cleanup_phase(self, model: ConfigModel) -> CleanupPhase:
     items_to_install = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
@@ -202,16 +202,10 @@ class Koti:
     ]
 
   @classmethod
-  def create_install_phases(cls, managers: Sequence[ConfigManager], configs: Sequence[ConfigGroup]) -> list[InstallPhase]:
-    groups = cls.get_all_provided_groups(configs)
-    groups_separated_into_phases = cls.separate_into_phases(groups)
-    merged_items_grouped_by_phase: list[list[ConfigItem]] = cls.merge_items([
-      [item for group in phase for item in group.provides]
-      for phase in groups_separated_into_phases
-    ])
+  def create_install_phases(cls, managers: Sequence[ConfigManager], merged_groups: list[ConfigGroup]) -> list[InstallPhase]:
     return [
-      cls.create_install_phase(managers, groups_in_phase, items_in_phase) for groups_in_phase, items_in_phase in
-      zip(groups_separated_into_phases, merged_items_grouped_by_phase)
+      cls.create_install_phase(managers, groups_in_phase)
+      for groups_in_phase in cls.separate_into_phases(merged_groups)
     ]
 
   @classmethod
@@ -226,7 +220,7 @@ class Koti:
 
   @classmethod
   def check_manager_consistency(cls, managers: Sequence[ConfigManager], configs: Sequence[ConfigGroup]):
-    for group in cls.get_all_provided_groups(configs):
+    for group in configs:
       for item in (x for x in group.provides if x is not None and isinstance(x, ManagedConfigItem)):
         matching_managers = [manager for manager in managers if item.__class__ in manager.managed_classes]
         if len(matching_managers) == 0:
@@ -235,19 +229,19 @@ class Koti:
           raise AssertionError(f"multiple managers found for class {item.__class__.__name__}")
 
   @classmethod
-  def merge_items(cls, items_grouped_by_phase: list[list[ConfigItem]]) -> list[list[ConfigItem]]:
-    flattened = [item for phase in items_grouped_by_phase for item in phase]
-    processed_identifiers: set[str] = set()
-    result: list[list[ConfigItem]] = []
-    for phase in items_grouped_by_phase:
-      phase_new: list[ConfigItem] = []
-      result.append(phase_new)
-      for item in phase:
-        if item.identifier() in processed_identifiers: continue
-        others = [other for other in flattened if other.identifier() == item.identifier()]
-        merged = cls.reduce_items(others)
-        phase_new.append(merged)
-        processed_identifiers.add(item.identifier())
+  def merge_configs(cls, configs: list[ConfigGroup]) -> list[ConfigGroup]:
+    items_by_identifier: dict[str, ConfigItem] = {}
+    result: list[ConfigGroup] = []
+    for group in configs:
+      provides = list(group.provides)  # copy for maniputation
+      for idx, item in enumerate(provides):
+        item_prev = items_by_identifier.get(item.identifier(), None)
+        item_merged = item_prev.merge(item) if item_prev is not None else item
+        items_by_identifier[item.identifier()] = item_merged
+        provides[idx] = item_merged
+      new_group = copy(group)
+      new_group.provides = provides
+      result.append(new_group)
     return result
 
   @classmethod
@@ -258,7 +252,7 @@ class Koti:
     return cls.reduce_items([merged_item, *items[2:]])
 
   @classmethod
-  def separate_into_phases(cls, groups: Sequence[ConfigGroup]) -> list[list[ConfigGroup]]:
+  def separate_into_phases(cls, groups: list[ConfigGroup]) -> list[list[ConfigGroup]]:
     result: list[list[ConfigGroup]] = [list(groups)]
     while True:
       violation = cls.find_dependency_violation(result)
@@ -274,28 +268,21 @@ class Koti:
     return result
 
   @classmethod
-  def get_all_provided_groups(cls, configs: Sequence[ConfigGroup]) -> Sequence[ConfigGroup]:
-    result: list[ConfigGroup] = []
-    for config_group in configs:
-      config_group_list = config_group if isinstance(config_group, list) else [config_group]
-      result += [group for group in config_group_list if group is not None]
-    return result
-
-  @classmethod
-  def create_install_phase(cls, managers: Sequence[ConfigManager], groups_in_phase: list[ConfigGroup], merged_items_in_phase: list[ConfigItem]) -> InstallPhase:
+  def create_install_phase(cls, managers: Sequence[ConfigManager], merged_groups_in_phase: list[ConfigGroup]) -> InstallPhase:
     steps: list[InstallStep] = []
     for manager in managers:
       items_for_manager = [
-        item for item in merged_items_in_phase
+        item for group in merged_groups_in_phase
+        for item in group.provides
         if isinstance(item, ManagedConfigItem) and item.__class__ in manager.managed_classes
       ]
       if not items_for_manager:
         continue  # only add the manager to the install phase if it actually has items to check
       steps.append(InstallStep(manager = manager, items_to_install = items_for_manager))
     return InstallPhase(
-      groups = groups_in_phase,
+      groups = merged_groups_in_phase,
       order = steps,
-      items = merged_items_in_phase
+      items = [item for group in merged_groups_in_phase for item in group.provides],
     )
 
   # FIXME: Refactoring
@@ -312,7 +299,7 @@ class Koti:
             raise AssertionError(f"required item not found: {required_item.identifier()}")
           required_phase_idx, required_group = required_phase_and_group
           if required_phase_idx >= phase_idx:
-            if group == required_group: raise AssertionError(f"group with dependency to itself")
+            assert required_group is not group, f"group with requires-dependency to itself: {group.description}"
             return required_phase_idx, required_group
 
         # check after
@@ -320,6 +307,7 @@ class Koti:
           for other_phase_idx, other_phase in enumerate(phases):
             for other_group in other_phase:
               if other_group.after(item) and phase_idx >= other_phase_idx:
+                assert other_group is not group, f"group with after-dependency to itself: {group.description}"
                 return phase_idx, group
 
         # check before
@@ -327,6 +315,7 @@ class Koti:
           for other_phase_idx, other_phase in enumerate(phases):
             for other_group in other_phase:
               if other_group.before(item) and other_phase_idx >= phase_idx:
+                assert other_group is not group, f"group with before-dependency to itself: {group.description}"
                 return other_phase_idx, other_group
 
     return None

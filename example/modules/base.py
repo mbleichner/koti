@@ -105,7 +105,6 @@ def base() -> Generator[ConfigGroup]:
         SigLevel = Required DatabaseOptional
         LocalFileSigLevel = Optional
     
-    
         [core]
         CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
         Include = /etc/pacman.d/mirrorlist
