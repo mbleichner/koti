@@ -7,7 +7,6 @@ from modules.desktop import desktop
 from modules.fish import fish
 from modules.gaming import gaming
 from modules.kernel import kernel_cachyos, kernel_stock
-from modules.koti_dev import koti_dev
 from modules.networking import network_manager
 from modules.nvidia_undervolting import nvidia_undervolting
 from modules.nvme_thermal_throttling import nvme_thermal_throttling
