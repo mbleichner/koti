@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import Iterable
+from typing import Any, Callable, Iterable
 
+from koti import ConfigModel
 from koti.model import ConfigItem, ManagedConfigItem
 
 
@@ -13,10 +14,12 @@ class Package(ManagedConfigItem):
     self,
     name: str,
     url: str | None = None,
+    script: Callable[[ConfigModel], Any] | None = None,
     tags: Iterable[str] | None = None
   ):
     self.name = name
     self.url = url
+    self.script = script
     self.tags = set(tags or [])
 
   def identifier(self):
@@ -31,10 +34,14 @@ class Package(ManagedConfigItem):
   def merge(self, other: ConfigItem) -> Package:
     assert isinstance(other, Package)
     assert other.identifier() == self.identifier()
-    assert self.url == other.url, f"Package('{self.name}') has conflicting url parameter"
+    if self.url is not None and other.url is not None:
+      assert self.url == other.url, f"Package('{self.name}') has conflicting url parameter"
+    if self.script is not None and other.script is not None:
+      assert self.script == other.script, f"Package('{self.name}') has conflicting script parameter"
     return Package(
       name = self.name,
       url = self.url,
+      script = self.script,
       tags = self.tags.union(other.tags),
     )
 

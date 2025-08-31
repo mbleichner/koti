@@ -15,10 +15,10 @@ class PacmanAdapter:
     self.extra_args = extra_args
 
   def list_explicit_packages(self) -> list[str]:
-    return self.parse_pkgs(shell_output(f"{self.pacman} -Qqe", check = False))
+    return self.parse_pkgs(shell_output(f"pacman -Qqe", check = False))
 
   def list_installed_packages(self) -> list[str]:
-    return self.parse_pkgs(shell_output(f"{self.pacman} -Qq", check = False))
+    return self.parse_pkgs(shell_output(f"pacman -Qq", check = False))
 
   def install(self, packages: list[str]):
     if packages:
@@ -26,20 +26,20 @@ class PacmanAdapter:
 
   def install_from_url(self, urls: list[str]):
     if urls:
-      shell(f"{self.pacman} -U {self.extra_args} {" ".join(urls)}")
+      shell(f"pacman -U {self.extra_args} {" ".join(urls)}")
 
   def mark_as_explicit(self, packages: list[str]):
     if packages:
-      shell(f"{self.pacman} -D --asexplicit {self.extra_args} {" ".join(packages)}")
+      shell(f"pacman -D --asexplicit {self.extra_args} {" ".join(packages)}")
 
   def mark_as_dependency(self, packages: list[str]):
     if packages:
-      shell(f"{self.pacman} -D --asdeps {self.extra_args} {" ".join(packages)}")
+      shell(f"pacman -D --asdeps {self.extra_args} {" ".join(packages)}")
 
   def prune_unneeded(self):
     unneeded_packages = self.parse_pkgs(shell_output(f"{self.pacman} -Qdttq", check = False))
     if len(unneeded_packages) > 0:
-      shell(f"{self.pacman} -Rns {self.extra_args} {" ".join(unneeded_packages)}")
+      shell(f"pacman -Rns {self.extra_args} {" ".join(unneeded_packages)}")
 
   def parse_pkgs(self, output: str) -> list[str]:
     if "there is nothing to do" in output: return []
@@ -90,17 +90,29 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     return []
 
   def install(self, items: list[Package], model: ConfigModel):
-    url_items = [item for item in items if item.url is not None]
-    repo_items = [item for item in items if item.url is None]
     installed_packages = self.delegate.list_installed_packages()
     explicit_packages = self.delegate.list_explicit_packages()
 
-    additional_items_from_urls = [item for item in url_items if item.name not in installed_packages]
+    additional_items_from_urls: list[Package] = []
+    additional_items_from_script: list[Package] = []
+    additional_items_from_repo: list[Package] = []
+    for item in items:
+      if item.name in installed_packages:
+        continue
+      if item.url is not None:
+        additional_items_from_urls.append(item)
+      elif item.script is not None:
+        additional_items_from_script.append(item)
+      else:
+        additional_items_from_repo.append(item)
+
+    for item in additional_items_from_script:
+      if item.script: item.script(model)
+
     self.delegate.install_from_url(
       urls = [item.url for item in additional_items_from_urls if item.url is not None],
     )
 
-    additional_items_from_repo = [item for item in repo_items if item.name not in installed_packages]
     self.delegate.install(
       packages = [item.name for item in additional_items_from_repo],
     )

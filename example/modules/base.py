@@ -1,5 +1,3 @@
-from inspect import cleandoc
-
 from koti import *
 from koti.utils import *
 
@@ -76,16 +74,29 @@ def base() -> Generator[ConfigGroup]:
   )
 
   yield ConfigGroup(
-    description = "basic bootstrapping of pacman and keyrings",
-    tags = ["CRITICAL"],
-    before = lambda item: isinstance(item, Package) and item.url is None,
+    description = "bootstrap keyrings, pacman, paru",
+    tags = ["bootstrap"],
+    before = lambda item: isinstance(item, Package) and not "bootstrap" in item.tags,
     provides = [
       PacmanKey("F3B607488DB35A47", comment = "cachyos"),
       Package("cachyos-keyring", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst"),
       Package("cachyos-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst"),
       Package("cachyos-v3-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst"),
 
-      User("manuel", home = "/home/manuel", shell = "/usr/bin/fish", groups = ["games", "wheel"]),
+      User(
+        username = "manuel",
+        home = "/home/manuel",
+        shell = "/usr/bin/fish",
+        groups = ["games", "wheel"], # FIXME: Gruppen anlegen, falls noch nicht vorhanden
+      ),
+
+      Package("paru", script = lambda model: shell("""
+        builddir=$(mktemp -d -t paru.XXXXXX)
+        echo $?
+        echo $builddir
+        git clone https://aur.archlinux.org/paru.git $builddir
+        makepkg -si -D $builddir
+      """, sudo = "manuel")),
 
       # Declare options for pacman.conf (so I don't have to null-check later)
       Option[str]("/etc/pacman.conf/NoExtract"),
@@ -137,19 +148,6 @@ def base() -> Generator[ConfigGroup]:
         CacheServer = http://pacoloco.fritz.box/repo/cachyos/$arch/$repo
         Include = /etc/pacman.d/cachyos-mirrorlist
       ''')),
-    ]
-  )
-
-  yield ConfigGroup(
-    description = "pacman related utilities",
-    tags = ["CRITICAL"],
-    provides = [
-      Package("pacman-contrib"),
-      Package("pacutils"),
-      Package("paru"),
-      Package("base-devel"),
-      Package("reflector"),
-      Package("lostfiles"),
 
       File("/etc/paru.conf", permissions = "r--", content = cleandoc('''
         [options]
@@ -162,6 +160,18 @@ def base() -> Generator[ConfigGroup]:
         CombinedUpgrade
         CleanAfter
       ''')),
+    ]
+  )
+
+  yield ConfigGroup(
+    description = "pacman related utilities",
+    tags = ["CRITICAL"],
+    provides = [
+      Package("pacman-contrib"),
+      Package("pacutils"),
+      Package("base-devel"),
+      Package("reflector"),
+      Package("lostfiles"),
 
       File("/etc/pacman.d/hooks/nvidia.hook", permissions = "r--", content = cleandoc('''
         [Trigger]
