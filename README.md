@@ -78,3 +78,12 @@ See the `examples` folder, specifically `koti-apply` and all the stuff in the `m
 - **decman** is a really nice tool that I used for a while. Unfortunately, it makes a few assumptions about the order of things to execute that lead to technical problems. For example - usually you
   install packages and then set up the corresponding config files, but in other cases you need to set up some config files before installing packages (think of `pacman.conf`). Decman doesn't allow you
   to control this, which means when you try to setup a system from scratch, you will run into crashes that need to be fixed by hand.
+
+
+## Testing in distrobox
+
+hostname distrobox
+sudo pacman -Syu base-devel python python-urllib3 systemd git sudo
+git clone https://github.com/mbleichner/koti.git
+cd koti/example
+sudo PYTHONPATH=$HOME/koti/src ./koti-apply

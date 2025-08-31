@@ -11,12 +11,13 @@ from socket import gethostname
 
 from koti import *
 from koti.utils import confirm
-from systems import dan, lenovo, mserver
+from systems import dan, lenovo, mserver, distrobox
 
 my_arch_systems = {
-  "dan":     dan(),  # ...... DAN A4-SFX desktop PC
-  "lenovo":  lenovo(),  # ... Lenovo X13 laptop
-  "mserver": mserver(),  # .. Homelab server
+  "dan":     dan(),  # .......... DAN A4-SFX desktop PC
+  "lenovo":  lenovo(),  # ....... Lenovo X13 laptop
+  "mserver": mserver(),  # ...... Homelab server
+  "distrobox": distrobox(),  # .. koti testing
 }
 
 koti = Koti(
