@@ -1,50 +1,55 @@
 from __future__ import annotations
 
-from inspect import cleandoc
 from subprocess import CalledProcessError, Popen, run
+from os import environ
 
 
-def shell(command: str, check: bool = True, executable: str = "/bin/sh", sudo: str | None = None):
+def shell(command: str, check: bool = True, executable: str = "/bin/sh", user: str | None = None):
   with Popen(
-    add_sudo(command, executable, sudo),
+    command,
     shell = True,
     executable = executable,
+    user = user,
+    env = env_for_user(user) if user else None,
   ) as process:
     if process.wait() != 0 and check:
       raise AssertionError(f"command failed: {command}")
 
 
-def shell_output(command: str, check: bool = True, executable: str = "/bin/sh", sudo: str | None = None) -> str:
+def shell_output(command: str, check: bool = True, executable: str = "/bin/sh", user: str | None = None) -> str:
   return run(
-    add_sudo(command, executable, sudo),
+    command,
+    executable = executable,
     check = check,
     shell = True,
     capture_output = True,
     universal_newlines = True,
-    executable = executable,
+    user = user,
+    env = env_for_user(user) if user else None,
   ).stdout.strip()
 
 
-def shell_success(command: str, executable: str = "/bin/sh", sudo: str | None = None) -> bool:
+def shell_success(command: str, executable: str = "/bin/sh", user: str | None = None) -> bool:
   try:
     run(
-      add_sudo(command, executable, sudo),
+      command,
+      executable = executable,
       check = True,
       shell = True,
       capture_output = True,
       universal_newlines = True,
-      executable = executable,
+      user = user,
+      env = env_for_user(user) if user else None,
     )
     return True
   except CalledProcessError:
     return False
 
 
-def add_sudo(command: str, executable: str, sudo: str | None):
-  if sudo is None:
-    return command
-  return cleandoc(f"""
-    <<- 'EOF' sudo -u manuel {executable} -s
-      {command}
-    EOF
-  """)
+def env_for_user(user: str) -> dict[str, str]:
+  user_homes: dict[str, str] = dict([line.split(":") for line in shell_output("getent passwd | cut -d: -f1,6").splitlines()])
+  home = user_homes.get(user, None)
+  result = {**environ, "USER": user}
+  if home:
+    result["HOME"] = home
+  return result

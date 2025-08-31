@@ -1,9 +1,8 @@
 from inspect import cleandoc
-from typing import TypedDict
+from typing import Generator, TypedDict
 
 from koti import *
-from koti.items.hooks import PostHookTriggerScope
-from koti.utils import shell
+from koti.utils.shell import shell
 
 
 def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:

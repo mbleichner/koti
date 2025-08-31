@@ -1,5 +1,8 @@
+from inspect import cleandoc
+from typing import Generator
+
 from koti import *
-from koti.utils import *
+from koti.utils.shell import shell
 
 
 def base() -> Generator[ConfigGroup]:
@@ -87,16 +90,17 @@ def base() -> Generator[ConfigGroup]:
         username = "manuel",
         home = "/home/manuel",
         shell = "/usr/bin/fish",
-        groups = ["games", "wheel"], # FIXME: Gruppen anlegen, falls noch nicht vorhanden
+        groups = ["games", "wheel"],  # FIXME: Gruppen anlegen, falls noch nicht vorhanden
       ),
 
       Package("paru", script = lambda model: shell("""
         builddir=$(mktemp -d -t paru.XXXXXX)
-        echo $?
+        echo $USER
+        echo $HOME
         echo $builddir
         git clone https://aur.archlinux.org/paru.git $builddir
         makepkg -si -D $builddir
-      """, sudo = "manuel")),
+      """, user = "manuel")),
 
       # Declare options for pacman.conf (so I don't have to null-check later)
       Option[str]("/etc/pacman.conf/NoExtract"),

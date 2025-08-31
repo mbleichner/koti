@@ -1,9 +1,9 @@
 from inspect import cleandoc
+from typing import Generator
 
 from koti import *
 from koti.items import *
-from koti.items.hooks import PostHookTriggerScope
-from koti.utils import shell
+from koti.utils.shell import shell
 
 
 def gaming() -> Generator[ConfigGroup]:

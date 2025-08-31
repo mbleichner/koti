@@ -5,7 +5,8 @@ from os import getuid
 from typing import Iterator
 
 from koti.model import *
-from koti.utils import *
+from koti.utils.colors import *
+from koti.utils.json_store import *
 
 
 class Koti:

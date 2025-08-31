@@ -5,7 +5,7 @@ from hashlib import sha256
 from koti.utils.colors import *
 from koti.model import ConfigItem, ConfigItemState, ConfigManager, ConfigModel, ManagedConfigItem
 from koti.items.hooks import PostHook
-from koti.utils import JsonMapping, JsonStore
+from koti.utils.json_store import JsonMapping, JsonStore
 
 
 class PostHookState(ConfigItemState):

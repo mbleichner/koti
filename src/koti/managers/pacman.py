@@ -1,7 +1,7 @@
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.package import Package
 from koti.items.pacman_key import PacmanKey
-from koti.utils import JsonCollection, JsonStore
+from koti.utils.json_store import JsonCollection, JsonStore
 from koti.utils.shell import shell, shell_output, shell_success
 from koti.utils.colors import *
 
@@ -144,8 +144,9 @@ class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
   def install(self, items: list[PacmanKey], model: ConfigModel):
     for item in items:
       print(f"installing pacman-key {item.key_id} from {item.key_server}")
-      shell(f"sudo pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
-      shell(f"sudo pacman-key --lsign-key {item.key_id}")
+      shell("pacman-key --init")
+      shell(f"pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
+      shell(f"pacman-key --lsign-key {item.key_id}")
 
   def uninstall(self, items: list[PacmanKey]):
     pass

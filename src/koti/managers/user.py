@@ -4,11 +4,10 @@ import os.path
 import pwd
 from hashlib import sha256
 
-from koti import shell, shell_output
+from koti.utils.shell import shell, shell_output
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.user import User
-from koti.utils import JsonCollection
-from koti.utils.json_store import JsonStore
+from koti.utils.json_store import JsonCollection, JsonStore
 from koti.utils.colors import *
 
 

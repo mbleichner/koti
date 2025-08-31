@@ -11,8 +11,7 @@ from koti.utils.colors import *
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.file import File
 from koti.items.directory import Directory
-from koti.utils import JsonCollection
-from koti.utils.json_store import JsonStore
+from koti.utils.json_store import JsonCollection, JsonStore
 
 
 class FileState(ConfigItemState):

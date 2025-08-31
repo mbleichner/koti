@@ -2,7 +2,7 @@ from inspect import cleandoc
 from typing import Generator
 
 from koti import *
-from koti.utils import shell
+from koti.utils.shell import shell
 
 
 def fish() -> Generator[ConfigGroup]:

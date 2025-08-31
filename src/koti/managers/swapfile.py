@@ -3,8 +3,7 @@ from hashlib import sha256
 
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.swapfile import Swapfile
-from koti.utils import JsonCollection
-from koti.utils.json_store import JsonStore
+from koti.utils.json_store import JsonCollection, JsonStore
 from koti.utils.shell import shell, shell_success
 from koti.utils.colors import *
 

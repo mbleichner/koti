@@ -1,8 +1,8 @@
 from inspect import cleandoc
+from typing import Generator
 
 from koti import *
-from koti.items.hooks import PostHookTriggerScope
-from koti.utils import shell
+from koti.utils.shell import shell
 from modules.base import base, swapfile
 from modules.cpufreq import cpufreq
 from modules.fish import fish

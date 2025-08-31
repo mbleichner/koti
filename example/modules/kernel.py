@@ -1,7 +1,8 @@
 from inspect import cleandoc
+from typing import Generator
 
 from koti import *
-from koti.utils import shell_output
+from koti.utils.shell import shell_output
 
 root_uuid = shell_output("findmnt -n -o UUID $(stat -c '%m' /)")
 

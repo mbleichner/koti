@@ -1,4 +1,5 @@
 from inspect import cleandoc
+from typing import Generator
 
 from koti import *
 from modules.base import base, swapfile
