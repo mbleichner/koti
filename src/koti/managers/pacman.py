@@ -21,8 +21,9 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
   ignore_manually_installed_packages: bool
   managed_packages_store: JsonCollection[str]
   explicit_packages_on_system: set[str]  # holds the list of explicitly installed packages on the system; will be updated whenever the manager adds/removes explicit packages.
+  aur_helper: tuple[str, str] | None  # FIXME: besseren Type ausdenken
 
-  def __init__(self, keep_unmanaged_packages: bool, aur_helper: str | None = None):
+  def __init__(self, keep_unmanaged_packages: bool, aur_helper: tuple[str, str] | None = None):
     super().__init__()
     store = JsonStore("/var/cache/koti/PacmanPackageManager.json")
     self.aur_helper = aur_helper
@@ -111,7 +112,10 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
 
   def pacman_install(self, packages: list[str]):
     if packages:
-      shell(f"{self.aur_helper or "pacman"} -Syu {" ".join(packages)}")
+      if self.aur_helper:
+        shell(f"{self.aur_helper[0]} -Syu {" ".join(packages)}", user = self.aur_helper[1])
+      else:
+        shell(f"pacman -Syu {" ".join(packages)}")
 
   def pacman_install_from_url(self, urls: list[str]):
     if urls:

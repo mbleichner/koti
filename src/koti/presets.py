@@ -7,7 +7,7 @@ class ConfigManagerPresets:
 
   @staticmethod
   def arch(
-    aur_helper: str | None = None,
+    aur_helper: tuple[str, str] | None = None,
     keep_unmanaged_packages: bool = False,
   ) -> list[ConfigManager]:
     return [

@@ -10,20 +10,20 @@
 from socket import gethostname
 
 from koti import *
-from koti.utils import confirm
-from systems import dan, lenovo, mserver, distrobox
+from koti.utils.confirm import confirm
+from systems import dan, distrobox, lenovo, mserver
 
 my_arch_systems = {
-  "dan":     dan(),  # .......... DAN A4-SFX desktop PC
-  "lenovo":  lenovo(),  # ....... Lenovo X13 laptop
-  "mserver": mserver(),  # ...... Homelab server
+  "dan":       dan(),  # .......... DAN A4-SFX desktop PC
+  "lenovo":    lenovo(),  # ....... Lenovo X13 laptop
+  "mserver":   mserver(),  # ...... Homelab server
   "distrobox": distrobox(),  # .. koti testing
 }
 
 koti = Koti(
   configs = my_arch_systems[gethostname()],  # .... choose system config based on the current hostname
   managers = ConfigManagerPresets.arch(  # ........ use preconfigured default managers for Arch Linux
-    aur_helper = "sudo -u manuel paru",  # ........ but use paru instead of pacman to install stuff
+    aur_helper = ("paru", "manuel"),  # ........... but use paru instead of pacman to install stuff
     keep_unmanaged_packages = False,  # ........... remove any packages that aren't mentioned in the koti config (this is the default)
   ),
 )
