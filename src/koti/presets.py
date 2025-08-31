@@ -7,14 +7,14 @@ class ConfigManagerPresets:
 
   @staticmethod
   def arch(
-    pacman_adapter: PacmanAdapter = PacmanAdapter(),
+    aur_helper: str | None = None,
     keep_unmanaged_packages: bool = False,
   ) -> list[ConfigManager]:
     return [
       UserManager(),
       PacmanKeyManager(),
       PacmanPackageManager(
-        delegate = pacman_adapter,
+        aur_helper = aur_helper,
         keep_unmanaged_packages = keep_unmanaged_packages
       ),
       SwapfileManager(),

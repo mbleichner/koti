@@ -6,46 +6,6 @@ from koti.utils.shell import shell, shell_output, shell_success
 from koti.utils.colors import *
 
 
-class PacmanAdapter:
-  extra_args: str
-  pacman: str
-
-  def __init__(self, pacman: str = "pacman", extra_args: str = ""):
-    self.pacman = pacman
-    self.extra_args = extra_args
-
-  def list_explicit_packages(self) -> list[str]:
-    return self.parse_pkgs(shell_output(f"pacman -Qqe", check = False))
-
-  def list_installed_packages(self) -> list[str]:
-    return self.parse_pkgs(shell_output(f"pacman -Qq", check = False))
-
-  def install(self, packages: list[str]):
-    if packages:
-      shell(f"{self.pacman} -Syu {self.extra_args} {" ".join(packages)}")
-
-  def install_from_url(self, urls: list[str]):
-    if urls:
-      shell(f"pacman -U {self.extra_args} {" ".join(urls)}")
-
-  def mark_as_explicit(self, packages: list[str]):
-    if packages:
-      shell(f"pacman -D --asexplicit {self.extra_args} {" ".join(packages)}")
-
-  def mark_as_dependency(self, packages: list[str]):
-    if packages:
-      shell(f"pacman -D --asdeps {self.extra_args} {" ".join(packages)}")
-
-  def prune_unneeded(self):
-    unneeded_packages = self.parse_pkgs(shell_output(f"{self.pacman} -Qdttq", check = False))
-    if len(unneeded_packages) > 0:
-      shell(f"pacman -Rns {self.extra_args} {" ".join(unneeded_packages)}")
-
-  def parse_pkgs(self, output: str) -> list[str]:
-    if "there is nothing to do" in output: return []
-    return [pkg for pkg in output.split("\n") if pkg]
-
-
 class PackageState(ConfigItemState):
   def hash(self) -> str:
     return "-"
@@ -58,18 +18,17 @@ class PacmanKeyState(ConfigItemState):
 
 class PacmanPackageManager(ConfigManager[Package, PackageState]):
   managed_classes = [Package]
-  delegate: PacmanAdapter
   ignore_manually_installed_packages: bool
   managed_packages_store: JsonCollection[str]
   explicit_packages_on_system: set[str]  # holds the list of explicitly installed packages on the system; will be updated whenever the manager adds/removes explicit packages.
 
-  def __init__(self, delegate: PacmanAdapter, keep_unmanaged_packages: bool):
+  def __init__(self, keep_unmanaged_packages: bool, aur_helper: str | None = None):
     super().__init__()
     store = JsonStore("/var/cache/koti/PacmanPackageManager.json")
+    self.aur_helper = aur_helper
     self.managed_packages_store = store.collection("managed_packages")
-    self.delegate = delegate
     self.ignore_manually_installed_packages = keep_unmanaged_packages
-    self.explicit_packages_on_system = set(self.delegate.list_explicit_packages())
+    self.explicit_packages_on_system = set(self.pacman_list_explicit_packages())
 
   def assert_installable(self, item: Package, model: ConfigModel):
     if item.url is not None:
@@ -90,8 +49,8 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     return []
 
   def install(self, items: list[Package], model: ConfigModel):
-    installed_packages = self.delegate.list_installed_packages()
-    explicit_packages = self.delegate.list_explicit_packages()
+    installed_packages = self.pacman_list_installed_packages()
+    explicit_packages = self.pacman_list_explicit_packages()
 
     additional_items_from_urls: list[Package] = []
     additional_items_from_script: list[Package] = []
@@ -109,20 +68,20 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     for item in additional_items_from_script:
       if item.script: item.script(model)
 
-    self.delegate.install_from_url(
+    self.pacman_install_from_url(
       urls = [item.url for item in additional_items_from_urls if item.url is not None],
     )
 
-    self.delegate.install(
+    self.pacman_install(
       packages = [item.name for item in additional_items_from_repo],
     )
 
     additional_explicit_items = [item for item in items if item.name not in explicit_packages]
-    self.delegate.mark_as_explicit(
+    self.pacman_mark_as_explicit(
       packages = [item.name for item in additional_explicit_items],
     )
 
-    self.explicit_packages_on_system = set(self.delegate.list_explicit_packages())
+    self.explicit_packages_on_system = set(self.pacman_list_explicit_packages())
     self.managed_packages_store.add_all([item.name for item in items])
 
   def installed(self, model: ConfigModel) -> list[Package]:
@@ -135,14 +94,45 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
 
   def uninstall(self, items: list[Package]):
     package_names = [pkg.name for pkg in items]
-    self.delegate.mark_as_dependency(package_names)
+    self.pacman_mark_as_dependency(package_names)
     self.managed_packages_store.remove_all(package_names)
-    self.delegate.prune_unneeded()
-    self.explicit_packages_on_system = set(self.delegate.list_explicit_packages())
+    self.pacman_prune_unneeded()
+    self.explicit_packages_on_system = set(self.pacman_list_explicit_packages())
 
   def finalize(self, model: ConfigModel):
     packages = [item.name for phase in model.phases for item in phase.items if isinstance(item, Package)]
     self.managed_packages_store.replace_all(packages)
+
+  def pacman_list_explicit_packages(self) -> list[str]:
+    return self.parse_pkgs(shell_output(f"pacman -Qqe", check = False))
+
+  def pacman_list_installed_packages(self) -> list[str]:
+    return self.parse_pkgs(shell_output(f"pacman -Qq", check = False))
+
+  def pacman_install(self, packages: list[str]):
+    if packages:
+      shell(f"{self.aur_helper or "pacman"} -Syu {" ".join(packages)}")
+
+  def pacman_install_from_url(self, urls: list[str]):
+    if urls:
+      shell(f"pacman -U {" ".join(urls)}")
+
+  def pacman_mark_as_explicit(self, packages: list[str]):
+    if packages:
+      shell(f"pacman -D --asexplicit {" ".join(packages)}")
+
+  def pacman_mark_as_dependency(self, packages: list[str]):
+    if packages:
+      shell(f"pacman -D --asdeps {" ".join(packages)}")
+
+  def pacman_prune_unneeded(self):
+    unneeded_packages = self.parse_pkgs(shell_output(f"pacman -Qdttq", check = False))
+    if len(unneeded_packages) > 0:
+      shell(f"pacman -Rns {" ".join(unneeded_packages)}")
+
+  def parse_pkgs(self, output: str) -> list[str]:
+    if "there is nothing to do" in output: return []
+    return [pkg for pkg in output.split("\n") if pkg]
 
 
 class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
