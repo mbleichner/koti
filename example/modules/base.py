@@ -90,7 +90,6 @@ def base() -> Generator[ConfigGroup]:
         username = "manuel",
         home = "/home/manuel",
         shell = "/usr/bin/fish",
-        groups = ["games", "wheel"],  # FIXME: Gruppen anlegen, falls noch nicht vorhanden
       ),
 
       Package("paru", script = lambda model: shell("""
@@ -227,6 +226,7 @@ def base() -> Generator[ConfigGroup]:
     description = "sudo + /etc/sudoers",
     provides = [
       Package("sudo"),
+      GroupAssignment("manuel", "wheel"),
       File("/etc/sudoers", permissions = "r--", content = cleandoc('''
         ## Defaults specification
         ##

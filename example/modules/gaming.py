@@ -18,6 +18,7 @@ def gaming() -> Generator[ConfigGroup]:
       Package("nexusmods-app-bin"),
       Package("r2modman-bin"),
       Package("mangohud"),
+      GroupAssignment("manuel", "games"),
 
       *PostHookTriggerScope(
         # https://wiki.cachyos.org/configuration/general_system_tweaks

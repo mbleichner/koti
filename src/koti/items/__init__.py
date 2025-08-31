@@ -10,3 +10,4 @@ from koti.items.systemd import SystemdUnit, SystemdUnits
 from koti.items.flatpak_package import FlatpakPackage
 from koti.items.flatpak_repo import FlatpakRepo
 from koti.items.user import User
+from koti.items.group import GroupAssignment

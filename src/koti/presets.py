@@ -17,6 +17,7 @@ class ConfigManagerPresets:
         aur_helper = aur_helper,
         keep_unmanaged_packages = keep_unmanaged_packages
       ),
+      GroupManager(),
       SwapfileManager(),
       FlatpakManager(),
       FileManager(),

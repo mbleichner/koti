@@ -5,19 +5,16 @@ from koti.model import ConfigItem, ManagedConfigItem
 
 class User(ManagedConfigItem):
   username: str
-  groups: list[str]
   shell: str | None
   home: str | None
 
   def __init__(
     self,
     username: str,
-    groups: list[str] | None = None,
     shell: str | None = None,
     home: str | None = None,
   ):
     self.username = username
-    self.groups = groups or []
     self.shell = shell
     self.home = home
 
@@ -32,7 +29,6 @@ class User(ManagedConfigItem):
       assert self.home == other.home, f"User('{self.username}') has conflicting home parameter"
     return User(
       username = self.username,
-      groups = list(set(self.groups).union(other.groups)),
       shell = self.shell or other.shell or None,
       home = self.home or other.home or None,
     )

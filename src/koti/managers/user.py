@@ -14,20 +14,16 @@ from koti.utils.colors import *
 class UserState(ConfigItemState):
   def __init__(
     self,
-    groups: list[str],
     shell: str,
     home_dir: str,
     home_exists: bool,
   ):
-    self.groups = groups
     self.shell = shell
     self.home_dir = home_dir
     self.home_exists = home_exists
 
   def hash(self) -> str:
     sha256_hash = sha256()
-    for group in self.groups:
-      sha256_hash.update(group.encode())
     sha256_hash.update(self.shell.encode())
     sha256_hash.update(self.home_dir.encode())
     sha256_hash.update(str(self.home_exists).encode())
@@ -53,7 +49,6 @@ class UserManager(ConfigManager[User, UserState]):
     home = item.home or f"/home/{item.username}"
     shell = item.shell or "/usr/bin/nologin"
     return UserState(
-      groups = item.groups,
       shell = shell,
       home_dir = home,
       home_exists = True,
@@ -72,7 +67,6 @@ class UserManager(ConfigManager[User, UserState]):
     home = user_homes[item.username]
     shell = user_shells[item.username]
     return UserState(
-      groups = groups,
       shell = shell,
       home_dir = home,
       home_exists = os.path.isdir(home),
@@ -85,12 +79,6 @@ class UserManager(ConfigManager[User, UserState]):
       return [f"{RED}user will be removed from the system {ENDC}(home directory will not be touched to prevent accidental data loss)"]
 
     result: list[str] = []
-    groups_to_remove = set(current.groups).difference(target.groups)
-    if len(groups_to_remove) > 0:
-      result.append(f"{RED}group(s) will be removed from user: {", ".join(groups_to_remove)}")
-    groups_to_add = set(target.groups).difference(current.groups)
-    if len(groups_to_add) > 0:
-      result.append(f"{GREEN}group(s) will be added to user: {", ".join(groups_to_add)}")
     if current.shell != target.shell:
       result.append(f"{YELLOW}shell will be changed to {target.shell}")
     if current.home_exists != target.home_exists:
@@ -113,14 +101,6 @@ class UserManager(ConfigManager[User, UserState]):
       # update homedir and/or shell
       if current.shell != target.shell or current.home_dir != target.home_dir:
         shell(f"usermod --home {target.home_dir} --shell {target.shell} {user.username}")
-
-      # update groups
-      groups_to_add = set(target.groups).difference(current.groups)
-      groups_to_remove = set(current.groups).difference(target.groups)
-      for group in groups_to_add:
-        shell(f"gpasswd --add {user.username} {group}")
-      for group in groups_to_remove:
-        shell(f"gpasswd --delete {user.username} {group}")
 
       # create homedir if missing
       if not os.path.isdir(target.home_dir):
