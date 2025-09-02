@@ -3,8 +3,11 @@ from __future__ import annotations
 import os.path
 import pwd
 from hashlib import sha256
+from typing import Sequence
 
-from koti.utils.shell import shell, shell_output
+from koti import ConfigItemToInstall, ConfigItemToUninstall, ExecutionPlan
+from koti.utils.managers import GenericExecutionPlan, ShellExecutionPlan
+from koti.utils.shell import shell_output
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.user import User
 from koti.utils.json_store import JsonCollection, JsonStore
@@ -72,53 +75,61 @@ class UserManager(ConfigManager[User, UserState]):
       home_exists = os.path.isdir(home),
     )
 
-  def diff(self, current: UserState | None, target: UserState | None) -> list[str]:
-    if current is None:
-      return [f"{GREEN}user will be created"]
-    if target is None:
-      return [f"{RED}user will be removed from the system {ENDC}(home directory will not be touched to prevent accidental data loss)"]
+  def plan_install(self, items: list[ConfigItemToInstall[User, UserState]]) -> Sequence[ExecutionPlan]:
+    result: list[ExecutionPlan] = []
+    for user, current, target in items:
+      if current is None:
+        result.append(ShellExecutionPlan(
+          items = [user],
+          description = f"{GREEN}create new user",
+          command = f"useradd -d {target.home_dir} -s {target.shell} {user.username}",
+          after_execute = lambda: self.managed_users_store.add(user.username)
+        ))
 
-    result: list[str] = []
-    if current.shell != target.shell:
-      result.append(f"{YELLOW}shell will be changed to {target.shell}")
-    if current.home_exists != target.home_exists:
-      result.append(f"{GREEN}home directory will be created in {target.home_dir}")
-    if current.home_dir != target.home_dir:
-      result.append(f"{YELLOW}home directory will be set to {target.home_dir}")
+      if current is not None and current.shell != target.shell:
+        result.append(ShellExecutionPlan(
+          items = [user],
+          description = f"{YELLOW}update user shell",
+          command = f"usermod --shell {target.shell} {user.username}",
+          after_execute = lambda: self.managed_users_store.add(user.username)
+        ))
+
+      if current is not None and current.home_dir != target.home_dir:
+        result.append(ShellExecutionPlan(
+          items = [user],
+          description = f"{YELLOW}update user homedir",
+          command = f"usermod --home {target.home_dir}",
+          after_execute = lambda: self.managed_users_store.add(user.username)
+        ))
+
+      if current is not None and not current.home_exists:
+        result.append(GenericExecutionPlan(
+          items = [user],
+          description = f"{GREEN}create user homedir",
+          executable = lambda: self.create_homedir(user, target.home_dir),
+          details = target.home_dir,
+          after_execute = lambda: self.managed_users_store.add(user.username)
+        ))
+
     return result
 
-  def install(self, items: list[User], model: ConfigModel):
-    for user in items:
-      target = self.state_target(user, model, planning = False)
-      current = self.state_current(user)
+  def plan_uninstall(self, items: list[ConfigItemToUninstall[User, UserState]]) -> Sequence[ExecutionPlan]:
+    result: list[ExecutionPlan] = []
+    for user, current in items:
+      result.append(ShellExecutionPlan(
+        items = [user],
+        description = f"{RED}user will be deleted",
+        command = f"userdel {user.username}",
+        after_execute = lambda: self.managed_users_store.remove(user.username)
+      ))
+    return result
 
-      # create user if necessary
-      if current is None:
-        shell(f"useradd -d {target.home_dir} -s {target.shell} {user.username}")
-      current = self.state_current(user)
-      assert current is not None, f"user {user.username} could not be created"
-
-      # update homedir and/or shell
-      if current.shell != target.shell or current.home_dir != target.home_dir:
-        shell(f"usermod --home {target.home_dir} --shell {target.shell} {user.username}")
-
-      # create homedir if missing
-      if not os.path.isdir(target.home_dir):
-        getpwnam = pwd.getpwnam(user.username)
-        uid = getpwnam.pw_uid
-        gid = getpwnam.pw_gid
-        os.mkdir(target.home_dir)
-        os.chown(target.home_dir, uid, gid)
-
-      self.managed_users_store.add(user.username)
-
-  def uninstall(self, items: list[User]):
-    for user in items:
-      current = self.state_current(user)
-      if current is None: return
-      self.warnings.append(f"{YELLOW}home directory of user '{user.username}' won't get removed by koti to prevent accidental data loss - please delete it manually")
-      shell(f"userdel {user.username}")
-      self.managed_users_store.remove(user.username)
+  def create_homedir(self, user: User, homedir: str):
+    getpwnam = pwd.getpwnam(user.username)
+    uid = getpwnam.pw_uid
+    gid = getpwnam.pw_gid
+    os.mkdir(homedir)
+    os.chown(homedir, uid, gid)
 
   def finalize(self, model: ConfigModel):
     usernames = [item.username for phase in model.phases for item in phase.items if isinstance(item, User)]

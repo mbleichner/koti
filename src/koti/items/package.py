@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any, Callable, Iterable
 
-from koti import ConfigModel
 from koti.model import ConfigItem, ManagedConfigItem
 
 
@@ -14,7 +13,7 @@ class Package(ManagedConfigItem):
     self,
     name: str,
     url: str | None = None,
-    script: Callable[[ConfigModel], Any] | None = None,
+    script: Callable[[], Any] | None = None,
     tags: Iterable[str] | None = None
   ):
     self.name = name

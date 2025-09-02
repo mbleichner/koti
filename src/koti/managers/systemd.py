@@ -1,6 +1,10 @@
+from typing import Sequence
+
+from koti import ConfigItemToInstall, ConfigItemToUninstall, ExecutionPlan
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.systemd import SystemdUnit
 from koti.managers.pacman import shell
+from koti.utils.managers import ShellExecutionPlan
 from koti.utils.shell import shell_success
 from koti.utils.json_store import JsonCollection, JsonStore
 from koti.utils.colors import *
@@ -39,16 +43,6 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
       result += [SystemdUnit(name, username) for name in units_store.elements()]
     return result
 
-  def uninstall(self, items: list[SystemdUnit]):
-    distinct_users = {item.user for item in items}
-    for username in distinct_users:
-      units_store: JsonCollection[str] = self.store.collection(username or "$system")
-      items_to_deactivate = [item for item in items if item.user == username]
-      if len(items_to_deactivate) > 0:
-        unit_names = [item.name for item in items_to_deactivate]
-        shell(f"{self.systemctl_for_user(username)} disable --now {" ".join(unit_names)}")
-        units_store.remove_all(unit_names)
-
   def state_current(self, item: SystemdUnit) -> SystemdUnitState | None:
     enabled: bool = shell_success(f"{self.systemctl_for_user(item.user)} is-enabled {item.name}")
     return SystemdUnitState() if enabled else None
@@ -56,12 +50,33 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
   def state_target(self, item: SystemdUnit, model: ConfigModel, planning: bool) -> SystemdUnitState:
     return SystemdUnitState()
 
-  def diff(self, current: SystemdUnitState | None, target: SystemdUnitState | None) -> list[str]:
-    if current is None:
-      return [f"{GREEN}unit will be enabled"]
-    if target is None:
-      return [f"{RED}unit will be disabled"]
-    return []
+  def plan_install(self, items: list[ConfigItemToInstall[SystemdUnit, SystemdUnitState]]) -> Sequence[ExecutionPlan]:
+    result: list[ExecutionPlan] = []
+    users = set([item.user for item, current, target in items])
+    for username in users:
+      items_for_user = [item for item, current, target in items if item.user == username]
+      units_store: JsonCollection[str] = self.store.collection(username or "$system")
+      result.append(ShellExecutionPlan(
+        items = items_for_user,
+        description = f"{GREEN}enable systemd unit(s)",
+        command = f"systemctl daemon-reload && {self.systemctl_for_user(username)} enable --now {" ".join([item.name for item in items_for_user])}",
+        after_execute = lambda: units_store.add_all([item.name for item in items_for_user])
+      ))
+    return result
+
+  def plan_uninstall(self, items: list[ConfigItemToUninstall[SystemdUnit, SystemdUnitState]]) -> Sequence[ExecutionPlan]:
+    result: list[ExecutionPlan] = []
+    users = set([item.user for item, current in items])
+    for username in users:
+      items_for_user = [item for item, current in items if item.user == username]
+      units_store: JsonCollection[str] = self.store.collection(username or "$system")
+      result.append(ShellExecutionPlan(
+        items = items_for_user,
+        description = f"{RED}disable systemd units",
+        command = f"systemctl daemon-reload && {self.systemctl_for_user(username)} disable --now {" ".join([item.name for item in items_for_user])}",
+        after_execute = lambda: units_store.remove_all([item.name for item in items_for_user])
+      ))
+    return result
 
   def systemctl_for_user(self, user: str | None):
     return f"systemctl --user -M {user}@" if user is not None else "systemctl"

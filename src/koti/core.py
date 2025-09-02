@@ -4,6 +4,8 @@ from copy import copy
 from os import getuid
 from typing import Iterator
 
+from tabulate import tabulate
+
 from koti.model import *
 from koti.utils.colors import *
 from koti.utils.json_store import *
@@ -62,7 +64,7 @@ class Koti:
       manager.warnings.clear()
 
     model = self.create_model()
-    changes: list[tuple[ConfigItem, str]] = []
+    execution_plans: list[ExecutionPlan] = []
 
     # plan installation phases
     items_total = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
@@ -71,27 +73,31 @@ class Koti:
     for phase in model.phases:
       for step in phase.steps:
         manager = step.manager
+        changed_items: list[ConfigItemToInstall] = []
         for item in step.items_to_install:
           current = manager.state_current(item)
           target = manager.state_target(item, model, planning = True)
           if current is None or current.hash() != target.hash():
+            changed_items.append((item, current, target))
             if current is None:
               items_to_install.append(item)
             else:
               items_to_update.append(item)
-            for change_text in (manager.diff(current, target) or ["item will be installed/updated"]):
-              changes.append((item, change_text))
+        if changed_items:
+          execution_plans.extend(manager.plan_install(changed_items))
 
     # plan cleanup phase
     cleanup_phase = self.create_cleanup_phase(model)
     items_to_uninstall: list[ManagedConfigItem] = []
     for cleanup_step in cleanup_phase.steps:
       manager = cleanup_step.manager
+      removed_items: list[ConfigItemToUninstall] = []
       for item in cleanup_step.items_to_uninstall:
         items_to_uninstall.append(item)
         current = manager.state_current(item)
-        for change_text in (manager.diff(current, None) or ["item will be uninstalled"]):
-          changes.append((item, change_text))
+        removed_items.append((item, current))
+      if removed_items:
+        execution_plans.extend(manager.plan_uninstall(removed_items))
 
     # list all groups
     if groups or items:
@@ -124,9 +130,16 @@ class Koti:
     changed_item_count = len(items_to_install) + len(items_to_update) + len(items_to_uninstall)
     if changed_item_count > 0:
       printc(f"{len(items_total)} items total, {changed_item_count} items to update:", BOLD)
-      maxlen = max([len(item.description()) for item, change in changes])
-      for changed_item, change_text in changes:
-        printc(f"- {changed_item.description().ljust(maxlen)}  {change_text}")
+      table: list[list[str | None]] = []
+      for plan in execution_plans:
+        table.append([
+          f"- {plan.description()}",
+          "\n".join([item.description() for item in plan.items]),
+          "\n".join(plan.details())
+        ])
+      table = [[f"{cell}{ENDC}" for cell in row] for row in table]
+      if table:
+        print(tabulate(table, tablefmt = "plain", maxcolwidths = [60]))
     else:
       printc(f"{len(items_total)} items total, everything up to date", BOLD)
     print()
@@ -145,20 +158,32 @@ class Koti:
       for install_step in phase.steps:
         manager = install_step.manager
         items_to_update: list[ManagedConfigItem] = []
+        items_to_update_with_state: list[ConfigItemToInstall] = []
         for item in install_step.items_to_install:
           current = manager.state_current(item)
           target = manager.state_target(item, model, planning = False)
           if current is None or current.hash() != target.hash():
             items_to_update.append(item)
+            items_to_update_with_state.append((item, current, target))
         self.print_install_step_log(model, phase_idx, install_step, items_to_update)
-        manager.install(items_to_update, model) or []
+        if items_to_update:
+          execution_plan = manager.plan_install(items_to_update_with_state)
+          # FIXME: Double check if all items of the plan have been reviewed
+          for x in execution_plan: x.execute()
 
     # execute cleanup phase
     cleanup_phase = self.create_cleanup_phase(model)
     for cleanup_step in cleanup_phase.steps:
       manager = cleanup_step.manager
       self.print_cleanup_step_log(model, cleanup_step)
-      manager.uninstall(cleanup_step.items_to_uninstall)
+      items_to_uninstall_with_state: list[ConfigItemToUninstall] = []
+      for item in cleanup_step.items_to_uninstall:
+        current = manager.state_current(item)
+        items_to_uninstall_with_state.append((item, current))
+      if items_to_uninstall_with_state:
+        execution_plan = manager.plan_uninstall(items_to_uninstall_with_state)
+        # FIXME: Double check if all items of the plan have been reviewed
+        for x in execution_plan: x.execute()
 
     # updating persistent data
     self.save_tags(self.store, model)

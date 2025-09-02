@@ -1,9 +1,12 @@
 import os.path
 from hashlib import sha256
+from typing import Sequence
 
+from koti import ConfigItemToInstall, ConfigItemToUninstall, ExecutionPlan
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.swapfile import Swapfile
 from koti.utils.json_store import JsonCollection, JsonStore
+from koti.utils.managers import GenericExecutionPlan
 from koti.utils.shell import shell, shell_success
 from koti.utils.colors import *
 
@@ -30,42 +33,31 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
   def assert_installable(self, item: Swapfile, model: ConfigModel):
     assert item.size_bytes is not None, "missing size_bytes parameter"
 
-  def install(self, items: list[Swapfile], model: ConfigModel):
-    for item in items:
-      assert item.size_bytes is not None
-      exists = os.path.isfile(item.filename)
-      current_size = os.stat(item.filename).st_size if exists else 0
-      if not exists:
-        self.create_swapfile(item)
-      elif current_size != item.size_bytes:
-        if self.is_mounted(item.filename):
-          shell(f"swapoff {item.filename}")
-          os.unlink(item.filename)
-          self.create_swapfile(item)
-          shell(f"swapon {item.filename}")
-        else:
-          shell(f"rm -f {item.filename}")
-          self.create_swapfile(item)
-
-      self.managed_files_store.add(item.filename)
-
   def create_swapfile(self, item: Swapfile):
     shell(f"mkswap -U clear --size {item.size_bytes} --file {item.identifier}")
     shell(f"chmod 600 {item.identifier}")
+
+  def recreate_swapfile(self, item: Swapfile):
+    if self.is_mounted(item.filename):
+      shell(f"swapoff {item.filename}")
+      os.unlink(item.filename)
+      self.create_swapfile(item)
+      shell(f"swapon {item.filename}")
+    else:
+      shell(f"rm -f {item.filename}")
+      self.create_swapfile(item)
+
+  def delete_swapfile(self, item: Swapfile):
+    if os.path.isfile(item.filename):
+      if self.is_mounted(item.filename):
+        shell(f"swapoff {item.filename}")
+      os.unlink(item.filename)
 
   def is_mounted(self, swapfile: str) -> bool:
     return shell_success(f"swapon --show | grep {swapfile}")
 
   def installed(self, model: ConfigModel) -> list[Swapfile]:
     return [Swapfile(filename) for filename in self.managed_files_store.elements()]
-
-  def uninstall(self, items: list[Swapfile]):
-    for item in items:
-      if os.path.isfile(item.filename):
-        if self.is_mounted(item.filename):
-          shell(f"swapoff {item.filename}")
-        os.unlink(item.filename)
-      self.managed_files_store.remove(item.filename)
 
   def state_current(self, item: Swapfile) -> SwapfileState | None:
     if not os.path.isfile(item.filename):
@@ -76,14 +68,42 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
     assert item.size_bytes is not None
     return SwapfileState(size_bytes = item.size_bytes)
 
-  def diff(self, current: SwapfileState | None, target: SwapfileState | None) -> list[str]:
-    if current is None:
-      return [f"{GREEN}swapfile will be created"]
-    if target is None:
-      return [f"{RED}swapfile will be deleted"]
-    return [change for change in (
-      f"{YELLOW}change size from {current.size_bytes} to {target.size_bytes}" if current.size_bytes != target.size_bytes else None,
-    ) if change is not None]
+  def plan_install(self, items: list[ConfigItemToInstall[Swapfile, SwapfileState]]) -> Sequence[ExecutionPlan]:
+    result: list[ExecutionPlan] = []
+    for item, current, target in items:
+      assert item.size_bytes is not None
+
+      if current is None:
+        result.append(GenericExecutionPlan(
+          items = [item],
+          description = f"{GREEN}create swapfile",
+          executable = lambda: self.create_swapfile(item),
+          details = f"size = {target.size_bytes}",
+          after_execute = lambda: self.managed_files_store.add(item.filename),
+        ))
+
+      if current is not None and current.size_bytes != target.size_bytes:
+        result.append(GenericExecutionPlan(
+          items = [item],
+          description = f"{YELLOW}resize swapfile",
+          executable = lambda: self.recreate_swapfile(item),
+          details = f"{current.size_bytes} => {target.size_bytes}",
+          after_execute = lambda: self.managed_files_store.add(item.filename)
+        ))
+
+    return result
+
+  def plan_uninstall(self, items: list[ConfigItemToUninstall[Swapfile, SwapfileState]]) -> Sequence[ExecutionPlan]:
+    result: list[ExecutionPlan] = []
+    for item, current in items:
+      result.append(GenericExecutionPlan(
+        items = [item],
+        description = f"{RED}delete swapfile",
+        executable = lambda: self.delete_swapfile(item),
+        details = "please make sure the swapfile isn't referenced in fstab any more",
+        after_execute = lambda: self.managed_files_store.add(item.filename)
+      ))
+    return result
 
   def finalize(self, model: ConfigModel):
     swapfiles = [item.filename for phase in model.phases for item in phase.items if isinstance(item, Swapfile)]

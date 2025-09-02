@@ -94,6 +94,29 @@ class ConfigItemState(metaclass = ABCMeta):
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.hash()")
 
 
+type ConfigItemToInstall[T: ManagedConfigItem, S: ConfigItemState] = tuple[T, S | None, S]
+type ConfigItemToUninstall[T: ManagedConfigItem, S: ConfigItemState] = tuple[T, S | None]
+
+
+class ExecutionPlan[T: ManagedConfigItem](metaclass = ABCMeta):
+  items: list[T]
+
+  def __init__(self, items: list[T]):
+    self.items = items
+
+  @abstractmethod
+  def execute(self):
+    pass
+
+  @abstractmethod
+  def description(self) -> str:
+    pass
+
+  @abstractmethod
+  def details(self) -> list[str]:
+    pass
+
+
 class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMeta):
   managed_classes: list[Type] = []
   order_in_cleanup_phase: Literal["reverse_install_order", "first", "last"] = "reverse_install_order"
@@ -130,23 +153,11 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     pass
 
   @abstractmethod
-  def diff(self, current: S | None, target: S | None) -> Sequence[str]:
-    """Describes the changes between current and target state in a human-friendly fashion.
-    Each returned list entry will be printed in a separate line and may contain colors for better readability."""
+  def plan_install(self, items: list[ConfigItemToInstall[T, S]]) -> Sequence[ExecutionPlan]:
     pass
 
   @abstractmethod
-  def install(self, items: list[T], model: ConfigModel):
-    """Installs one or multiple items on the system. Can depend on the config model, as there might
-    be e.g. Option()s that need to be considered. If the install fails for some reason, a python error
-    should be raised, so the whole process gets halted (to avoid getting into inconsistent states)."""
-    pass
-
-  @abstractmethod
-  def uninstall(self, items: list[T]):
-    """Removes one or multiple items from the system. If the uninstall fails for some reason, the manager
-    can decide to kill the process by raising a python error or just log a warning in case the failed
-    uninstall is unlikely to cause any problems."""
+  def plan_uninstall(self, items: list[ConfigItemToUninstall[T, S]]) -> Sequence[ExecutionPlan]:
     pass
 
   @abstractmethod

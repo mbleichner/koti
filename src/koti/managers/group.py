@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from koti.utils.shell import shell, shell_output
+from typing import Sequence
+
+from koti import ConfigItemToInstall, ConfigItemToUninstall, ExecutionPlan
+from koti.utils.managers import ShellExecutionPlan
+from koti.utils.shell import shell_output
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.group import GroupAssignment
 from koti.utils.json_store import JsonCollection, JsonStore
@@ -45,21 +49,26 @@ class GroupManager(ConfigManager[GroupAssignment, GroupAssignmentState]):
         return GroupAssignmentState()
     return None
 
-  def diff(self, current: GroupAssignmentState | None, target: GroupAssignmentState | None) -> list[str]:
-    if current is None:
-      return [f"{GREEN}user will be assigned to group"]
-    if target is None:
-      return [f"{RED}user will be unassigned from group"]
-    return []
+  def plan_install(self, items: list[ConfigItemToInstall[GroupAssignment, GroupAssignmentState]]) -> Sequence[ExecutionPlan]:
+    result: list[ExecutionPlan] = []
+    for item, current, target in items:
+      result.append(ShellExecutionPlan(
+        items = [item],
+        description = f"{GREEN}assign user to group",
+        command = f"gpasswd --add {item.username} {item.group}",
+        after_execute = lambda: self.managed_users_store.add(item.username)
+      ))
+    return result
 
-  def install(self, items: list[GroupAssignment], model: ConfigModel):
-    for item in items:
-      shell(f"gpasswd --add {item.username} {item.group}")
-      self.managed_users_store.add(item.username)
-
-  def uninstall(self, items: list[GroupAssignment]):
-    for item in items:
-      shell(f"gpasswd --delete {item.username} {item.group}")
+  def plan_uninstall(self, items: list[ConfigItemToUninstall[GroupAssignment, GroupAssignmentState]]) -> Sequence[ExecutionPlan]:
+    result: list[ExecutionPlan] = []
+    for item, current in items:
+      result.append(ShellExecutionPlan(
+        items = [item],
+        description = f"{RED}unassign user from group",
+        command = f"gpasswd --delete {item.username} {item.group}",
+      ))
+    return result
 
   def finalize(self, model: ConfigModel):
     usernames = set([item.username for phase in model.phases for item in phase.items if isinstance(item, GroupAssignment)])

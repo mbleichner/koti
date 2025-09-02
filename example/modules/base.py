@@ -92,11 +92,8 @@ def base() -> Generator[ConfigGroup]:
         shell = "/usr/bin/fish",
       ),
 
-      Package("paru", script = lambda model: shell("""
+      Package("paru", script = lambda: shell("""
         builddir=$(mktemp -d -t paru.XXXXXX)
-        echo $USER
-        echo $HOME
-        echo $builddir
         git clone https://aur.archlinux.org/paru.git $builddir
         makepkg -si -D $builddir
       """, user = "manuel")),
@@ -215,6 +212,7 @@ def base() -> Generator[ConfigGroup]:
       Package("pyenv"),
       Package("mypy"),
       Package("python-urllib3"),
+      Package("python-tabulate"),
       Package("distrobox"),
       Package("docker"),
       Package("containerd"),

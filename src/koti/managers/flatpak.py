@@ -1,8 +1,10 @@
 from hashlib import sha256
 import re
-from typing import cast
+from typing import Sequence
 
+from koti import ConfigItemToInstall, ConfigItemToUninstall, ExecutionPlan
 from koti.utils.colors import *
+from koti.utils.managers import GenericExecutionPlan, ShellExecutionPlan
 from koti.utils.shell import shell, shell_output, shell_success
 from koti.items.flatpak_package import FlatpakPackage
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
@@ -44,31 +46,6 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     installed_repos = [FlatpakRepo(name) for name in shell_output("flatpak remotes --columns name").splitlines()]
     return [*installed_repos, *installed_packages]
 
-  def install(self, items: list[FlatpakRepo | FlatpakPackage], model: ConfigModel):
-    repo_items = [item for item in items if isinstance(item, FlatpakRepo)]
-    package_items = [item for item in items if isinstance(item, FlatpakPackage)]
-    if repo_items:
-      installed_remotes = shell_output("flatpak remotes --columns name").splitlines()
-      for item in repo_items:
-        if item.name in installed_remotes:
-          shell(f"flatpak remote-delete --force '{item.name}'")
-        shell(f"flatpak remote-add '{item.name}' '{item.spec_url}'")
-    if package_items:
-      shell(f"flatpak install {" ".join(item.id for item in package_items)}")
-
-  def uninstall(self, items: list[FlatpakRepo | FlatpakPackage]):
-    if not shell_success("flatpak --version"):
-      self.warnings.append(f"{RED}could not uninstall flatpak packages due to missing flatpak installation")
-      return
-
-    repo_items = [item for item in items if isinstance(item, FlatpakRepo)]
-    package_items = [item for item in items if isinstance(item, FlatpakPackage)]
-    if package_items:
-      shell(f"flatpak uninstall {" ".join(item.id for item in package_items)}")
-      shell("flatpak uninstall --unused")
-    for item in repo_items:
-      shell(f"flatpak remote-delete --force '{item.name}'", check = False)
-
   def state_current(self, item: FlatpakRepo | FlatpakPackage) -> FlatpakRepoState | FlatpakPackageState | None:
     flatpak_available = shell_success("flatpak --version")
     if not flatpak_available:
@@ -87,25 +64,49 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     else:
       return FlatpakPackageState()
 
-  def diff(self, current: FlatpakRepoState | FlatpakPackageState | None, target: FlatpakRepoState | FlatpakPackageState | None) -> list[str]:
-    if isinstance(current, FlatpakRepoState) or isinstance(target, FlatpakRepoState):
-      current = cast(FlatpakRepoState | None, current)
-      target = cast(FlatpakRepoState | None, target)
-      if current is None:
-        return [f"{GREEN}repo will be installed"]
-      if target is None:
-        return [f"{RED}repo will be removed (TODO)"]
-      return [change for change in [
-        f"{YELLOW}change repo_url from {current.repo_url} to {target.repo_url}" if current.repo_url != target.repo_url else None
-      ] if change is not None]
-    else:
-      current = cast(FlatpakPackageState | None, current)
-      target = cast(FlatpakPackageState | None, target)
-      if current is None:
-        return [f"{GREEN}package will be installed"]
-      if target is None:
-        return [f"{RED}package will be removed"]
-      return []
+  def plan_install(self, items: list[ConfigItemToInstall[FlatpakRepo | FlatpakPackage, FlatpakRepoState | FlatpakPackageState]]) -> Sequence[ExecutionPlan]:
+    result: list[ExecutionPlan] = []
+    repo_items = [item for item, current, target in items if isinstance(item, FlatpakRepo)]
+    package_items = [item for item, current, target in items if isinstance(item, FlatpakPackage)]
+    if repo_items:
+      installed_remotes = shell_output("flatpak remotes --columns name").splitlines()
+      for repo_item in repo_items:
+        already_installed = repo_item.name in installed_remotes
+        result.append(GenericExecutionPlan(
+          items = [repo_item],
+          executable = lambda: self.update_remote(repo_item, already_installed = already_installed),
+          description = f"{YELLOW}update flatpak repo" if already_installed else f"{GREEN}install flatpak repo"
+        ))
+    if package_items:
+      result.append(ShellExecutionPlan(
+        items = package_items,
+        command = f"flatpak install {" ".join(item.id for item in package_items)}",
+        description = f"{GREEN}install flatpak package(s)"
+      ))
+    return result
+
+  def plan_uninstall(self, items: list[ConfigItemToUninstall[FlatpakRepo | FlatpakPackage, FlatpakRepoState | FlatpakPackageState]]) -> Sequence[ExecutionPlan]:
+    result: list[ExecutionPlan] = []
+    repo_items = [item for item, current in items if isinstance(item, FlatpakRepo)]
+    package_items = [item for item, current in items if isinstance(item, FlatpakPackage)]
+    if package_items:
+      result.append(ShellExecutionPlan(
+        items = package_items,
+        command = f"flatpak uninstall {" ".join(item.id for item in package_items)} && flatpak uninstall --unused",
+        description = f"{RED}uninstall flatpak package(s)"
+      ))
+    for item in repo_items:
+      result.append(ShellExecutionPlan(
+        items = package_items,
+        command = f"flatpak remote-delete --force '{item.name}'",
+        description = f"{RED}uninstall flatpak remote"
+      ))
+    return result
+
+  def update_remote(self, item: FlatpakRepo, already_installed: bool):
+    if already_installed:
+      shell(f"flatpak remote-delete --force '{item.name}'")
+    shell(f"flatpak remote-add '{item.name}' '{item.spec_url}'")
 
   def get_installed_repo_url(self, item: FlatpakRepo) -> str | None:
     for line in shell_output("flatpak remotes --columns name,url").splitlines():

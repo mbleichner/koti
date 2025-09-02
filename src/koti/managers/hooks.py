@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from hashlib import sha256
+from typing import Sequence
 
+from koti import ConfigItemToInstall, ConfigItemToUninstall, ExecutionPlan
 from koti.utils.colors import *
 from koti.model import ConfigItem, ConfigItemState, ConfigManager, ConfigModel, ManagedConfigItem
 from koti.items.hooks import PostHook
 from koti.utils.json_store import JsonMapping, JsonStore
+from koti.utils.managers import GenericExecutionPlan
 
 
 class PostHookState(ConfigItemState):
@@ -41,13 +44,6 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
       assert exec_order_item is None or exec_order_item < exec_order_hook
       if exec_order_item is not None and not exec_order_item < exec_order_hook: f"{hook} has trigger that is evaluated too late: {item}"
 
-  def install(self, items: list[PostHook], model: ConfigModel):
-    for hook in items:
-      assert hook.execute is not None
-      new_state = self.state_target(hook, model, planning = False)
-      hook.execute()
-      self.trigger_hash_store.put(hook.name, new_state.trigger_hashes)
-
   @staticmethod
   def index_in_execution_order(model: ConfigModel, needle: ConfigItem) -> int | None:
     result = 0
@@ -61,10 +57,6 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
 
   def installed(self, model: ConfigModel) -> list[PostHook]:
     return [PostHook(name) for name in self.trigger_hash_store.keys()]
-
-  def uninstall(self, items: list[PostHook]):
-    for hook in items:
-      self.trigger_hash_store.remove(hook.name)
 
   def state_current(self, hook: PostHook) -> PostHookState | None:
     stored_value = self.trigger_hash_store.get(hook.name, None)
@@ -93,20 +85,35 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
 
     return manager.state_current(reference)
 
-  def diff(self, current: PostHookState | None, target: PostHookState | None) -> list[str]:
-    if current is None:
-      return [f"{GREEN}hook will be called for the first time"]
-    if target is None:
-      return [f"{RED}hook has been removed from config"]
-    all_triggers = set(current.trigger_hashes.keys()).union(target.trigger_hashes.keys())
-    changed_triggers = [
-      trigger for trigger in all_triggers
-      if current.trigger_hashes.get(trigger, None) != target.trigger_hashes.get(trigger, None)
-    ]
-    if changed_triggers:
-      return [f"{YELLOW}hook will be triggered due to changed dependencies"]
-    else:
-      return []
+  def plan_install(self, items: list[ConfigItemToInstall[PostHook, PostHookState]]) -> Sequence[ExecutionPlan]:
+    result: list[ExecutionPlan] = []
+    for hook, current, target in items:
+      assert hook.execute is not None
+      current_trigger_hashes: dict[str, str] = current.trigger_hashes if current is not None else {}
+      target_trigger_hashes: dict[str, str] = target.trigger_hashes
+      changed_triggers = [
+        trigger for trigger in set(current_trigger_hashes.keys()).union(target_trigger_hashes.keys())
+        if current_trigger_hashes.get(trigger, None) != target_trigger_hashes.get(trigger, None)
+      ]
+      result.append(GenericExecutionPlan(
+        items = [hook],
+        description = f"{YELLOW}execute hook",
+        executable = hook.execute,
+        details = f"changed triggers: {", ".join(changed_triggers)}",
+        after_execute = lambda: self.trigger_hash_store.put(hook.name, target.trigger_hashes),
+      ))
+    return result
+
+  def plan_uninstall(self, items: list[ConfigItemToUninstall[PostHook, PostHookState]]) -> Sequence[ExecutionPlan]:
+    result: list[ExecutionPlan] = []
+    for hook, current in items:
+      result.append(GenericExecutionPlan(
+        items = [hook],
+        description = f"{RED}hook will no longer be tracked",
+        executable = lambda: None,
+        after_execute = self.trigger_hash_store.remove(hook.name),
+      ))
+    return result
 
   def finalize(self, model: ConfigModel):
     currently_installed = [item.name for phase in model.phases for item in phase.items if isinstance(item, PostHook)]
