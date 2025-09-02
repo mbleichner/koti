@@ -4,8 +4,7 @@ from koti import ConfigItemToInstall, ConfigItemToUninstall, ExecutionPlan
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.systemd import SystemdUnit
 from koti.managers.pacman import shell
-from koti.utils.managers import ShellExecutionPlan
-from koti.utils.shell import shell_success
+from koti.utils.shell import ShellAction, shell_success
 from koti.utils.json_store import JsonCollection, JsonStore
 from koti.utils.colors import *
 
@@ -56,11 +55,14 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
     for username in users:
       items_for_user = [item for item, current, target in items if item.user == username]
       units_store: JsonCollection[str] = self.store.collection(username or "$system")
-      result.append(ShellExecutionPlan(
+      result.append(ExecutionPlan(
         items = items_for_user,
         description = f"{GREEN}enable systemd unit(s)",
-        command = f"systemctl daemon-reload && {self.systemctl_for_user(username)} enable --now {" ".join([item.name for item in items_for_user])}",
-        after_execute = lambda: units_store.add_all([item.name for item in items_for_user])
+        actions = [
+          ShellAction(f"systemctl daemon-reload"),
+          ShellAction(f"{self.systemctl_for_user(username)} enable --now {" ".join([item.name for item in items_for_user])}"),
+          lambda: units_store.add_all([item.name for item in items_for_user]),
+        ]
       ))
     return result
 
@@ -70,11 +72,14 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
     for username in users:
       items_for_user = [item for item, current in items if item.user == username]
       units_store: JsonCollection[str] = self.store.collection(username or "$system")
-      result.append(ShellExecutionPlan(
+      result.append(ExecutionPlan(
         items = items_for_user,
         description = f"{RED}disable systemd units",
-        command = f"systemctl daemon-reload && {self.systemctl_for_user(username)} disable --now {" ".join([item.name for item in items_for_user])}",
-        after_execute = lambda: units_store.remove_all([item.name for item in items_for_user])
+        actions = [
+          ShellAction(f"systemctl daemon-reload"),
+          ShellAction(f"{self.systemctl_for_user(username)} disable --now {" ".join([item.name for item in items_for_user])}"),
+          lambda: units_store.remove_all([item.name for item in items_for_user])
+        ]
       ))
     return result
 

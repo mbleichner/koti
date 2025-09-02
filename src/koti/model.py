@@ -98,23 +98,17 @@ type ConfigItemToInstall[T: ManagedConfigItem, S: ConfigItemState] = tuple[T, S 
 type ConfigItemToUninstall[T: ManagedConfigItem, S: ConfigItemState] = tuple[T, S | None]
 
 
-class ExecutionPlan[T: ManagedConfigItem](metaclass = ABCMeta):
+class ExecutionPlan[T: ManagedConfigItem]:
   items: list[T]
+  description: str
+  actions: list[Callable[[], Any]]
+  details: list[str]
 
-  def __init__(self, items: list[T]):
+  def __init__(self, items: list[T], description: str, actions: list[Callable[[], Any]], details: list[str] | str | None = None):
     self.items = items
-
-  @abstractmethod
-  def execute(self):
-    pass
-
-  @abstractmethod
-  def description(self) -> str:
-    pass
-
-  @abstractmethod
-  def details(self) -> list[str]:
-    pass
+    self.description = description
+    self.actions = actions
+    self.details = [details] if isinstance(details, str) else (details or [])
 
 
 class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMeta):

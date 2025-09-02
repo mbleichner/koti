@@ -6,8 +6,7 @@ from hashlib import sha256
 from typing import Sequence
 
 from koti import ConfigItemToInstall, ConfigItemToUninstall, ExecutionPlan
-from koti.utils.managers import GenericExecutionPlan, ShellExecutionPlan
-from koti.utils.shell import shell_output
+from koti.utils.shell import ShellAction, shell_output
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.user import User
 from koti.utils.json_store import JsonCollection, JsonStore
@@ -79,36 +78,44 @@ class UserManager(ConfigManager[User, UserState]):
     result: list[ExecutionPlan] = []
     for user, current, target in items:
       if current is None:
-        result.append(ShellExecutionPlan(
+        result.append(ExecutionPlan(
           items = [user],
           description = f"{GREEN}create new user",
-          command = f"useradd -d {target.home_dir} -s {target.shell} {user.username}",
-          after_execute = lambda: self.managed_users_store.add(user.username)
+          actions = [
+            ShellAction(f"useradd -d {target.home_dir} -s {target.shell} {user.username}"),
+            lambda: self.managed_users_store.add(user.username)
+          ]
         ))
 
       if current is not None and current.shell != target.shell:
-        result.append(ShellExecutionPlan(
+        result.append(ExecutionPlan(
           items = [user],
           description = f"{YELLOW}update user shell",
-          command = f"usermod --shell {target.shell} {user.username}",
-          after_execute = lambda: self.managed_users_store.add(user.username)
+          actions = [
+            ShellAction(f"usermod --shell {target.shell} {user.username}"),
+            lambda: self.managed_users_store.add(user.username)
+          ]
         ))
 
       if current is not None and current.home_dir != target.home_dir:
-        result.append(ShellExecutionPlan(
+        result.append(ExecutionPlan(
           items = [user],
           description = f"{YELLOW}update user homedir",
-          command = f"usermod --home {target.home_dir}",
-          after_execute = lambda: self.managed_users_store.add(user.username)
+          actions = [
+            ShellAction(f"usermod --home {target.home_dir}"),
+            lambda: self.managed_users_store.add(user.username)
+          ]
         ))
 
       if current is not None and not current.home_exists:
-        result.append(GenericExecutionPlan(
+        result.append(ExecutionPlan(
           items = [user],
           description = f"{GREEN}create user homedir",
-          executable = lambda: self.create_homedir(user, target.home_dir),
           details = target.home_dir,
-          after_execute = lambda: self.managed_users_store.add(user.username)
+          actions = [
+            lambda: self.create_homedir(user, target.home_dir),
+            lambda: self.managed_users_store.add(user.username)
+          ]
         ))
 
     return result
@@ -116,11 +123,12 @@ class UserManager(ConfigManager[User, UserState]):
   def plan_uninstall(self, items: list[ConfigItemToUninstall[User, UserState]]) -> Sequence[ExecutionPlan]:
     result: list[ExecutionPlan] = []
     for user, current in items:
-      result.append(ShellExecutionPlan(
+      result.append(ExecutionPlan(
         items = [user],
         description = f"{RED}user will be deleted",
-        command = f"userdel {user.username}",
-        after_execute = lambda: self.managed_users_store.remove(user.username)
+        actions = [ShellAction(f"userdel {user.username}"),
+                   lambda: self.managed_users_store.remove(user.username)
+                   ]
       ))
     return result
 

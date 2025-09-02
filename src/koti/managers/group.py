@@ -3,8 +3,7 @@ from __future__ import annotations
 from typing import Sequence
 
 from koti import ConfigItemToInstall, ConfigItemToUninstall, ExecutionPlan
-from koti.utils.managers import ShellExecutionPlan
-from koti.utils.shell import shell_output
+from koti.utils.shell import ShellAction, shell_output
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.group import GroupAssignment
 from koti.utils.json_store import JsonCollection, JsonStore
@@ -52,21 +51,25 @@ class GroupManager(ConfigManager[GroupAssignment, GroupAssignmentState]):
   def plan_install(self, items: list[ConfigItemToInstall[GroupAssignment, GroupAssignmentState]]) -> Sequence[ExecutionPlan]:
     result: list[ExecutionPlan] = []
     for item, current, target in items:
-      result.append(ShellExecutionPlan(
+      result.append(ExecutionPlan(
         items = [item],
         description = f"{GREEN}assign user to group",
-        command = f"gpasswd --add {item.username} {item.group}",
-        after_execute = lambda: self.managed_users_store.add(item.username)
+        actions = [
+          ShellAction(f"gpasswd --add {item.username} {item.group}"),
+          lambda: self.managed_users_store.add(item.username),
+        ]
       ))
     return result
 
   def plan_uninstall(self, items: list[ConfigItemToUninstall[GroupAssignment, GroupAssignmentState]]) -> Sequence[ExecutionPlan]:
     result: list[ExecutionPlan] = []
     for item, current in items:
-      result.append(ShellExecutionPlan(
+      result.append(ExecutionPlan(
         items = [item],
         description = f"{RED}unassign user from group",
-        command = f"gpasswd --delete {item.username} {item.group}",
+        actions = [
+          ShellAction(f"gpasswd --delete {item.username} {item.group}"),
+        ]
       ))
     return result
 

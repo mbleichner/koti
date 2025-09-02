@@ -6,7 +6,6 @@ from koti import ConfigItemToInstall, ConfigItemToUninstall, ExecutionPlan
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.swapfile import Swapfile
 from koti.utils.json_store import JsonCollection, JsonStore
-from koti.utils.managers import GenericExecutionPlan
 from koti.utils.shell import shell, shell_success
 from koti.utils.colors import *
 
@@ -74,21 +73,25 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
       assert item.size_bytes is not None
 
       if current is None:
-        result.append(GenericExecutionPlan(
+        result.append(ExecutionPlan(
           items = [item],
           description = f"{GREEN}create swapfile",
-          executable = lambda: self.create_swapfile(item),
           details = f"size = {target.size_bytes}",
-          after_execute = lambda: self.managed_files_store.add(item.filename),
+          actions = [
+            lambda: self.create_swapfile(item),
+            lambda: self.managed_files_store.add(item.filename),
+          ],
         ))
 
       if current is not None and current.size_bytes != target.size_bytes:
-        result.append(GenericExecutionPlan(
+        result.append(ExecutionPlan(
           items = [item],
           description = f"{YELLOW}resize swapfile",
-          executable = lambda: self.recreate_swapfile(item),
           details = f"{current.size_bytes} => {target.size_bytes}",
-          after_execute = lambda: self.managed_files_store.add(item.filename)
+          actions = [
+            lambda: self.recreate_swapfile(item),
+            lambda: self.managed_files_store.add(item.filename)
+          ]
         ))
 
     return result
@@ -96,12 +99,14 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
   def plan_uninstall(self, items: list[ConfigItemToUninstall[Swapfile, SwapfileState]]) -> Sequence[ExecutionPlan]:
     result: list[ExecutionPlan] = []
     for item, current in items:
-      result.append(GenericExecutionPlan(
+      result.append(ExecutionPlan(
         items = [item],
         description = f"{RED}delete swapfile",
-        executable = lambda: self.delete_swapfile(item),
         details = "please make sure the swapfile isn't referenced in fstab any more",
-        after_execute = lambda: self.managed_files_store.add(item.filename)
+        actions = [
+          lambda: self.delete_swapfile(item),
+          lambda: self.managed_files_store.add(item.filename),
+        ]
       ))
     return result
 

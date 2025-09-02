@@ -9,6 +9,7 @@ from tabulate import tabulate
 from koti.model import *
 from koti.utils.colors import *
 from koti.utils.json_store import *
+from koti.utils.shell import ShellAction
 
 
 class Koti:
@@ -118,31 +119,32 @@ class Koti:
                 printc(f"- {item.description()}")
         print()
 
+    changed_item_count = len(items_to_install) + len(items_to_update) + len(items_to_uninstall)
+    printc(f"{len(items_total)} items total, {changed_item_count or "no"} items with changes", BOLD)
+    print()
+
     # print warnings generated during evaluation
     warnings = [message for manager in self.managers for message in manager.warnings]
     if warnings:
       printc(f"Evaluation warnings:", BOLD)
-      for message in warnings:
+      for message in set(warnings):
         printc(f"- {message}")
       print()
 
     # list all changed items
-    changed_item_count = len(items_to_install) + len(items_to_update) + len(items_to_uninstall)
-    if changed_item_count > 0:
-      printc(f"{len(items_total)} items total, {changed_item_count} items to update:", BOLD)
+    if len(execution_plans) > 0:
+      printc(f"Actions that will be executed (in order):", BOLD)
       table: list[list[str | None]] = []
       for plan in execution_plans:
         table.append([
-          f"- {plan.description()}",
+          f"- {plan.description}",
           "\n".join([item.description() for item in plan.items]),
-          "\n".join(plan.details())
+          "\n".join([f"{CYAN}{action.command}{ENDC}" for action in plan.actions if isinstance(action, ShellAction)] + plan.details)
         ])
       table = [[f"{cell}{ENDC}" for cell in row] for row in table]
       if table:
         print(tabulate(table, tablefmt = "plain", maxcolwidths = [60]))
-    else:
-      printc(f"{len(items_total)} items total, everything up to date", BOLD)
-    print()
+      print()
 
     return changed_item_count > 0
 
@@ -167,9 +169,11 @@ class Koti:
             items_to_update_with_state.append((item, current, target))
         self.print_install_step_log(model, phase_idx, install_step, items_to_update)
         if items_to_update:
-          execution_plan = manager.plan_install(items_to_update_with_state)
+          execution_plans = manager.plan_install(items_to_update_with_state)
           # FIXME: Double check if all items of the plan have been reviewed
-          for x in execution_plan: x.execute()
+          for plan in execution_plans:
+            for action in plan.actions:
+              action()
 
     # execute cleanup phase
     cleanup_phase = self.create_cleanup_phase(model)
@@ -181,9 +185,11 @@ class Koti:
         current = manager.state_current(item)
         items_to_uninstall_with_state.append((item, current))
       if items_to_uninstall_with_state:
-        execution_plan = manager.plan_uninstall(items_to_uninstall_with_state)
+        execution_plans = manager.plan_uninstall(items_to_uninstall_with_state)
         # FIXME: Double check if all items of the plan have been reviewed
-        for x in execution_plan: x.execute()
+        for plan in execution_plans:
+          for action in plan.actions:
+            action()
 
     # updating persistent data
     self.save_tags(self.store, model)

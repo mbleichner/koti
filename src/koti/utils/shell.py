@@ -46,6 +46,15 @@ def shell_success(command: str, executable: str = "/bin/sh", user: str | None = 
     return False
 
 
+class ShellAction:
+  def __init__(self, command: str, user: str | None = None):
+    self.command = command
+    self.user = user
+
+  def __call__(self, *args, **kwargs):
+    shell(self.command, user = self.user)
+
+
 def env_for_user(user: str) -> dict[str, str]:
   user_homes: dict[str, str] = dict([line.split(":") for line in shell_output("getent passwd | cut -d: -f1,6").splitlines()])
   home = user_homes.get(user, None)

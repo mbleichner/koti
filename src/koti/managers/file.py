@@ -13,7 +13,6 @@ from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.file import File
 from koti.items.directory import Directory
 from koti.utils.json_store import JsonCollection, JsonStore
-from koti.utils.managers import GenericExecutionPlan
 
 
 class FileState(ConfigItemState):
@@ -102,44 +101,54 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
   def plan_file_install(self, item: File, current: FileState | None, target: FileState, from_dir_install: bool) -> Sequence[ExecutionPlan]:
     result: list[ExecutionPlan] = []
 
-    after_execute = (lambda: self.managed_files_store.add(item.filename)) if not from_dir_install else None
+    after_execute = (lambda: self.managed_files_store.add(item.filename)) if not from_dir_install else (lambda: None)
 
     if current is None:
-      result.append(GenericExecutionPlan(
+      result.append(ExecutionPlan(
         items = [item],
-        executable = lambda: self.update_file(item, target),
         description = f"{GREEN}creating new file",
         details = f"uid = {target.uid}, gid = {target.gid}, mode = {oct(target.mode)}",
-        after_execute = after_execute,
+        actions = [
+          lambda: self.update_file(item, target),
+          after_execute
+        ],
       ))
 
     if current is not None and current.content_hash != target.content_hash:
       with NamedTemporaryFile(prefix = "koti.", delete = False) as tmp:
         tmp.write(target.content)
-      result.append(GenericExecutionPlan(
+        os.chown(tmp.name, uid = target.uid, gid = target.gid)
+        os.chmod(tmp.name, mode = target.mode)
+      result.append(ExecutionPlan(
         items = [item],
-        executable = lambda: self.update_file(item, target),
         description = f"{YELLOW}updating file content",
-        details = f"preview changes: {CYAN}sudo diff '{item.filename}' '{tmp.name}'",
-        after_execute = after_execute,
+        details = f"{CYAN}diff '{item.filename}' '{tmp.name}'{ENDC} to preview changes",
+        actions = [
+          lambda: self.update_file(item, target),
+          after_execute,
+        ]
       ))
 
     if current is not None and (current.uid != target.uid or current.gid != target.gid):
-      result.append(GenericExecutionPlan(
+      result.append(ExecutionPlan(
         items = [item],
-        executable = lambda: os.chown(item.filename, uid = target.uid, gid = target.gid),
         description = f"{YELLOW}updating file ownership",
         details = f"uid {current.uid} => {target.uid}, gid {current.gid} => {target.gid}",
-        after_execute = after_execute,
+        actions = [
+          lambda: os.chown(item.filename, uid = target.uid, gid = target.gid),
+          after_execute,
+        ]
       ))
 
     if current is not None and current.mode != target.mode:
-      result.append(GenericExecutionPlan(
+      result.append(ExecutionPlan(
         items = [item],
-        executable = lambda: os.chmod(item.filename, mode = target.mode),
         description = f"{YELLOW}updating file permissions",
         details = f"{oct(current.mode)} => {oct(target.mode)}",
-        after_execute = after_execute,
+        actions = [
+          lambda: os.chmod(item.filename, mode = target.mode),
+          after_execute,
+        ]
       ))
 
     return result
@@ -157,30 +166,36 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     files_target = [file.filename for file in item.files]
     files_to_remove = [f for f in files_current if f not in files_target]
     if files_to_remove:
-      result.append(GenericExecutionPlan(
+      result.append(ExecutionPlan(
         items = [File(filename) for filename in files_to_remove],
         description = f"{RED}remove orphan file(s)",
-        executable = lambda: self.unlink_files(files_to_remove),
-        after_execute = lambda: self.remove_leftover_empty_dirs(item),
         details = "leftover empty directories will be removed",
+        actions = [
+          lambda: self.unlink_files(files_to_remove),
+          lambda: self.remove_leftover_empty_dirs(item),
+        ]
       ))
 
     return result
 
   def plan_file_uninstall(self, item: File, current: FileState) -> Sequence[ExecutionPlan]:
-    return [GenericExecutionPlan(
+    return [ExecutionPlan(
       items = [item],
-      executable = lambda: os.unlink(item.filename),
       description = f"{RED}deleting file",
-      after_execute = lambda: self.managed_files_store.remove(item.filename),
+      actions = [
+        lambda: os.unlink(item.filename),
+        lambda: self.managed_files_store.remove(item.filename),
+      ]
     )]
 
   def plan_dir_uninstall(self, item: Directory, current: DirectoryState) -> Sequence[ExecutionPlan]:
-    return [GenericExecutionPlan(
+    return [ExecutionPlan(
       items = [item],
-      executable = lambda: shutil.rmtree(item.dirname),
       description = f"{RED}deleting directory",
-      after_execute = lambda: self.managed_dirs_store.remove(item.dirname),
+      actions = [
+        lambda: shutil.rmtree(item.dirname),
+        lambda: self.managed_dirs_store.remove(item.dirname),
+      ]
     )]
 
   def installed_files(self, model: ConfigModel) -> list[File]:

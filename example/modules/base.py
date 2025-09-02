@@ -333,7 +333,7 @@ def base() -> Generator[ConfigGroup]:
         # Zeilenumbruch hinter den Locales ist wichtig, sonst werden sie ignoriert
       ''')),
 
-      PostHook("regenerate-locales", execute = lambda: shell("locale-gen"), trigger = [
+      PostHook("regenerate-locales", execute = ShellAction("locale-gen"), trigger = [
         File("/etc/locale.gen"),
       ]),
     ]

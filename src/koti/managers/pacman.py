@@ -7,8 +7,7 @@ from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.package import Package
 from koti.items.pacman_key import PacmanKey
 from koti.utils.json_store import JsonCollection, JsonStore
-from koti.utils.managers import GenericExecutionPlan, ShellExecutionPlan
-from koti.utils.shell import shell, shell_output, shell_success
+from koti.utils.shell import ShellAction, shell, shell_output, shell_success
 from koti.utils.colors import *
 
 
@@ -39,7 +38,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
 
   def assert_installable(self, item: Package, model: ConfigModel):
     if item.url is not None:
-      self.warnings.append(f"the package '{item.name}' is installed via URL, but might later get {CYAN}updated to a different version by pacman{ENDC} if also contained in a package repository")
+      self.warnings.append(f"packages installed via URL might later get updated to a different version by pacman if also contained in a package repository")
 
   def state_current(self, item: Package) -> PackageState | None:
     installed: bool = item.name in self.explicit_packages_on_system
@@ -67,47 +66,48 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
         additional_explicit_items.append(item)
 
     result: list[ExecutionPlan] = []
+    if additional_explicit_items:
+      result.append(ExecutionPlan(
+        items = additional_explicit_items,
+        description = f"{GREEN}marking package(s) explicitly installed",
+        actions = [
+          ShellAction(f"pacman -D --asexplicit {" ".join([item.name for item in additional_explicit_items])}"),
+          lambda: self.add_managed_packages(additional_explicit_items),
+          lambda: self.update_explicit_package_list(),
+        ]
+      ))
     for item in additional_items_from_script:
       assert item.script is not None, "illegal state"
-      result.append(GenericExecutionPlan(
+      result.append(ExecutionPlan(
         items = additional_items_from_urls,
-        description = f"{GREEN}installing package(s) from provided script",
-        executable = item.script,
-        after_execute = [
+        description = f"{GREEN}installing package(s) from script",
+        actions = [
+          item.script,
           lambda: self.add_managed_packages(additional_items_from_urls),
           lambda: self.update_explicit_package_list(),
         ]
       ))
     if additional_items_from_urls:
-      result.append(ShellExecutionPlan(
+      result.append(ExecutionPlan(
         items = additional_items_from_urls,
-        description = f"{GREEN}installing package(s) from provided URL(s)",
-        command = f"pacman -U {" ".join([item.url for item in additional_items_from_urls if item.url])}",
-        after_execute = [
+        description = f"{GREEN}installing package(s) from URL(s)",
+        actions = [
+          ShellAction(f"pacman -U {" ".join([item.url for item in additional_items_from_urls if item.url])}"),
           lambda: self.add_managed_packages(additional_items_from_urls),
           lambda: self.update_explicit_package_list(),
         ]
       ))
-
     if additional_items_from_repo:
       pacman_or_helper = self.aur_helper[0] if self.aur_helper else "pacman"
-      result.append(ShellExecutionPlan(
+      result.append(ExecutionPlan(
         items = additional_items_from_repo,
-        description = f"{GREEN}installing package(s) from pacman repositories",
-        command = f"{pacman_or_helper} -Syu {" ".join([item.name for item in additional_items_from_repo])}",
-        user = self.aur_helper[1] if self.aur_helper else None,
-        after_execute = [
+        description = f"{GREEN}installing package(s) from repositories",
+        actions = [
+          ShellAction(
+            f"{pacman_or_helper} -Syu {" ".join([item.name for item in additional_items_from_repo])}",
+            user = self.aur_helper[1] if self.aur_helper else None,
+          ),
           lambda: self.add_managed_packages(additional_items_from_repo),
-          lambda: self.update_explicit_package_list(),
-        ]
-      ))
-    if additional_explicit_items:
-      result.append(ShellExecutionPlan(
-        items = additional_explicit_items,
-        description = f"{GREEN}marking package(s) explicitly installed",
-        command = f"pacman -D --asexplicit {" ".join([item.name for item in additional_explicit_items])}",
-        after_execute = [
-          lambda: self.add_managed_packages(additional_explicit_items),
           lambda: self.update_explicit_package_list(),
         ]
       ))
@@ -116,20 +116,22 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
   def plan_uninstall(self, items: list[ConfigItemToUninstall[Package, PackageState]]) -> Sequence[ExecutionPlan]:
     items_to_remove = [item for (item, current) in items]
     return [
-      ShellExecutionPlan(
+      ExecutionPlan(
         items = items_to_remove,
         description = f"{RED}marking package(s) non-explicitly installed",
-        command = f"pacman -D --asdeps {" ".join([item.name for item in items_to_remove])}",
-        after_execute = [
+        actions = [
+          ShellAction(f"pacman -D --asdeps {" ".join([item.name for item in items_to_remove])}"),
           lambda: self.remove_managed_packages(items_to_remove),
           lambda: self.update_explicit_package_list(),
         ]
       ),
-      GenericExecutionPlan(
+      ExecutionPlan(
         items = [],
         description = f"{RED}prune unneeded packages",
-        executable = lambda: self.pacman_prune_unneeded(),
-        details = f"pacman will additionally ask for confirmation before uninstalling any packages"
+        details = f"pacman will additionally ask for confirmation before uninstalling any packages",
+        actions = [
+          lambda: self.pacman_prune_unneeded(),
+        ],
       )
     ]
 
@@ -189,10 +191,14 @@ class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
   def plan_install(self, items: list[ConfigItemToInstall[PacmanKey, PacmanKeyState]]) -> Sequence[ExecutionPlan]:
     result: list[ExecutionPlan] = []
     for item, current, target in items:
-      result.append(ShellExecutionPlan(
+      result.append(ExecutionPlan(
         items = [item],
         description = f"{GREEN}assign user to group",
-        command = f"pacman-key --init && pacman-key --recv-keys {item.key_id} --keyserver {item.key_server} && pacman-key --lsign-key {item.key_id}",
+        actions = [
+          ShellAction(f"pacman-key --init"),
+          ShellAction(f"pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}"),
+          ShellAction(f"pacman-key --lsign-key {item.key_id}"),
+        ]
       ))
     return result
 

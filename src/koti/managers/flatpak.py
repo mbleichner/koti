@@ -4,8 +4,7 @@ from typing import Sequence
 
 from koti import ConfigItemToInstall, ConfigItemToUninstall, ExecutionPlan
 from koti.utils.colors import *
-from koti.utils.managers import GenericExecutionPlan, ShellExecutionPlan
-from koti.utils.shell import shell, shell_output, shell_success
+from koti.utils.shell import ShellAction, shell, shell_output, shell_success
 from koti.items.flatpak_package import FlatpakPackage
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.flatpak_repo import FlatpakRepo
@@ -72,16 +71,20 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
       installed_remotes = shell_output("flatpak remotes --columns name").splitlines()
       for repo_item in repo_items:
         already_installed = repo_item.name in installed_remotes
-        result.append(GenericExecutionPlan(
+        result.append(ExecutionPlan(
           items = [repo_item],
-          executable = lambda: self.update_remote(repo_item, already_installed = already_installed),
-          description = f"{YELLOW}update flatpak repo" if already_installed else f"{GREEN}install flatpak repo"
+          description = f"{YELLOW}update flatpak repo" if already_installed else f"{GREEN}install flatpak repo",
+          actions = [
+            lambda: self.update_remote(repo_item, already_installed = already_installed)
+          ],
         ))
     if package_items:
-      result.append(ShellExecutionPlan(
+      result.append(ExecutionPlan(
         items = package_items,
-        command = f"flatpak install {" ".join(item.id for item in package_items)}",
-        description = f"{GREEN}install flatpak package(s)"
+        description = f"{GREEN}install flatpak package(s)",
+        actions = [
+          ShellAction(f"flatpak install {" ".join(item.id for item in package_items)}")
+        ],
       ))
     return result
 
@@ -90,16 +93,20 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     repo_items = [item for item, current in items if isinstance(item, FlatpakRepo)]
     package_items = [item for item, current in items if isinstance(item, FlatpakPackage)]
     if package_items:
-      result.append(ShellExecutionPlan(
+      result.append(ExecutionPlan(
         items = package_items,
-        command = f"flatpak uninstall {" ".join(item.id for item in package_items)} && flatpak uninstall --unused",
-        description = f"{RED}uninstall flatpak package(s)"
+        description = f"{RED}uninstall flatpak package(s)",
+        actions = [
+          ShellAction(f"flatpak uninstall {" ".join(item.id for item in package_items)} && flatpak uninstall --unused")
+        ],
       ))
     for item in repo_items:
-      result.append(ShellExecutionPlan(
+      result.append(ExecutionPlan(
         items = package_items,
-        command = f"flatpak remote-delete --force '{item.name}'",
-        description = f"{RED}uninstall flatpak remote"
+        description = f"{RED}uninstall flatpak remote",
+        actions = [
+          ShellAction(f"flatpak remote-delete --force '{item.name}'")
+        ],
       ))
     return result
 

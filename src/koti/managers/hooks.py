@@ -8,7 +8,6 @@ from koti.utils.colors import *
 from koti.model import ConfigItem, ConfigItemState, ConfigManager, ConfigModel, ManagedConfigItem
 from koti.items.hooks import PostHook
 from koti.utils.json_store import JsonMapping, JsonStore
-from koti.utils.managers import GenericExecutionPlan
 
 
 class PostHookState(ConfigItemState):
@@ -89,29 +88,26 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
     result: list[ExecutionPlan] = []
     for hook, current, target in items:
       assert hook.execute is not None
-      current_trigger_hashes: dict[str, str] = current.trigger_hashes if current is not None else {}
-      target_trigger_hashes: dict[str, str] = target.trigger_hashes
-      changed_triggers = [
-        trigger for trigger in set(current_trigger_hashes.keys()).union(target_trigger_hashes.keys())
-        if current_trigger_hashes.get(trigger, None) != target_trigger_hashes.get(trigger, None)
-      ]
-      result.append(GenericExecutionPlan(
+      result.append(ExecutionPlan(
         items = [hook],
         description = f"{YELLOW}execute hook",
-        executable = hook.execute,
-        details = f"changed triggers: {", ".join(changed_triggers)}",
-        after_execute = lambda: self.trigger_hash_store.put(hook.name, target.trigger_hashes),
+        details = "hook will be executed for the first time" if current is None else "hook will be executed because of updated dependencies",
+        actions = [
+          hook.execute,
+          lambda: self.trigger_hash_store.put(hook.name, target.trigger_hashes),
+        ],
       ))
     return result
 
   def plan_uninstall(self, items: list[ConfigItemToUninstall[PostHook, PostHookState]]) -> Sequence[ExecutionPlan]:
     result: list[ExecutionPlan] = []
     for hook, current in items:
-      result.append(GenericExecutionPlan(
+      result.append(ExecutionPlan(
         items = [hook],
         description = f"{RED}hook will no longer be tracked",
-        executable = lambda: None,
-        after_execute = self.trigger_hash_store.remove(hook.name),
+        actions = [
+          self.trigger_hash_store.remove(hook.name),
+        ]
       ))
     return result
 
