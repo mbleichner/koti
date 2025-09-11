@@ -4,7 +4,7 @@ purge_files_after: 2592000  # seconds
 download_timeout: 600       # seconds
 user_agent: Pacoloco/1.2
 prefetch:
-  cron: 45 7,16 * * *
+  cron: 45 * * * *
 repos:
   archlinux:
     mirrorlist: /etc/pacman.d/mirrorlist
