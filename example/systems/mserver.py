@@ -68,7 +68,7 @@ def mserver() -> Generator[ConfigGroup | None]:
         nameserver 192.168.1.100
         nameserver 192.168.1.1
         search fritz.box
-        options timeout:3 no-aaaa
+        options timeout:3
       ''')),
     ]
   )
