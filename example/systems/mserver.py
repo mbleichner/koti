@@ -68,7 +68,7 @@ def mserver() -> Generator[ConfigGroup | None]:
         nameserver 192.168.1.100
         nameserver 192.168.1.1
         search fritz.box
-        options timeout:3
+        options timeout:3 no-aaaa
       ''')),
     ]
   )
@@ -81,11 +81,12 @@ def mserver() -> Generator[ConfigGroup | None]:
       Package("docker-compose"),
       Package("containerd"),
       SystemdUnit("docker.service"),
+      GroupAssignment("manuel", "docker"),
 
       File("/usr/local/bin/docker-update", permissions = "r-x", content = cleandoc('''
         #!/bin/bash -e
         for DIR in homeassistant nextcloud pihole pyanodon-mapshot pacoloco traefik; do
-          cd /opt/$DIR && sudo docker compose pull && sudo docker compose up -d
+          cd /opt/$DIR && docker compose pull && docker compose up -d
         done
       ''')),
 
