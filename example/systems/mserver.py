@@ -114,5 +114,17 @@ def mserver() -> Generator[ConfigGroup | None]:
         File("/opt/pacoloco/docker-compose.yml", permissions = "r--", source = "files/pacoloco/docker-compose.yml"),
         File("/opt/pacoloco/pacoloco.yaml", permissions = "r--", source = "files/pacoloco/pacoloco.yaml"),
       ),
+
+      PostHook(
+        'init pacoloco db files',
+        trigger = PostHook(f"docker compose /opt/pacoloco/docker-compose.yml"),
+        execute = lambda: shell('''
+          curl http://pacoloco.fritz.box/repo/archlinux/core/os/x86_64/core.db > /dev/null
+          curl http://pacoloco.fritz.box/repo/archlinux/extra/os/x86_64/extra.db > /dev/null
+          curl http://pacoloco.fritz.box/repo/archlinux/multilib/os/x86_64/multilib.db > /dev/null
+          curl http://pacoloco.fritz.box/repo/cachyos-v3/x86_64_v3/cachyos-v3/cachyos-v3.db > /dev/null
+          curl http://pacoloco.fritz.box/repo/cachyos/x86_64/cachyos/cachyos.db > /dev/null
+        '''),
+      )
     ]
   )
