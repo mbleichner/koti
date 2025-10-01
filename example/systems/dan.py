@@ -50,15 +50,15 @@ def dan() -> Generator[ConfigGroup | None]:
       # moep
       Package("python-flask"),
       Package("python-bottle"),
-      Package("python-numpy"),
-      Package("python-steam"),
-      Package("python-tests"),
-      Package("python-mock"),
-
-      GroupAssignment("manuel", "docker"),
-      File("/tmp/test", permissions = "r--", content = cleandoc('''
-        moep moep
-      ''')),
+      # Package("python-numpy"),
+      # Package("python-steam"),
+      # Package("python-tests"),
+      # Package("python-mock"),
+      #
+      # GroupAssignment("manuel", "docker"),
+      # File("/tmp/test", permissions = "r--", content = cleandoc('''
+      #   moep moep
+      # ''')),
 
       PostHook("moep hook 1", execute = lambda: shell("echo moep 1"), trigger = File("/tmp/test")),
       PostHook("moep hook 2", execute = lambda: shell("echo moep 2"), trigger = PostHook("moep hook 1")),
