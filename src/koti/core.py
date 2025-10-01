@@ -102,11 +102,11 @@ class Koti:
       printc(f"Actions that will be executed (in order):", BOLD)
       for plan in execution_plans:
         printc(f"- {plan.description}")
+        for detail in plan.details:
+          printc(f"  {detail}")
         for action in plan.actions:
           if isinstance(action, ShellAction):
             printc(f"  $ {action.command}")
-        for detail in plan.details:
-          printc(f"  {detail}")
 
       print()
 
@@ -329,5 +329,3 @@ class Koti:
           if group_item.identifier() == required_item.identifier():
             return idx_phase, group
     return None
-
-

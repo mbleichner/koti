@@ -85,13 +85,13 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
 
   def plan_file_install(self, items_to_check: Sequence[File], model: ConfigModel, dryrun: bool, from_dir_install: bool) -> Generator[ExecutionPlan]:
     for item in items_to_check:
-      after_execute = lambda: self.managed_files_store.add(item.filename) if not from_dir_install else None
       current, target = self.states(item, model, dryrun)
       if current == target:
         continue
 
       assert current is None or isinstance(current, FileState)
       assert target is not None and isinstance(target, FileState)
+      after_execute = lambda: self.managed_files_store.add(item.filename) if not from_dir_install else None
 
       if current is None:
         yield ExecutionPlan(
@@ -99,7 +99,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
           description = f"{GREEN}create new file: {item.filename}",
           details = f"uid = {target.uid}, gid = {target.gid}, mode = {oct(target.mode)}",
           actions = [
-            lambda: self.update_file(item, target),
+            lambda: self.update_file_content(item, target),
             after_execute
           ],
         )
@@ -114,10 +114,10 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
           description = f"{YELLOW}update file content: {item.filename}",
           details = [
             f"filesize {len(current.content)} => {len(target.content)} bytes",
-            f"{CYAN}diff '{item.filename}' '{tmp.name}'{ENDC} to preview changes",
+            f"preview changes: diff '{item.filename}' '{tmp.name}'",
           ],
           actions = [
-            lambda: self.update_file(item, target),
+            lambda: self.update_file_content(item, target),
             after_execute,
           ]
         )
@@ -128,7 +128,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
           description = f"{YELLOW}update file ownership: {item.filename}",
           details = f"uid {current.uid} => {target.uid}, gid {current.gid} => {target.gid}",
           actions = [
-            lambda: os.chown(item.filename, uid = target.uid, gid = target.gid),
+            lambda: self.fix_file_owner(item, target),
             after_execute,
           ]
         )
@@ -139,7 +139,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
           description = f"{YELLOW}update file permissions: {item.filename}",
           details = f"mode {oct(current.mode)} => {oct(target.mode)}",
           actions = [
-            lambda: os.chmod(item.filename, mode = target.mode),
+            lambda: self.fix_file_mode(item, target),
             after_execute,
           ]
         )
@@ -166,7 +166,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
           description = f"{RED}remove orphan file(s)",
           details = "leftover empty directories will also be removed",
           actions = [
-            lambda: self.unlink_files(files_to_remove),
+            lambda: self.delete_files(files_to_remove),
             lambda: self.remove_leftover_empty_dirs(item),
           ]
         )
@@ -180,7 +180,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         items = [item],
         description = f"{RED}delete file: {item.filename}",
         actions = [
-          lambda: os.unlink(item.filename),
+          lambda: self.delete_files([item.filename]),
           lambda: self.managed_files_store.remove(item.filename),
         ]
       )
@@ -194,7 +194,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         items = [item],
         description = f"{RED}delete directory: {item.dirname}",
         actions = [
-          lambda: shutil.rmtree(item.dirname),
+          lambda: self.delete_dir(item.dirname),
           lambda: self.managed_dirs_store.remove(item.dirname),
         ]
       )
@@ -207,9 +207,14 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     dirnames = self.managed_dirs_store.elements()
     return [Directory(dirname) for dirname in dirnames]
 
-  def unlink_files(self, filenames: list[str]):
+  def delete_files(self, filenames: list[str]):
     for filename in filenames:
       os.unlink(filename)
+      print(f"file {filename} deleted")
+
+  def delete_dir(self, dirname: str):
+    shutil.rmtree(dirname)
+    print(f"directory {dirname} deleted")
 
   def remove_leftover_empty_dirs(self, item: Directory):
     # remove empty dirs (repeatedly, since they may be nested)
@@ -221,8 +226,9 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       if empty_dir is None:
         break
       os.rmdir(empty_dir)
+      print(f"leftover directory {empty_dir} removed")
 
-  def update_file(self, item: File, target: FileState):
+  def update_file_content(self, item: File, target: FileState):
     assert item.content is not None
     uid = target.uid
     gid = target.gid
@@ -234,6 +240,15 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     os.chown(item.filename, uid = uid, gid = gid)
     os.chmod(item.filename, mode)
     assert mode == (os.stat(item.filename).st_mode & 0o777), "cannot apply file permissions (incompatible file system?)"
+    print(f"file {item.filename} successfully updated")
+
+  def fix_file_owner(self, item: File, target: FileState):
+    os.chown(item.filename, uid = target.uid, gid = target.gid)
+    print(f"file owner of {item.filename} successfully updated")
+
+  def fix_file_mode(self, item: File, target: FileState):
+    os.chmod(item.filename, mode = target.mode)
+    print(f"permissions of {item.filename} successfully updated")
 
   def file_state_current(self, item: File) -> FileState | None:
     if not os.path.isfile(item.filename):

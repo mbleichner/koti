@@ -1,7 +1,6 @@
 from inspect import cleandoc
 
 from koti import *
-from koti.utils.shell import shell
 from modules.base import base, swapfile
 from modules.cpufreq import cpufreq, throttle_after_boot
 from modules.desktop import desktop
@@ -50,18 +49,18 @@ def dan() -> Generator[ConfigGroup | None]:
       # moep
       Package("python-flask"),
       Package("python-bottle"),
-      # Package("python-numpy"),
-      # Package("python-steam"),
-      # Package("python-tests"),
-      # Package("python-mock"),
-      #
-      # GroupAssignment("manuel", "docker"),
-      # File("/tmp/test", permissions = "r--", content = cleandoc('''
-      #   moep moep
-      # ''')),
+      Package("python-numpy"),
+      Package("python-steam"),
+      Package("python-tests"),
+      Package("python-mock"),
 
-      PostHook("moep hook 1", execute = lambda: shell("echo moep 1"), trigger = File("/tmp/test")),
-      PostHook("moep hook 2", execute = lambda: shell("echo moep 2"), trigger = PostHook("moep hook 1")),
+      GroupAssignment("manuel", "docker"),
+      File("/tmp/test", permissions = "r--", content = cleandoc('''
+        moep moep moep
+      ''')),
+
+      PostHook("moep hook 1", execute = ShellAction("echo moep 1"), trigger = File("/tmp/test")),
+      PostHook("moep hook 2", execute = ShellAction("echo moep 2"), trigger = PostHook("moep hook 1")),
 
       File("/etc/fstab", permissions = "r--", content = cleandoc('''
         UUID=3409a847-0bd6-43e4-96fd-6e8be4e3c58d  /             ext4  rw,noatime 0 1
