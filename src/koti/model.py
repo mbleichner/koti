@@ -4,6 +4,8 @@ from abc import ABCMeta, abstractmethod
 from functools import reduce
 from typing import Any, Callable, Generator, Iterable, Literal, Sequence, Type, cast, overload
 
+from koti.utils.shell import ShellAction
+
 
 class ConfigGroup:
   """The purpose of ConfigGroups is to provide ConfigItems that should be installed on the system.
@@ -116,29 +118,6 @@ class ExecutionPlan[T: ManagedConfigItem]:
     self.actions = actions
     self.details = [details] if isinstance(details, str) else (details or [])
 
-  def execute(self):
-    for action in self.actions: action()
-
-  # def try_merge(self, other: ExecutionPlan) -> ExecutionPlan | None:
-  #   return None
-
-
-# class ExecutionPlan(metaclass = ABCMeta):
-#
-#   @abstractmethod
-#   def headline(self) -> str:
-#     pass
-#
-#   def details(self) -> str | None:
-#     pass
-#
-#   @abstractmethod
-#   def execute(self):
-#     pass
-#
-#   def try_merge(self, other: ExecutionPlan) -> ExecutionPlan | None:
-#     return None
-
 
 class ItemToInstall[T: ManagedConfigItem, S: ConfigItemState]:
   def __init__(self, item: T, state_current: Callable[[], S | None], state_target: Callable[[], S]):
@@ -170,14 +149,6 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     Can depend on the model, as some items may need to inspect their execution order, such as PostHooks."""
     pass
 
-  # @abstractmethod
-  # def installed(self, model: ConfigModel) -> Sequence[T]:
-  #   """Returns a list of all items currently installed on the system. This may depend on the model, as it may
-  #   be beneficial to check if newly added ConfigItems already exist on the system and display them accordingly.
-  #   In case the installed items cannot be queried from the system (e.g. due to missing tools), a warning should
-  #   be logged and an empty list should be returned."""
-  #   pass
-
   @abstractmethod
   def state_current(self, item: T) -> S | None:
     """Returns an object representing the state of a currently installed item on the system."""
@@ -197,10 +168,14 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
 
   @abstractmethod
   def plan_install(self, items_to_check: Sequence[T], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+    """Called during install phases. This method checks a set of items if any actions need to be
+    performed and returns them via a Generator. Returned ExecutionPlans will immediately be executed."""
     pass
 
   @abstractmethod
   def plan_cleanup(self, items_to_keep: Sequence[T], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+    """Called during cleanup phase. This method is repsonsible for uninstalling items that are no longer needed.
+    Returned ExecutionPlans will immediately be executed."""
     pass
 
   @abstractmethod

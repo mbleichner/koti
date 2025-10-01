@@ -51,18 +51,6 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
       *[item for item in items if item.script is None and item.url is None],
     ]
 
-  # def plan_install(self, items: list[Package], model: ConfigModel, dryrun: bool) -> Sequence[ExecutionPlan]:
-  # def plan_install(self, items: list[ConfigItemToInstall[Package, PackageState]]) -> Sequence[ExecutionPlan]:
-  # if item.name in installed_packages:
-  #   return MarkExplicit([item], self)
-  # if item.url is not None and item.name not in installed_packages:
-  #   return InstallFromURL([item], self)
-  # if item.script is not None and item.name not in installed_packages:
-  #   return InstallFromScript(item, self)
-  # if item.name not in installed_packages:
-  #   return InstallViaPacman([item], self)
-  # raise AssertionError("illegal state")
-
   def plan_install(self, items_to_check: Sequence[Package], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
     installed_packages = self.pacman_list_installed_packages()
     explicit_packages = self.pacman_list_explicit_packages()
@@ -88,7 +76,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     if additional_explicit_items:
       yield ExecutionPlan(
         items = additional_explicit_items,
-        description = f"{GREEN}marking {len(additional_explicit_items)} package(s) explicitly installed",
+        description = f"{GREEN}mark package(s) explicitly installed: {", ".join([item.name for item in additional_explicit_items])}",
         actions = [
           ShellAction(f"pacman -D --asexplicit {" ".join([item.name for item in additional_explicit_items])}"),
           lambda: self.add_managed_packages(additional_explicit_items),
@@ -100,7 +88,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
       assert item.script is not None, "illegal state"
       yield ExecutionPlan(
         items = additional_items_from_urls,
-        description = f"{GREEN}install {len(additional_items_from_urls)} package(s) from script",
+        description = f"{GREEN}install {len(additional_items_from_urls)} package from script: {item.name}",
         actions = [
           item.script,
           lambda: self.add_managed_packages(additional_items_from_urls),
@@ -111,7 +99,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     if additional_items_from_urls:
       yield ExecutionPlan(
         items = additional_items_from_urls,
-        description = f"{GREEN}install {len(additional_items_from_urls)} package(s) from URL(s)",
+        description = f"{GREEN}install package(s) from URL(s): {", ".join([item.url for item in additional_items_from_urls if item.url])}",
         actions = [
           ShellAction(f"pacman -U {" ".join([item.url for item in additional_items_from_urls if item.url])}"),
           lambda: self.add_managed_packages(additional_items_from_urls),
@@ -123,7 +111,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
       pacman_or_helper = self.aur_helper[0] if self.aur_helper else "pacman"
       yield ExecutionPlan(
         items = additional_items_from_repo,
-        description = f"{GREEN}install {len(additional_items_from_repo)} package(s): {" ".join([item.name for item in additional_items_from_repo])}",
+        description = f"{GREEN}install package(s): {" ".join([item.name for item in additional_items_from_repo])}",
         actions = [
           ShellAction(
             f"{pacman_or_helper} -Syu {" ".join([item.name for item in additional_items_from_repo])}",
@@ -140,7 +128,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     if items_to_remove:
       yield ExecutionPlan(
         items = items_to_remove,
-        description = f"{RED}marking package(s) non-explicitly installed",
+        description = f"{RED}mark package(s) non-explicitly installed: {", ".join([item.name for item in items_to_remove])}",
         actions = [
           ShellAction(f"pacman -D --asdeps {" ".join([item.name for item in items_to_remove])}"),
           lambda: self.remove_managed_packages(items_to_remove),
@@ -155,14 +143,6 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
         lambda: self.pacman_prune_unneeded(),
       ],
     )
-
-  # def installed(self, model: ConfigModel) -> list[Package]:
-  #   installed_by_koti = self.managed_packages_store.elements()
-  #   package_names = {
-  #     pkg for pkg in self.explicit_packages_on_system
-  #     if not self.ignore_manually_installed_packages or pkg in installed_by_koti
-  #   }
-  #   return [Package(pkg) for pkg in package_names]
 
   def installed_packages(self) -> list[Package]:
     installed_by_koti = self.managed_packages_store.elements()
@@ -195,6 +175,8 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     unneeded_packages = self.parse_pkgs(shell_output(f"pacman -Qdttq", check = False))
     if len(unneeded_packages) > 0:
       shell(f"pacman -Rns {" ".join(unneeded_packages)}")
+    else:
+      print("no unneeded packages found")
 
   def parse_pkgs(self, output: str) -> list[str]:
     if "there is nothing to do" in output: return []

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import copy
-from os import getuid
+from os import get_terminal_size, getuid
 from typing import Iterator
 
 from koti.model import *
@@ -101,16 +101,12 @@ class Koti:
     if len(execution_plans) > 0:
       printc(f"Actions that will be executed (in order):", BOLD)
       for plan in execution_plans:
-        details = [f"{CYAN}{action.command}{ENDC}" for action in plan.actions if isinstance(action, ShellAction)] + plan.details
-
-        if len(plan.description) < 80:
-          printc(f"- {ljust(plan.description, 80)}{ENDC}{details[0]}")
-          for x in details[1:]:
-            printc(f"  {ljust("", 80)}{ENDC}{x}")
-        else:
-          printc(f"- {plan.description}")
-          for x in details:
-            printc(f"  {ljust("", 80)}{ENDC}{x}")
+        printc(f"- {plan.description}")
+        for action in plan.actions:
+          if isinstance(action, ShellAction):
+            printc(f"  $ {action.command}")
+        for detail in plan.details:
+          printc(f"  {detail}")
 
       print()
 
@@ -143,15 +139,27 @@ class Koti:
 
     warnings = [message for manager in self.managers for message in manager.warnings]
     if warnings:
-      print()
       printc(f"Warnings during execution:", BOLD)
       for message in warnings:
         printc(f"- {message}")
       print()
 
+    self.print_divider_line()
+    print("execution finished.")
+
   def execute_plan(self, plan: ExecutionPlan):
-    printc(f"Now executing: {plan.description}")
-    plan.execute()
+    self.print_divider_line()
+    printc(f"executing: {plan.description}")
+    for detail in plan.details:
+      printc(f"{detail}")
+    for action in plan.actions:
+      if isinstance(action, ShellAction):
+        printc(f"$ {action.command}")
+      action()
+
+  @classmethod
+  def print_divider_line(cls):
+    printc(f"{"-" * (get_terminal_size().columns - 1)}")
 
   @classmethod
   def load_tags(cls, store: JsonStore) -> dict[str, set[str]]:
@@ -321,3 +329,5 @@ class Koti:
           if group_item.identifier() == required_item.identifier():
             return idx_phase, group
     return None
+
+

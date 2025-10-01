@@ -48,12 +48,12 @@ def dan() -> Generator[ConfigGroup | None]:
       Package("nvidia-settings"),
 
       # moep
-      # Package("python-flask"),
-      # Package("python-bottle"),
-      # Package("python-numpy"),
-      # Package("python-steam"),
-      # Package("python-tests"),
-      # Package("python-mock"),
+      Package("python-flask"),
+      Package("python-bottle"),
+      Package("python-numpy"),
+      Package("python-steam"),
+      Package("python-tests"),
+      Package("python-mock"),
 
       GroupAssignment("manuel", "docker"),
       File("/tmp/test", permissions = "r--", content = cleandoc('''

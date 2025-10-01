@@ -164,7 +164,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         yield ExecutionPlan(
           items = [File(filename) for filename in files_to_remove],
           description = f"{RED}remove orphan file(s)",
-          details = "leftover empty directories will be removed",
+          details = "leftover empty directories will also be removed",
           actions = [
             lambda: self.unlink_files(files_to_remove),
             lambda: self.remove_leftover_empty_dirs(item),
@@ -178,7 +178,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         continue
       yield ExecutionPlan(
         items = [item],
-        description = f"{RED}deleting file",
+        description = f"{RED}delete file: {item.filename}",
         actions = [
           lambda: os.unlink(item.filename),
           lambda: self.managed_files_store.remove(item.filename),
@@ -192,7 +192,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         continue
       yield ExecutionPlan(
         items = [item],
-        description = f"{RED}deleting directory",
+        description = f"{RED}delete directory: {item.dirname}",
         actions = [
           lambda: shutil.rmtree(item.dirname),
           lambda: self.managed_dirs_store.remove(item.dirname),

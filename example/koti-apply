@@ -31,4 +31,3 @@ koti = Koti(
 koti.plan()
 confirm("confirm execution")
 koti.apply()
-print("execution finished.")

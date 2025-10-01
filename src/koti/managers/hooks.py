@@ -92,8 +92,7 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
       assert hook.execute is not None
       yield ExecutionPlan(
         items = [hook],
-        description = f"{YELLOW}execute hook: {hook.name}",
-        details = "hook will be executed for the first time" if current is None else "hook will be executed because of updated dependencies",
+        description = f"{YELLOW}execute hook '{hook.name}' {"for the first time" if current is None else "because of updated dependencies"}",
         actions = [
           hook.execute,
           lambda: self.trigger_hash_store.put(hook.name, target.trigger_hashes),
@@ -107,7 +106,7 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
         continue
       yield ExecutionPlan(
         items = [hook],
-        description = f"{RED}hook will no longer be tracked",
+        description = f"{RED}hook will no longer be tracked: {hook.name}",
         actions = [
           self.trigger_hash_store.remove(hook.name),
         ]
