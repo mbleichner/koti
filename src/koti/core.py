@@ -279,13 +279,13 @@ class Koti:
       items = [item for group in merged_groups_in_phase for item in group.provides],
     )
 
-  # FIXME: Refactoring
   @classmethod
   def find_dependency_violation(cls, phases: list[list[ConfigGroup]]) -> tuple[int, ConfigGroup] | None:
+    """Finds ConfigGroups that would be executed too late and need to be moved into an earlier phase."""
     for phase_idx, phase in enumerate(phases):
       for group in phase:
 
-        # check requires
+        # check "requires" dependencies
         for required_item in group.requires:
           required_phase_and_group = cls.find_required_group(required_item, phases)
           if required_phase_and_group is None:
@@ -295,7 +295,7 @@ class Koti:
             assert required_group is not group, f"group with requires-dependency to itself: {group.description}"
             return required_phase_idx, required_group
 
-        # check after
+        # check "after" dependencies
         for item in group.provides:
           for other_phase_idx, other_phase in enumerate(phases):
             for other_group in other_phase:
@@ -303,7 +303,7 @@ class Koti:
                 assert other_group is not group, f"group with after-dependency to itself: {group.description}"
                 return phase_idx, group
 
-        # check before
+        # check "before" dependencies
         for item in group.provides:
           for other_phase_idx, other_phase in enumerate(phases):
             for other_group in other_phase:

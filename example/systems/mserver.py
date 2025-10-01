@@ -118,7 +118,7 @@ def mserver() -> Generator[ConfigGroup | None]:
         'download pacoloco .db files',
         # Pacoloco prefetch only works if .db files have been added to the cache, which will not happen if we use
         # the CacheServer setting. As a workaround, we trigger a download of the .db files manually.
-        trigger = PostHook(f"docker compose /opt/pacoloco/docker-compose.yml"), # FIXME: funktioniert noch nicht richtig
+        trigger = PostHook(f"docker compose /opt/pacoloco/docker-compose.yml"),
         execute = lambda: shell('''
           curl http://pacoloco.fritz.box/repo/archlinux/core/os/x86_64/core.db > /dev/null
           curl http://pacoloco.fritz.box/repo/archlinux/extra/os/x86_64/extra.db > /dev/null
