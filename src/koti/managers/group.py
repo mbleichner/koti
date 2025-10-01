@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Generator, Sequence
 
-from koti import ConfigItemToInstall, ConfigItemToUninstall, ExecutionPlan
+from koti import ExecutionPlan
 from koti.utils.shell import ShellAction, shell_output
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.group import GroupAssignment
@@ -38,7 +38,7 @@ class GroupManager(ConfigManager[GroupAssignment, GroupAssignmentState]):
           result.append(GroupAssignment(username, group))
     return result
 
-  def state_target(self, item: GroupAssignment, model: ConfigModel, planning: bool) -> GroupAssignmentState:
+  def state_target(self, item: GroupAssignment, model: ConfigModel, dryrun: bool) -> GroupAssignmentState:
     return GroupAssignmentState()
 
   def state_current(self, item: GroupAssignment) -> GroupAssignmentState | None:
@@ -48,30 +48,32 @@ class GroupManager(ConfigManager[GroupAssignment, GroupAssignmentState]):
         return GroupAssignmentState()
     return None
 
-  def plan_install(self, items: list[ConfigItemToInstall[GroupAssignment, GroupAssignmentState]]) -> Sequence[ExecutionPlan]:
-    result: list[ExecutionPlan] = []
-    for item, current, target in items:
-      result.append(ExecutionPlan(
+  def plan_install(self, items_to_check: Sequence[GroupAssignment], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+    for item in items_to_check:
+      current, target = self.states(item, model, dryrun)
+      if current == target:
+        continue
+      yield ExecutionPlan(
         items = [item],
-        description = f"{GREEN}assign user to group",
+        description = f"{GREEN}assign user {item.username} to group {item.group}",
         actions = [
           ShellAction(f"gpasswd --add {item.username} {item.group}"),
           lambda: self.managed_users_store.add(item.username),
         ]
-      ))
-    return result
+      )
 
-  def plan_uninstall(self, items: list[ConfigItemToUninstall[GroupAssignment, GroupAssignmentState]]) -> Sequence[ExecutionPlan]:
-    result: list[ExecutionPlan] = []
-    for item, current in items:
-      result.append(ExecutionPlan(
+  def plan_cleanup(self, items_to_keep: Sequence[GroupAssignment], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+    installed = self.installed(model)
+    for item in installed:
+      if item in items_to_keep:
+        continue
+      yield ExecutionPlan(
         items = [item],
-        description = f"{RED}unassign user from group",
+        description = f"{RED}unassign {item.username} from group {item.group}",
         actions = [
           ShellAction(f"gpasswd --delete {item.username} {item.group}"),
         ]
-      ))
-    return result
+      )
 
   def finalize(self, model: ConfigModel):
     usernames = set([item.username for phase in model.phases for item in phase.items if isinstance(item, GroupAssignment)])

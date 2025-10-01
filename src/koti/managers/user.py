@@ -3,9 +3,9 @@ from __future__ import annotations
 import os.path
 import pwd
 from hashlib import sha256
-from typing import Sequence
+from typing import Generator, Sequence
 
-from koti import ConfigItemToInstall, ConfigItemToUninstall, ExecutionPlan
+from koti import ExecutionPlan
 from koti.utils.shell import ShellAction, shell_output
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.user import User
@@ -44,10 +44,10 @@ class UserManager(ConfigManager[User, UserState]):
   def assert_installable(self, item: User, model: ConfigModel):
     pass
 
-  def installed(self, model: ConfigModel) -> list[User]:
+  def installed(self) -> list[User]:
     return [User(username) for username in self.managed_users_store.elements()]
 
-  def state_target(self, item: User, model: ConfigModel, planning: bool) -> UserState:
+  def state_target(self, item: User, model: ConfigModel, dryrun: bool) -> UserState:
     home = item.home or f"/home/{item.username}"
     shell = item.shell or "/usr/bin/nologin"
     return UserState(
@@ -74,41 +74,43 @@ class UserManager(ConfigManager[User, UserState]):
       home_exists = os.path.isdir(home),
     )
 
-  def plan_install(self, items: list[ConfigItemToInstall[User, UserState]]) -> Sequence[ExecutionPlan]:
-    result: list[ExecutionPlan] = []
-    for user, current, target in items:
+  def plan_install(self, items_to_check: Sequence[User], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+    for user in items_to_check:
+      current, target = self.states(user, model, dryrun)
+      assert target is not None
+
       if current is None:
-        result.append(ExecutionPlan(
+        yield ExecutionPlan(
           items = [user],
           description = f"{GREEN}create new user",
           actions = [
             ShellAction(f"useradd -d {target.home_dir} -s {target.shell} {user.username}"),
             lambda: self.managed_users_store.add(user.username)
           ]
-        ))
+        )
 
       if current is not None and current.shell != target.shell:
-        result.append(ExecutionPlan(
+        yield ExecutionPlan(
           items = [user],
           description = f"{YELLOW}update user shell",
           actions = [
             ShellAction(f"usermod --shell {target.shell} {user.username}"),
             lambda: self.managed_users_store.add(user.username)
           ]
-        ))
+        )
 
       if current is not None and current.home_dir != target.home_dir:
-        result.append(ExecutionPlan(
+        yield ExecutionPlan(
           items = [user],
           description = f"{YELLOW}update user homedir",
           actions = [
             ShellAction(f"usermod --home {target.home_dir}"),
             lambda: self.managed_users_store.add(user.username)
           ]
-        ))
+        )
 
       if current is not None and not current.home_exists:
-        result.append(ExecutionPlan(
+        yield ExecutionPlan(
           items = [user],
           description = f"{GREEN}create user homedir",
           details = target.home_dir,
@@ -116,21 +118,21 @@ class UserManager(ConfigManager[User, UserState]):
             lambda: self.create_homedir(user, target.home_dir),
             lambda: self.managed_users_store.add(user.username)
           ]
-        ))
+        )
 
-    return result
-
-  def plan_uninstall(self, items: list[ConfigItemToUninstall[User, UserState]]) -> Sequence[ExecutionPlan]:
-    result: list[ExecutionPlan] = []
-    for user, current in items:
-      result.append(ExecutionPlan(
+  def plan_cleanup(self, items_to_keep: Sequence[User], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+    managed_users = self.installed()
+    for user in managed_users:
+      if user in items_to_keep:
+        continue
+      yield ExecutionPlan(
         items = [user],
         description = f"{RED}user will be deleted",
-        actions = [ShellAction(f"userdel {user.username}"),
-                   lambda: self.managed_users_store.remove(user.username)
-                   ]
-      ))
-    return result
+        actions = [
+          ShellAction(f"userdel {user.username}"),
+          lambda: self.managed_users_store.remove(user.username)
+        ]
+      )
 
   def create_homedir(self, user: User, homedir: str):
     getpwnam = pwd.getpwnam(user.username)

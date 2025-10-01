@@ -60,6 +60,7 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
       Package("samba"),
       Package("spectacle"),
       Package("wine"),
+      Package("chromium"),
       Package("google-chrome"),
       Package("linphone-desktop-appimage"),
       Package("ttf-ms-win10-auto"),  # Das win11 Package war zuletzt broken

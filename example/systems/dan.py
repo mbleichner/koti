@@ -1,7 +1,7 @@
 from inspect import cleandoc
-from typing import Generator
 
 from koti import *
+from koti.utils.shell import shell
 from modules.base import base, swapfile
 from modules.cpufreq import cpufreq, throttle_after_boot
 from modules.desktop import desktop
@@ -20,9 +20,9 @@ def dan() -> Generator[ConfigGroup | None]:
   yield from base()
   yield from cpufreq(min_freq = 2000, max_freq = 4500, governor = "performance")
   yield from throttle_after_boot(2000)
-  yield from swapfile(12)
-  yield from kernel_cachyos(1)
-  yield from kernel_stock(2)
+  yield from swapfile(size_gb = 12)
+  yield from kernel_cachyos(sortkey = 1)
+  yield from kernel_stock(sortkey = 2)
   yield from fish()
   yield from desktop(nvidia = True, autologin = True)
   yield from systray(ryzen = True, nvidia = True)
@@ -41,9 +41,28 @@ def dan() -> Generator[ConfigGroup | None]:
       Package("linux-firmware-other"),
       Package("linux-firmware-intel"),
       Package("linux-firmware-nvidia"),
-      Package("nvidia-open"),
-      Package("linux-cachyos-nvidia-open"),
+
+      # Nicht das vorkompilierte NVIDIA Modul von CachyOS nehmen, sonst kommt es gelegentlich zu Dependency-Fehlern, wenn das
+      # CachyOS-Modul von einer zu neuen nvidia-utils Version abhängt, die in den Arch-Repos noch nicht verfügbar ist
+      Package("nvidia-open-dkms"),
       Package("nvidia-settings"),
+
+      # moep
+      # Package("python-flask"),
+      # Package("python-bottle"),
+      # Package("python-numpy"),
+      # Package("python-steam"),
+      # Package("python-tests"),
+      # Package("python-mock"),
+
+      GroupAssignment("manuel", "docker"),
+      File("/tmp/test", permissions = "r--", content = cleandoc('''
+        moep moep
+      ''')),
+
+      PostHook("moep hook 1", execute = lambda: shell("echo moep 1"), trigger = File("/tmp/test")),
+      PostHook("moep hook 2", execute = lambda: shell("echo moep 2"), trigger = PostHook("moep hook 1")),
+
       File("/etc/fstab", permissions = "r--", content = cleandoc('''
         UUID=3409a847-0bd6-43e4-96fd-6e8be4e3c58d  /             ext4  rw,noatime 0 1
         UUID=AF4E-18BD                             /boot         vfat  rw,defaults 0 2

@@ -2,7 +2,7 @@ from inspect import cleandoc
 from typing import Generator
 
 from koti import *
-from koti.utils.shell import shell
+from koti.utils.shell import shell, ShellAction
 
 
 def base() -> Generator[ConfigGroup]:
@@ -101,6 +101,12 @@ def base() -> Generator[ConfigGroup]:
       # Declare options for pacman.conf (so I don't have to null-check later)
       Option[str]("/etc/pacman.conf/NoExtract"),
       Option[str]("/etc/pacman.conf/NoUpgrade"),
+
+      PostHook(
+        name = "moep",
+        trigger = File("/etc/pacman.conf"),
+        execute = lambda: print("moep"),
+      ),
 
       File("/etc/pacman.conf", permissions = "r--", content = lambda model: cleandoc(f'''
         [options]
@@ -354,10 +360,10 @@ def base() -> Generator[ConfigGroup]:
   )
 
 
-def swapfile(swapfile_gb: int) -> Generator[ConfigGroup]:
+def swapfile(size_gb: int) -> Generator[ConfigGroup]:
   yield ConfigGroup(
-    description = f"swapfile ({swapfile_gb} GByte)",
+    description = f"swapfile ({size_gb} GByte)",
     provides = [
-      Swapfile("/swapfile", swapfile_gb * 1024 ** 3),  # 8GB
+      Swapfile("/swapfile", size_gb * 1024 ** 3),  # 8GB
     ]
   )

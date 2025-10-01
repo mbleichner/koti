@@ -1,6 +1,6 @@
-from typing import Sequence
+from typing import Generator, Sequence
 
-from koti import ConfigItemToInstall, ConfigItemToUninstall, ExecutionPlan
+from koti import ExecutionPlan
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.systemd import SystemdUnit
 from koti.managers.pacman import shell
@@ -34,7 +34,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
       units_store: JsonCollection[str] = self.store.collection(username or "$system")
       units_store.add_all([item.name for item in items])
 
-  def installed(self, model: ConfigModel) -> list[SystemdUnit]:
+  def installed(self) -> list[SystemdUnit]:
     result: list[SystemdUnit] = []
     managed_users = [(username if username != "$system" else None) for username in self.store.keys()]
     for username in managed_users:
@@ -46,42 +46,55 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
     enabled: bool = shell_success(f"{self.systemctl_for_user(item.user)} is-enabled {item.name}")
     return SystemdUnitState() if enabled else None
 
-  def state_target(self, item: SystemdUnit, model: ConfigModel, planning: bool) -> SystemdUnitState:
+  def state_target(self, item: SystemdUnit, model: ConfigModel, dryrun: bool) -> SystemdUnitState:
     return SystemdUnitState()
 
-  def plan_install(self, items: list[ConfigItemToInstall[SystemdUnit, SystemdUnitState]]) -> Sequence[ExecutionPlan]:
-    result: list[ExecutionPlan] = []
-    users = set([item.user for item, current, target in items])
+  def plan_install(self, items_to_check: Sequence[SystemdUnit], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+    users = {item.user for item in items_to_check}
     for username in users:
-      items_for_user = [item for item, current, target in items if item.user == username]
-      units_store: JsonCollection[str] = self.store.collection(username or "$system")
-      result.append(ExecutionPlan(
-        items = items_for_user,
-        description = f"{GREEN}enable systemd unit(s)",
-        actions = [
-          ShellAction(f"systemctl daemon-reload"),
-          ShellAction(f"{self.systemctl_for_user(username)} enable --now {" ".join([item.name for item in items_for_user])}"),
-          lambda: units_store.add_all([item.name for item in items_for_user]),
-        ]
-      ))
-    return result
+      items_to_activate_for_user: list[SystemdUnit] = []
+      for item in items_to_check:
+        if item.user == username:
+          current, target = self.states(item, model, dryrun)
+          if current != target:
+            items_to_activate_for_user.append(item)
+      if not items_to_activate_for_user:
+        continue
 
-  def plan_uninstall(self, items: list[ConfigItemToUninstall[SystemdUnit, SystemdUnitState]]) -> Sequence[ExecutionPlan]:
-    result: list[ExecutionPlan] = []
-    users = set([item.user for item, current in items])
+      if items_to_activate_for_user:
+        units_store: JsonCollection[str] = self.store.collection(username or "$system")
+        yield ExecutionPlan(
+          items = items_to_activate_for_user,
+          description = f"{GREEN}enable systemd unit(s)",
+          actions = [
+            ShellAction(f"systemctl daemon-reload"),
+            ShellAction(f"{self.systemctl_for_user(username)} enable --now {" ".join([item.name for item in items_to_activate_for_user])}"),
+            lambda: units_store.add_all([item.name for item in items_to_activate_for_user]),
+          ]
+        )
+
+  def plan_cleanup(self, items_to_keep: Sequence[SystemdUnit], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+    installed_units = self.installed()
+    users = {item.user for item in installed_units}
+
     for username in users:
-      items_for_user = [item for item, current in items if item.user == username]
+      items_to_deactivate_for_user: list[SystemdUnit] = []
+      for item in installed_units:
+        if item not in items_to_keep and item.user == username:
+          items_to_deactivate_for_user.append(item)
+      if not items_to_deactivate_for_user:
+        continue
+
       units_store: JsonCollection[str] = self.store.collection(username or "$system")
-      result.append(ExecutionPlan(
-        items = items_for_user,
-        description = f"{RED}disable systemd units",
+      yield ExecutionPlan(
+        items = items_to_deactivate_for_user,
+        description = f"{RED}disable systemd unit(s) {" ".join([item.name for item in items_to_deactivate_for_user])}",
         actions = [
           ShellAction(f"systemctl daemon-reload"),
-          ShellAction(f"{self.systemctl_for_user(username)} disable --now {" ".join([item.name for item in items_for_user])}"),
-          lambda: units_store.remove_all([item.name for item in items_for_user])
+          ShellAction(f"{self.systemctl_for_user(username)} disable --now {" ".join([item.name for item in items_to_deactivate_for_user])}"),
+          lambda: units_store.remove_all([item.name for item in items_to_deactivate_for_user])
         ]
-      ))
-    return result
+      )
 
   def systemctl_for_user(self, user: str | None):
     return f"systemctl --user -M {user}@" if user is not None else "systemctl"

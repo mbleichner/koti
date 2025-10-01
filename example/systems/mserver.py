@@ -1,5 +1,4 @@
 from inspect import cleandoc
-from typing import Generator
 
 from koti import *
 from koti.utils.shell import shell
@@ -24,9 +23,9 @@ def DockerComposeService(composefile: File, *other: ConfigItem) -> list[ConfigIt
 def mserver() -> Generator[ConfigGroup | None]:
   yield from base()
   yield from cpufreq(min_freq = 800, max_freq = 4200, governor = "powersave")
-  yield from swapfile(8)
-  yield from kernel_lts(1)
-  yield from kernel_stock(2)
+  yield from swapfile(size_gb = 8)
+  yield from kernel_lts(sortkey = 1)
+  yield from kernel_stock(sortkey = 2)
   yield from fish()
 
   yield ConfigGroup(

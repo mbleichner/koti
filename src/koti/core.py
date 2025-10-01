@@ -4,8 +4,6 @@ from copy import copy
 from os import getuid
 from typing import Iterator
 
-from tabulate import tabulate
-
 from koti.model import *
 from koti.utils.colors import *
 from koti.utils.json_store import *
@@ -44,21 +42,16 @@ class Koti:
 
   def create_cleanup_phase(self, model: ConfigModel) -> CleanupPhase:
     items_to_install = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
-    identifiers_to_install = [item.identifier() for item in items_to_install]
     steps: list[CleanupStep] = []
     for manager in self.get_cleanup_phase_manager_order(self.managers):
-      installed_items = [item for item in manager.installed(model) if manager.state_current(item) is not None]
-      if not installed_items:
-        continue  # only add the manager to the cleanup phase if there are any items that could potentially be uninstalled
-      items_to_uninstall = [item for item in installed_items if item.identifier() not in identifiers_to_install]
       steps.append(CleanupStep(
         manager = manager,
-        items_to_uninstall = items_to_uninstall,
         items_to_keep = [item for item in items_to_install if item.__class__ in manager.managed_classes],
       ))
     return CleanupPhase(steps)
 
   def plan(self, groups: bool = True, items: bool = False) -> bool:
+    dryrun = True
 
     # clear warnings from previous runs
     for manager in self.managers:
@@ -69,36 +62,16 @@ class Koti:
 
     # plan installation phases
     items_total = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
-    items_to_install: list[ManagedConfigItem] = []
-    items_to_update: list[ManagedConfigItem] = []
     for phase in model.phases:
-      for step in phase.steps:
-        manager = step.manager
-        changed_items: list[ConfigItemToInstall] = []
-        for item in step.items_to_install:
-          current = manager.state_current(item)
-          target = manager.state_target(item, model, planning = True)
-          if current is None or current.hash() != target.hash():
-            changed_items.append((item, current, target))
-            if current is None:
-              items_to_install.append(item)
-            else:
-              items_to_update.append(item)
-        if changed_items:
-          execution_plans.extend(manager.plan_install(changed_items))
+      for install_step in phase.steps:
+        for plan in install_step.manager.plan_install(install_step.items_to_install, model, dryrun):
+          execution_plans.append(plan)
 
     # plan cleanup phase
     cleanup_phase = self.create_cleanup_phase(model)
-    items_to_uninstall: list[ManagedConfigItem] = []
     for cleanup_step in cleanup_phase.steps:
-      manager = cleanup_step.manager
-      removed_items: list[ConfigItemToUninstall] = []
-      for item in cleanup_step.items_to_uninstall:
-        items_to_uninstall.append(item)
-        current = manager.state_current(item)
-        removed_items.append((item, current))
-      if removed_items:
-        execution_plans.extend(manager.plan_uninstall(removed_items))
+      for plan in cleanup_step.manager.plan_cleanup(cleanup_step.items_to_keep, model, dryrun):
+        execution_plans.append(plan)
 
     # list all groups
     if groups or items:
@@ -106,21 +79,14 @@ class Koti:
         printc(f"Phase {phase_idx + 1}:", BOLD)
         if groups:
           for group in phase.groups:
-            group_contains_change = len([item for item in group.provides if item in items_to_install or item in items_to_update]) > 0
-            printc(f"{"~" if group_contains_change else "-"} {group.description}", YELLOW if group_contains_change else None)
+            printc(f"- {group.description}")
         if items:
           for install_step in phase.steps:
             for item in install_step.items_to_install:
-              if item in items_to_install:
-                printc(f"+ {item.description()}", GREEN)
-              elif item in items_to_update:
-                printc(f"~ {item.description()}", YELLOW)
-              else:
-                printc(f"- {item.description()}")
+              printc(f"- {item.description()}")
         print()
 
-    changed_item_count = len(items_to_install) + len(items_to_update) + len(items_to_uninstall)
-    printc(f"{len(items_total)} items total, {changed_item_count or "no"} items with changes", BOLD)
+    printc(f"{len(items_total)} items total")
     print()
 
     # print warnings generated during evaluation
@@ -134,22 +100,25 @@ class Koti:
     # list all changed items
     if len(execution_plans) > 0:
       printc(f"Actions that will be executed (in order):", BOLD)
-      table: list[list[str | None]] = []
       for plan in execution_plans:
-        table.append([
-          f"- {plan.description}",
-          "\n".join([item.description() for item in plan.items]),
-          "\n".join([f"{CYAN}{action.command}{ENDC}" for action in plan.actions if isinstance(action, ShellAction)] + plan.details)
-        ])
-      table = [[f"{cell}{ENDC}" for cell in row] for row in table]
-      if table:
-        print(tabulate(table, tablefmt = "plain", maxcolwidths = [60]))
+        details = [f"{CYAN}{action.command}{ENDC}" for action in plan.actions if isinstance(action, ShellAction)] + plan.details
+
+        if len(plan.description) < 80:
+          printc(f"- {ljust(plan.description, 80)}{ENDC}{details[0]}")
+          for x in details[1:]:
+            printc(f"  {ljust("", 80)}{ENDC}{x}")
+        else:
+          printc(f"- {plan.description}")
+          for x in details:
+            printc(f"  {ljust("", 80)}{ENDC}{x}")
+
       print()
 
-    return changed_item_count > 0
+    return len(execution_plans) > 0
 
   def apply(self):
     model = self.create_model()
+    dryrun = False
 
     # clear warnings before execution
     for manager in self.managers:
@@ -158,38 +127,14 @@ class Koti:
     # execute install phases
     for phase_idx, phase in enumerate(model.phases):
       for install_step in phase.steps:
-        manager = install_step.manager
-        items_to_update: list[ManagedConfigItem] = []
-        items_to_update_with_state: list[ConfigItemToInstall] = []
-        for item in install_step.items_to_install:
-          current = manager.state_current(item)
-          target = manager.state_target(item, model, planning = False)
-          if current is None or current.hash() != target.hash():
-            items_to_update.append(item)
-            items_to_update_with_state.append((item, current, target))
-        self.print_install_step_log(model, phase_idx, install_step, items_to_update)
-        if items_to_update:
-          execution_plans = manager.plan_install(items_to_update_with_state)
-          # FIXME: Double check if all items of the plan have been reviewed
-          for plan in execution_plans:
-            for action in plan.actions:
-              action()
+        for plan in install_step.manager.plan_install(install_step.items_to_install, model, dryrun):
+          self.execute_plan(plan)
 
     # execute cleanup phase
     cleanup_phase = self.create_cleanup_phase(model)
     for cleanup_step in cleanup_phase.steps:
-      manager = cleanup_step.manager
-      self.print_cleanup_step_log(model, cleanup_step)
-      items_to_uninstall_with_state: list[ConfigItemToUninstall] = []
-      for item in cleanup_step.items_to_uninstall:
-        current = manager.state_current(item)
-        items_to_uninstall_with_state.append((item, current))
-      if items_to_uninstall_with_state:
-        execution_plans = manager.plan_uninstall(items_to_uninstall_with_state)
-        # FIXME: Double check if all items of the plan have been reviewed
-        for plan in execution_plans:
-          for action in plan.actions:
-            action()
+      for plan in cleanup_step.manager.plan_cleanup(cleanup_step.items_to_keep, model, dryrun):
+        self.execute_plan(plan)
 
     # updating persistent data
     self.save_tags(self.store, model)
@@ -204,25 +149,9 @@ class Koti:
         printc(f"- {message}")
       print()
 
-  @classmethod
-  def print_install_step_log(cls, model: ConfigModel, phase_idx: int, step: InstallStep, items_to_update: Sequence[ManagedConfigItem]):
-    manager_name_maxlen = max([len(manager.__class__.__name__) for manager in model.managers])
-    manager_name = step.manager.__class__.__name__
-    if 0 < len(items_to_update) < 5:
-      details = f"items to install or update: {", ".join([item.description() for item in items_to_update])}"
-    else:
-      details = f"{len(items_to_update) or "no"} items to update/install"
-    print(f"Phase {phase_idx + 1}  |  {manager_name.ljust(manager_name_maxlen)}  |  {str(len(step.items_to_install)).rjust(3)} items total  |  {details}")
-
-  @classmethod
-  def print_cleanup_step_log(cls, model: ConfigModel, step: CleanupStep):
-    manager_name_maxlen = max([len(manager.__class__.__name__) for manager in model.managers])
-    manager_name = step.manager.__class__.__name__
-    if 0 < len(step.items_to_uninstall) < 5:
-      details = f"items to uninstall: {", ".join([item.description() for item in step.items_to_uninstall])}"
-    else:
-      details = f"{len(step.items_to_uninstall) or "no"} items to uninstall"
-    print(f"Cleanup  |  {manager_name.ljust(manager_name_maxlen)}  |  {str(len(step.items_to_keep)).rjust(3)} remaining    |  {details}")
+  def execute_plan(self, plan: ExecutionPlan):
+    printc(f"Now executing: {plan.description}")
+    plan.execute()
 
   @classmethod
   def load_tags(cls, store: JsonStore) -> dict[str, set[str]]:

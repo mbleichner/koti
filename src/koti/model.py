@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
 from functools import reduce
-from typing import Any, Callable, Iterable, Literal, Sequence, Type, cast, overload
+from typing import Any, Callable, Generator, Iterable, Literal, Sequence, Type, cast, overload
 
 
 class ConfigGroup:
@@ -93,6 +93,12 @@ class ConfigItemState(metaclass = ABCMeta):
     used by foreign managers without having to inspect the implementation of the item state."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.hash()")
 
+  def __eq__(self, other: Any) -> bool:
+    return self.hash() == other.hash() if other.__class__ == self.__class__ else False
+
+  def __hash__(self):
+    return hash(self.hash())
+
 
 type ConfigItemToInstall[T: ManagedConfigItem, S: ConfigItemState] = tuple[T, S | None, S]
 type ConfigItemToUninstall[T: ManagedConfigItem, S: ConfigItemState] = tuple[T, S | None]
@@ -110,6 +116,45 @@ class ExecutionPlan[T: ManagedConfigItem]:
     self.actions = actions
     self.details = [details] if isinstance(details, str) else (details or [])
 
+  def execute(self):
+    for action in self.actions: action()
+
+  # def try_merge(self, other: ExecutionPlan) -> ExecutionPlan | None:
+  #   return None
+
+
+# class ExecutionPlan(metaclass = ABCMeta):
+#
+#   @abstractmethod
+#   def headline(self) -> str:
+#     pass
+#
+#   def details(self) -> str | None:
+#     pass
+#
+#   @abstractmethod
+#   def execute(self):
+#     pass
+#
+#   def try_merge(self, other: ExecutionPlan) -> ExecutionPlan | None:
+#     return None
+
+
+class ItemToInstall[T: ManagedConfigItem, S: ConfigItemState]:
+  def __init__(self, item: T, state_current: Callable[[], S | None], state_target: Callable[[], S]):
+    self.item = item
+    self.state_target = state_target
+    self.state_current = state_current
+
+  def states(self) -> tuple[S | None, S]:
+    return self.state_current(), self.state_target()
+
+
+class ItemToUninstall[T: ManagedConfigItem, S: ConfigItemState]:
+  def __init__(self, item: T, state_current: Callable[[], S | None]):
+    self.item = item
+    self.state_current = state_current
+
 
 class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMeta):
   managed_classes: list[Type] = []
@@ -125,13 +170,13 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     Can depend on the model, as some items may need to inspect their execution order, such as PostHooks."""
     pass
 
-  @abstractmethod
-  def installed(self, model: ConfigModel) -> Sequence[T]:
-    """Returns a list of all items currently installed on the system. This may depend on the model, as it may
-    be beneficial to check if newly added ConfigItems already exist on the system and display them accordingly.
-    In case the installed items cannot be queried from the system (e.g. due to missing tools), a warning should
-    be logged and an empty list should be returned."""
-    pass
+  # @abstractmethod
+  # def installed(self, model: ConfigModel) -> Sequence[T]:
+  #   """Returns a list of all items currently installed on the system. This may depend on the model, as it may
+  #   be beneficial to check if newly added ConfigItems already exist on the system and display them accordingly.
+  #   In case the installed items cannot be queried from the system (e.g. due to missing tools), a warning should
+  #   be logged and an empty list should be returned."""
+  #   pass
 
   @abstractmethod
   def state_current(self, item: T) -> S | None:
@@ -139,19 +184,23 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     pass
 
   @abstractmethod
-  def state_target(self, item: T, model: ConfigModel, planning: bool) -> S:
+  def state_target(self, item: T, model: ConfigModel, dryrun: bool) -> S:
     """Returns an object representing the state that the item will have after installation/updating.
     Can depend on the config model, as there might be e.g. Option()s that need to be considered.
-    Also the method can behave different during planning (e.g. PostHooks assume that their triggers
+    Also the method can behave different during dryrun (e.g. PostHooks assume that their triggers
     have already been updated to their respective target states)."""
     pass
 
+  def states(self, item: T, model: ConfigModel, dryrun: bool) -> tuple[S | None, S | None]:
+    """Convenience method to get both current and target state of an item"""
+    return self.state_current(item), self.state_target(item, model, dryrun)
+
   @abstractmethod
-  def plan_install(self, items: list[ConfigItemToInstall[T, S]]) -> Sequence[ExecutionPlan]:
+  def plan_install(self, items_to_check: Sequence[T], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
     pass
 
   @abstractmethod
-  def plan_uninstall(self, items: list[ConfigItemToUninstall[T, S]]) -> Sequence[ExecutionPlan]:
+  def plan_cleanup(self, items_to_keep: Sequence[T], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
     pass
 
   @abstractmethod
@@ -252,22 +301,18 @@ class InstallStep:
 
 
 class CleanupPhase:
-  items_to_uninstall: Sequence[ManagedConfigItem]
   items_to_keep: Sequence[ManagedConfigItem]
   steps: Sequence[CleanupStep]
 
   def __init__(self, steps: list[CleanupStep]):
-    self.items_to_uninstall = [item for step in steps for item in step.items_to_uninstall]
     self.items_to_keep = [item for step in steps for item in step.items_to_keep]
     self.steps = steps
 
 
 class CleanupStep:
   manager: ConfigManager
-  items_to_uninstall: list[ManagedConfigItem]
   items_to_keep: list[ManagedConfigItem]
 
-  def __init__(self, manager: ConfigManager, items_to_uninstall: list[ManagedConfigItem], items_to_keep: list[ManagedConfigItem]):
-    self.items_to_uninstall = items_to_uninstall
+  def __init__(self, manager: ConfigManager, items_to_keep: list[ManagedConfigItem]):
     self.items_to_keep = items_to_keep
     self.manager = manager

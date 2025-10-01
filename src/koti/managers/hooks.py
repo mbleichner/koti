@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from hashlib import sha256
-from typing import Sequence
+from typing import Generator, Sequence
 
-from koti import ConfigItemToInstall, ConfigItemToUninstall, ExecutionPlan
+from koti import ExecutionPlan
 from koti.utils.colors import *
 from koti.model import ConfigItem, ConfigItemState, ConfigManager, ConfigModel, ManagedConfigItem
 from koti.items.hooks import PostHook
@@ -39,9 +39,8 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
     for item in hook.trigger:
       exec_order_item = PostHookManager.index_in_execution_order(model, item)  # can be None in case the item isn't set up by koti (i.e. files created by pacman hooks or such)
       exec_order_hook = PostHookManager.index_in_execution_order(model, hook)
-      assert exec_order_hook is not None, f"{hook} not found in execution order"
-      assert exec_order_item is None or exec_order_item < exec_order_hook
-      if exec_order_item is not None and not exec_order_item < exec_order_hook: f"{hook} has trigger that is evaluated too late: {item}"
+      assert exec_order_hook is not None, f"{hook.description()} not found in execution order"
+      assert exec_order_item is None or exec_order_item < exec_order_hook, f"{hook.description()} has trigger that is evaluated too late: {item.description()}"
 
   @staticmethod
   def index_in_execution_order(model: ConfigModel, needle: ConfigItem) -> int | None:
@@ -54,8 +53,8 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
           result += 1
     return None
 
-  def installed(self, model: ConfigModel) -> list[PostHook]:
-    return [PostHook(name) for name in self.trigger_hash_store.keys()]
+  # def installed(self, model: ConfigModel) -> list[PostHook]:
+  #   return [PostHook(name) for name in self.trigger_hash_store.keys()]
 
   def state_current(self, hook: PostHook) -> PostHookState | None:
     stored_value = self.trigger_hash_store.get(hook.name, None)
@@ -64,52 +63,55 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
     trigger_hashes: dict[str, str] = stored_value
     return PostHookState(trigger_hashes)
 
-  def state_target(self, hook: PostHook, model: ConfigModel, planning: bool) -> PostHookState:
+  def state_target(self, hook: PostHook, model: ConfigModel, dryrun: bool) -> PostHookState:
     trigger_hashes: dict[str, str] = {}
     for ref in hook.trigger:
-      trigger_state = self.state_for_trigger(ref, model, planning)
+      trigger_state = self.state_for_trigger(ref, model, dryrun)
       if trigger_state is not None:
         trigger_hashes[ref.identifier()] = trigger_state.hash()
     return PostHookState(trigger_hashes)
 
-  def state_for_trigger(self, reference: ManagedConfigItem, model: ConfigModel, planning: bool) -> ConfigItemState | None:
+  def state_for_trigger(self, reference: ManagedConfigItem, model: ConfigModel, dryrun: bool) -> ConfigItemState | None:
     manager: ConfigManager = model.manager(reference)
 
-    # during planning, assume that the trigger item will already have been
+    # during dryrun, assume that the trigger item will already have been
     # updated to its target state (if managed by koti)
-    if planning:
+    if dryrun:
       trigger_item = model.item(reference, optional = True)
       if trigger_item is not None:
-        return manager.state_target(trigger_item, model, planning)
+        return manager.state_target(trigger_item, model, dryrun)
 
     return manager.state_current(reference)
 
-  def plan_install(self, items: list[ConfigItemToInstall[PostHook, PostHookState]]) -> Sequence[ExecutionPlan]:
-    result: list[ExecutionPlan] = []
-    for hook, current, target in items:
+  def plan_install(self, items_to_check: Sequence[PostHook], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+    for hook in items_to_check:
+      current, target = self.states(hook, model, dryrun)
+      if current == target:
+        continue
+      assert target is not None
       assert hook.execute is not None
-      result.append(ExecutionPlan(
+      yield ExecutionPlan(
         items = [hook],
-        description = f"{YELLOW}execute hook",
+        description = f"{YELLOW}execute hook: {hook.name}",
         details = "hook will be executed for the first time" if current is None else "hook will be executed because of updated dependencies",
         actions = [
           hook.execute,
           lambda: self.trigger_hash_store.put(hook.name, target.trigger_hashes),
-        ],
-      ))
-    return result
+        ]
+      )
 
-  def plan_uninstall(self, items: list[ConfigItemToUninstall[PostHook, PostHookState]]) -> Sequence[ExecutionPlan]:
-    result: list[ExecutionPlan] = []
-    for hook, current in items:
-      result.append(ExecutionPlan(
+  def plan_cleanup(self, items_to_keep: Sequence[PostHook], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+    currently_tracked_hooks = [PostHook(name) for name in self.trigger_hash_store.keys()]
+    for hook in currently_tracked_hooks:
+      if hook in items_to_keep:
+        continue
+      yield ExecutionPlan(
         items = [hook],
         description = f"{RED}hook will no longer be tracked",
         actions = [
           self.trigger_hash_store.remove(hook.name),
         ]
-      ))
-    return result
+      )
 
   def finalize(self, model: ConfigModel):
     currently_installed = [item.name for phase in model.phases for item in phase.items if isinstance(item, PostHook)]
