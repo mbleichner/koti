@@ -156,9 +156,9 @@ class Koti:
       shell_module.verbose_mode = True
       self.print_divider_line()
       printc(f"executing: {plan.description}")
+      for info in plan.info:
+        printc(f"{info}")
       if plan.hash() not in reviewed_plan_hashes:
-        for info in plan.info:
-          printc(f"{info}")
         confirm("This action was not predicted during planning phase - please confirm to continue")
       plan.execute()
     finally:

@@ -101,12 +101,6 @@ def base() -> Generator[ConfigGroup]:
       Option[str]("/etc/pacman.conf/NoExtract"),
       Option[str]("/etc/pacman.conf/NoUpgrade"),
 
-      PostHook(
-        name = "moep",
-        trigger = File("/etc/pacman.conf"),
-        execute = lambda: print("moep"),
-      ),
-
       File("/etc/pacman.conf", permissions = "r--", content = lambda model: cleandoc(f'''
         [options]
         HoldPkg = pacman glibc

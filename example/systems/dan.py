@@ -78,10 +78,9 @@ def dan() -> Generator[ConfigGroup | None]:
     provides = [
       Package("linphone-desktop-appimage"),
       Package("microsoft-edge-stable-bin"),
-      Package("flatpak"),
-      FlatpakRepo("flathub", spec_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"),
-      #FlatpakPackage("org.freedesktop.Platform"),
-      #FlatpakPackage("com.discordapp.Discord"),
+      # Package("flatpak"),
+      # FlatpakRepo("flathub", spec_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"),
+      # FlatpakPackage("com.discordapp.Discord"),
       # FlatpakPackage("us.zoom.Zoom"),
     ]
   )
