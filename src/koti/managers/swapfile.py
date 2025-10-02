@@ -35,6 +35,7 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
   def create_swapfile(self, item: Swapfile):
     shell(f"mkswap -U clear --size {item.size_bytes} --file {item.identifier}")
     shell(f"chmod 600 {item.identifier}")
+    self.managed_files_store.add(item.filename)
 
   def recreate_swapfile(self, item: Swapfile):
     if self.is_mounted(item.filename):
@@ -45,12 +46,14 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
     else:
       shell(f"rm -f {item.filename}")
       self.create_swapfile(item)
+    self.managed_files_store.add(item.filename)
 
   def delete_swapfile(self, item: Swapfile):
     if os.path.isfile(item.filename):
       if self.is_mounted(item.filename):
         shell(f"swapoff {item.filename}")
       os.unlink(item.filename)
+    self.managed_files_store.remove(item.filename)
 
   def is_mounted(self, swapfile: str) -> bool:
     return shell_success(f"swapon --show | grep {swapfile}")
@@ -80,22 +83,16 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
         yield ExecutionPlan(
           items = [item],
           description = f"{GREEN}create swapfile",
-          details = f"size = {target.size_bytes}",
-          actions = [
-            lambda: self.create_swapfile(item),
-            lambda: self.managed_files_store.add(item.filename),
-          ],
+          info = f"size = {target.size_bytes}",
+          execute = lambda: self.create_swapfile(item),
         )
 
       if current is not None and current.size_bytes != target.size_bytes:
         yield ExecutionPlan(
           items = [item],
           description = f"{YELLOW}resize swapfile",
-          details = f"{current.size_bytes} => {target.size_bytes}",
-          actions = [
-            lambda: self.recreate_swapfile(item),
-            lambda: self.managed_files_store.add(item.filename)
-          ]
+          info = f"{current.size_bytes} => {target.size_bytes}",
+          execute = lambda: self.recreate_swapfile(item),
         )
 
   def plan_cleanup(self, items_to_keep: Sequence[Swapfile], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
@@ -106,11 +103,8 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
       yield ExecutionPlan(
         items = [item],
         description = f"{RED}delete swapfile",
-        details = "please make sure the swapfile isn't referenced in fstab any more",
-        actions = [
-          lambda: self.delete_swapfile(item),
-          lambda: self.managed_files_store.add(item.filename),
-        ]
+        info = "please make sure the swapfile isn't referenced in fstab any more",
+        execute = lambda: self.delete_swapfile(item),
       )
 
   def finalize(self, model: ConfigModel):

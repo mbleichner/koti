@@ -3,8 +3,12 @@ from __future__ import annotations
 from subprocess import CalledProcessError, Popen, run
 from os import environ
 
+verbose_mode: bool = False
+
 
 def shell(command: str, check: bool = True, executable: str = "/bin/sh", user: str | None = None):
+  if verbose_mode:
+    print(f"$ {command}")
   with Popen(
     command,
     shell = True,
@@ -46,13 +50,13 @@ def shell_success(command: str, executable: str = "/bin/sh", user: str | None = 
     return False
 
 
-class ShellAction:
-  def __init__(self, command: str, user: str | None = None):
-    self.command = command
-    self.user = user
-
-  def __call__(self, *args, **kwargs):
-    shell(self.command, user = self.user)
+# class ShellAction:
+#   def __init__(self, command: str, user: str | None = None):
+#     self.command = command
+#     self.user = user
+#
+#   def __call__(self, *args, **kwargs):
+#     shell(self.command, user = self.user)
 
 
 def env_for_user(user: str) -> dict[str, str]:

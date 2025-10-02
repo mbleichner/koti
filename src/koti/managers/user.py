@@ -6,7 +6,7 @@ from hashlib import sha256
 from typing import Generator, Sequence
 
 from koti import ExecutionPlan
-from koti.utils.shell import ShellAction, shell_output
+from koti.utils.shell import shell, shell_output
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.user import User
 from koti.utils.json_store import JsonCollection, JsonStore
@@ -44,9 +44,6 @@ class UserManager(ConfigManager[User, UserState]):
   def assert_installable(self, item: User, model: ConfigModel):
     pass
 
-  def installed(self) -> list[User]:
-    return [User(username) for username in self.managed_users_store.elements()]
-
   def state_target(self, item: User, model: ConfigModel, dryrun: bool) -> UserState:
     home = item.home or f"/home/{item.username}"
     shell = item.shell or "/usr/bin/nologin"
@@ -83,63 +80,65 @@ class UserManager(ConfigManager[User, UserState]):
         yield ExecutionPlan(
           items = [user],
           description = f"{GREEN}create new user",
-          actions = [
-            ShellAction(f"useradd -d {target.home_dir} -s {target.shell} {user.username}"),
-            lambda: self.managed_users_store.add(user.username)
-          ]
+          execute = lambda: self.create_user(user, target),
         )
 
       if current is not None and current.shell != target.shell:
         yield ExecutionPlan(
           items = [user],
           description = f"{YELLOW}update user shell",
-          actions = [
-            ShellAction(f"usermod --shell {target.shell} {user.username}"),
-            lambda: self.managed_users_store.add(user.username)
-          ]
+          execute = lambda: self.fix_user_shell(user, target),
         )
 
       if current is not None and current.home_dir != target.home_dir:
         yield ExecutionPlan(
           items = [user],
           description = f"{YELLOW}update user homedir",
-          actions = [
-            ShellAction(f"usermod --home {target.home_dir}"),
-            lambda: self.managed_users_store.add(user.username)
-          ]
+          execute = lambda: self.fix_user_home(user, target),
         )
 
       if current is not None and not current.home_exists:
         yield ExecutionPlan(
           items = [user],
           description = f"{GREEN}create user homedir",
-          details = target.home_dir,
-          actions = [
-            lambda: self.create_homedir(user, target.home_dir),
-            lambda: self.managed_users_store.add(user.username)
-          ]
+          info = target.home_dir,
+          execute = lambda: self.create_user_home(user, target),
         )
 
   def plan_cleanup(self, items_to_keep: Sequence[User], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
-    managed_users = self.installed()
+    managed_users = [User(username) for username in self.managed_users_store.elements()]
     for user in managed_users:
       if user in items_to_keep:
         continue
       yield ExecutionPlan(
         items = [user],
         description = f"{RED}user will be deleted",
-        actions = [
-          ShellAction(f"userdel {user.username}"),
-          lambda: self.managed_users_store.remove(user.username)
-        ]
+        execute = lambda: self.delete_user(user),
       )
 
-  def create_homedir(self, user: User, homedir: str):
+  def fix_user_home(self, user: User, target: UserState):
+    shell(f"usermod --home {target.home_dir}")
+    self.managed_users_store.add(user.username)
+
+  def fix_user_shell(self, user: User, target: UserState):
+    shell(f"usermod --shell {target.shell} {user.username}")
+    self.managed_users_store.add(user.username)
+
+  def create_user(self, user: User, target: UserState):
+    shell(f"useradd -d {target.home_dir} -s {target.shell} {user.username}")
+    self.managed_users_store.add(user.username)
+
+  def delete_user(self, user: User):
+    shell(f"userdel {user.username}")
+    self.managed_users_store.remove(user.username)
+
+  def create_user_home(self, user: User, target: UserState):
     getpwnam = pwd.getpwnam(user.username)
     uid = getpwnam.pw_uid
     gid = getpwnam.pw_gid
-    os.mkdir(homedir)
-    os.chown(homedir, uid, gid)
+    os.mkdir(target.home_dir)
+    os.chown(target.home_dir, uid, gid)
+    self.managed_users_store.add(user.username)
 
   def finalize(self, model: ConfigModel):
     usernames = [item.username for phase in model.phases for item in phase.items if isinstance(item, User)]

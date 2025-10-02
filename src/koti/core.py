@@ -4,10 +4,10 @@ from copy import copy
 from os import get_terminal_size, getuid
 from typing import Iterator
 
+import koti.utils.shell as shell_module
 from koti.model import *
 from koti.utils.colors import *
 from koti.utils.json_store import *
-from koti.utils.shell import ShellAction
 
 
 class Koti:
@@ -102,12 +102,8 @@ class Koti:
       printc(f"Actions that will be executed (in order):", BOLD)
       for plan in execution_plans:
         printc(f"- {plan.description}")
-        for detail in plan.details:
-          printc(f"  {detail}")
-        for action in plan.actions:
-          if isinstance(action, ShellAction):
-            printc(f"  $ {action.command}")
-
+        for info in plan.info:
+          printc(f"  {info}")
       print()
 
     return len(execution_plans) > 0
@@ -148,14 +144,13 @@ class Koti:
     print("execution finished.")
 
   def execute_plan(self, plan: ExecutionPlan):
-    self.print_divider_line()
-    printc(f"executing: {plan.description}")
-    for detail in plan.details:
-      printc(f"{detail}")
-    for action in plan.actions:
-      if isinstance(action, ShellAction):
-        printc(f"$ {action.command}")
-      action()
+    try:
+      shell_module.verbose_mode = True
+      self.print_divider_line()
+      printc(f"executing: {plan.description}")
+      plan.execute()
+    finally:
+      shell_module.verbose_mode = False
 
   @classmethod
   def print_divider_line(cls):

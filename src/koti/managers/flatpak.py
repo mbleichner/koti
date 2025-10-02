@@ -4,7 +4,7 @@ from typing import Generator, Sequence
 
 from koti import ExecutionPlan
 from koti.utils.colors import *
-from koti.utils.shell import ShellAction, shell, shell_output, shell_success
+from koti.utils.shell import shell, shell_output, shell_success
 from koti.items.flatpak_package import FlatpakPackage
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.flatpak_repo import FlatpakRepo
@@ -73,9 +73,7 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
         yield ExecutionPlan(
           items = [repo_item],
           description = f"{YELLOW}update flatpak repo" if already_installed else f"{GREEN}install flatpak repo",
-          actions = [
-            lambda: self.update_remote(repo_item, already_installed = already_installed)
-          ],
+          execute = lambda: self.update_remote(repo_item, already_installed = already_installed),
         )
 
     if package_items:
@@ -88,10 +86,8 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
       if items_to_install:
         yield ExecutionPlan(
           items = items_to_install,
-          description = f"{GREEN}install flatpak package(s)",
-          actions = [
-            ShellAction(f"flatpak install {" ".join(item.id for item in items_to_install)}")
-          ],
+          description = f"{GREEN}install flatpak(s): {", ".join(item.id for item in items_to_install)}",
+          execute = lambda: shell(f"flatpak install {" ".join(item.id for item in items_to_install)}"),
         )
 
   def plan_cleanup(self, items_to_keep: Sequence[FlatpakRepo | FlatpakPackage], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
@@ -105,10 +101,8 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     if packages_to_remove:
       yield ExecutionPlan(
         items = packages_to_remove,
-        description = f"{RED}uninstall flatpak package(s)",
-        actions = [
-          ShellAction(f"flatpak uninstall {" ".join(item.id for item in packages_to_remove)}")
-        ],
+        description = f"{RED}uninstall flatpak(s): {", ".join(item.id for item in packages_to_remove)}",
+        execute = lambda: shell(f"flatpak uninstall {" ".join(item.id for item in packages_to_remove)}"),
       )
 
     installed_repos = [FlatpakRepo(name) for name in shell_output("flatpak remotes --columns name").splitlines()]
@@ -116,18 +110,15 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     for item in repos_to_remove:
       yield ExecutionPlan(
         items = [item],
-        description = f"{RED}uninstall flatpak remote",
-        actions = [
-          ShellAction(f"flatpak remote-delete --force '{item.name}'")
-        ],
+        description = f"{RED}uninstall flatpak remote: {item.name}",
+        execute = lambda: shell(f"flatpak remote-delete --force '{item.name}'"),
       )
 
     yield ExecutionPlan(
       items = [],
-      description = f"{RED}prune unneeded flatpak packages",
-      actions = [
-        ShellAction(f"flatpak uninstall --unused")
-      ],
+      description = f"{RED}prune unneeded flatpaks",
+      info = "flatpak will ask before actually deleting any packages",
+      execute = lambda: shell(f"flatpak uninstall --unused"),
     )
 
   def update_remote(self, item: FlatpakRepo, already_installed: bool):

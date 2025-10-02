@@ -1,8 +1,7 @@
 from inspect import cleandoc
-from typing import Generator
 
 from koti import *
-from koti.utils.shell import shell, ShellAction
+from koti.utils.shell import shell
 
 
 def base() -> Generator[ConfigGroup]:
@@ -339,7 +338,7 @@ def base() -> Generator[ConfigGroup]:
         # Zeilenumbruch hinter den Locales ist wichtig, sonst werden sie ignoriert
       ''')),
 
-      PostHook("regenerate-locales", execute = ShellAction("locale-gen"), trigger = [
+      PostHook("regenerate-locales", execute = lambda: shell("locale-gen"), trigger = [
         File("/etc/locale.gen"),
       ]),
     ]

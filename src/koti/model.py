@@ -4,8 +4,6 @@ from abc import ABCMeta, abstractmethod
 from functools import reduce
 from typing import Any, Callable, Generator, Iterable, Literal, Sequence, Type, cast, overload
 
-from koti.utils.shell import ShellAction
-
 
 class ConfigGroup:
   """The purpose of ConfigGroups is to provide ConfigItems that should be installed on the system.
@@ -109,14 +107,14 @@ type ConfigItemToUninstall[T: ManagedConfigItem, S: ConfigItemState] = tuple[T, 
 class ExecutionPlan[T: ManagedConfigItem]:
   items: list[T]
   description: str
-  actions: list[Callable[[], Any]]
-  details: list[str]
+  execute: Callable[[], None]
+  info: list[str]
 
-  def __init__(self, items: list[T], description: str, actions: list[Callable[[], Any]], details: list[str] | str | None = None):
+  def __init__(self, items: list[T], description: str, execute: Callable[[], None], info: list[str] | str | None = None):
     self.items = items
     self.description = description
-    self.actions = actions
-    self.details = [details] if isinstance(details, str) else (details or [])
+    self.execute = execute
+    self.info = [info] if isinstance(info, str) else (info or [])
 
 
 class ItemToInstall[T: ManagedConfigItem, S: ConfigItemState]:

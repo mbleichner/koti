@@ -1,6 +1,7 @@
 from inspect import cleandoc
 
 from koti import *
+from koti.utils.shell import shell
 from modules.base import base, swapfile
 from modules.cpufreq import cpufreq, throttle_after_boot
 from modules.desktop import desktop
@@ -59,8 +60,8 @@ def dan() -> Generator[ConfigGroup | None]:
         moep moep moep
       ''')),
 
-      PostHook("moep hook 1", execute = ShellAction("echo moep 1"), trigger = File("/tmp/test")),
-      PostHook("moep hook 2", execute = ShellAction("echo moep 2"), trigger = PostHook("moep hook 1")),
+      PostHook("moep hook 1", execute = lambda: shell("echo moep 1"), trigger = File("/tmp/test")),
+      PostHook("moep hook 2", execute = lambda: shell("echo moep 2"), trigger = PostHook("moep hook 1")),
 
       File("/etc/fstab", permissions = "r--", content = cleandoc('''
         UUID=3409a847-0bd6-43e4-96fd-6e8be4e3c58d  /             ext4  rw,noatime 0 1
@@ -79,6 +80,8 @@ def dan() -> Generator[ConfigGroup | None]:
       Package("microsoft-edge-stable-bin"),
       Package("flatpak"),
       FlatpakRepo("flathub", spec_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"),
+      #FlatpakPackage("org.freedesktop.Platform"),
+      #FlatpakPackage("com.discordapp.Discord"),
       FlatpakPackage("us.zoom.Zoom"),
     ]
   )

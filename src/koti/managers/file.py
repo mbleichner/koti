@@ -63,6 +63,14 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     if isinstance(item, Directory):
       assert len(item.files) > 0, "directory contains no files"
 
+  def installed_files(self) -> list[File]:
+    filenames = self.managed_files_store.elements()
+    return [File(filename) for filename in filenames]
+
+  def installed_dirs(self) -> list[Directory]:
+    dirnames = self.managed_dirs_store.elements()
+    return [Directory(dirname) for dirname in dirnames]
+
   def state_target(self, item: File | Directory, model: ConfigModel, dryrun: bool) -> FileState | DirectoryState:
     if isinstance(item, File):
       return self.file_state_target(item, model)
@@ -76,14 +84,14 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       return self.dir_state_current(item)
 
   def plan_install(self, items_to_check: Sequence[File | Directory], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
-    yield from self.plan_file_install([item for item in items_to_check if isinstance(item, File)], model, dryrun, from_dir_install = False)
+    yield from self.plan_file_install([item for item in items_to_check if isinstance(item, File)], model, dryrun, register_file = True)
     yield from self.plan_dir_install([item for item in items_to_check if isinstance(item, Directory)], model, dryrun)
 
   def plan_cleanup(self, items_to_keep: Sequence[File | Directory], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
     yield from self.plan_file_cleanup([item for item in items_to_keep if isinstance(item, File)], model, dryrun)
     yield from self.plan_dir_cleanup([item for item in items_to_keep if isinstance(item, Directory)], model, dryrun)
 
-  def plan_file_install(self, items_to_check: Sequence[File], model: ConfigModel, dryrun: bool, from_dir_install: bool) -> Generator[ExecutionPlan]:
+  def plan_file_install(self, items_to_check: Sequence[File], model: ConfigModel, dryrun: bool, register_file: bool) -> Generator[ExecutionPlan]:
     for item in items_to_check:
       current, target = self.states(item, model, dryrun)
       if current == target:
@@ -91,17 +99,13 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
 
       assert current is None or isinstance(current, FileState)
       assert target is not None and isinstance(target, FileState)
-      after_execute = lambda: self.managed_files_store.add(item.filename) if not from_dir_install else None
 
       if current is None:
         yield ExecutionPlan(
           items = [item],
           description = f"{GREEN}create new file: {item.filename}",
-          details = f"uid = {target.uid}, gid = {target.gid}, mode = {oct(target.mode)}",
-          actions = [
-            lambda: self.update_file_content(item, target),
-            after_execute
-          ],
+          info = f"uid = {target.uid}, gid = {target.gid}, mode = {oct(target.mode)}",
+          execute = lambda: self.create_or_update_file(item, target, register_file),
         )
 
       if current is not None and current.content_hash != target.content_hash:
@@ -112,36 +116,27 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         yield ExecutionPlan(
           items = [item],
           description = f"{YELLOW}update file content: {item.filename}",
-          details = [
+          info = [
             f"filesize {len(current.content)} => {len(target.content)} bytes",
             f"preview changes: diff '{item.filename}' '{tmp.name}'",
           ],
-          actions = [
-            lambda: self.update_file_content(item, target),
-            after_execute,
-          ]
+          execute = lambda: self.create_or_update_file(item, target, register_file),
         )
 
       if current is not None and (current.uid != target.uid or current.gid != target.gid):
         yield ExecutionPlan(
           items = [item],
           description = f"{YELLOW}update file ownership: {item.filename}",
-          details = f"uid {current.uid} => {target.uid}, gid {current.gid} => {target.gid}",
-          actions = [
-            lambda: self.fix_file_owner(item, target),
-            after_execute,
-          ]
+          info = f"uid {current.uid} => {target.uid}, gid {current.gid} => {target.gid}",
+          execute = lambda: self.fix_file_owner(item, target, register_file),
         )
 
       if current is not None and current.mode != target.mode:
         yield ExecutionPlan(
           items = [item],
           description = f"{YELLOW}update file permissions: {item.filename}",
-          details = f"mode {oct(current.mode)} => {oct(target.mode)}",
-          actions = [
-            lambda: self.fix_file_mode(item, target),
-            after_execute,
-          ]
+          info = f"mode {oct(current.mode)} => {oct(target.mode)}",
+          execute = lambda: self.fix_file_mode(item, target, register_file),
         )
 
   def plan_dir_install(self, items_to_check: Sequence[Directory], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
@@ -154,7 +149,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       assert target is not None and isinstance(target, DirectoryState)
 
       # install all files belonging to the directory
-      yield from self.plan_file_install(item.files, model, dryrun, from_dir_install = True)
+      yield from self.plan_file_install(item.files, model, dryrun, register_file = False)
 
       # remove files that should no longer be present
       files_current = [f"{base}/{subfile}" for base, subdirs, subfiles in os.walk(item.dirname) for subfile in subfiles]
@@ -164,59 +159,15 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         yield ExecutionPlan(
           items = [File(filename) for filename in files_to_remove],
           description = f"{RED}remove orphan file(s)",
-          details = "leftover empty directories will also be removed",
-          actions = [
-            lambda: self.delete_files(files_to_remove),
-            lambda: self.remove_leftover_empty_dirs(item),
-          ]
+          info = "leftover empty directories will also be removed",
+          execute = lambda: self.remove_orphaned_files(item, files_to_remove),
         )
 
-  def plan_file_cleanup(self, items_to_keep: Sequence[File], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
-    installed_files = self.installed_files()
-    for item in installed_files:
-      if item in items_to_keep:
-        continue
-      yield ExecutionPlan(
-        items = [item],
-        description = f"{RED}delete file: {item.filename}",
-        actions = [
-          lambda: self.delete_files([item.filename]),
-          lambda: self.managed_files_store.remove(item.filename),
-        ]
-      )
-
-  def plan_dir_cleanup(self, items_to_keep: Sequence[Directory], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
-    installed_dirs = self.installed_dirs()
-    for item in installed_dirs:
-      if item in items_to_keep:
-        continue
-      yield ExecutionPlan(
-        items = [item],
-        description = f"{RED}delete directory: {item.dirname}",
-        actions = [
-          lambda: self.delete_dir(item.dirname),
-          lambda: self.managed_dirs_store.remove(item.dirname),
-        ]
-      )
-
-  def installed_files(self) -> list[File]:
-    filenames = self.managed_files_store.elements()
-    return [File(filename) for filename in filenames]
-
-  def installed_dirs(self) -> list[Directory]:
-    dirnames = self.managed_dirs_store.elements()
-    return [Directory(dirname) for dirname in dirnames]
-
-  def delete_files(self, filenames: list[str]):
-    for filename in filenames:
+  def remove_orphaned_files(self, item: Directory, files_to_remove: list[str]):
+    for filename in files_to_remove:
       os.unlink(filename)
       print(f"file {filename} deleted")
 
-  def delete_dir(self, dirname: str):
-    shutil.rmtree(dirname)
-    print(f"directory {dirname} deleted")
-
-  def remove_leftover_empty_dirs(self, item: Directory):
     # remove empty dirs (repeatedly, since they may be nested)
     while True:
       empty_dir = next((
@@ -228,7 +179,39 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       os.rmdir(empty_dir)
       print(f"leftover directory {empty_dir} removed")
 
-  def update_file_content(self, item: File, target: FileState):
+  def plan_file_cleanup(self, items_to_keep: Sequence[File], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+    installed_files = self.installed_files()
+    for item in installed_files:
+      if item in items_to_keep:
+        continue
+      yield ExecutionPlan(
+        items = [item],
+        description = f"{RED}delete file: {item.filename}",
+        execute = lambda: self.delete_file(item)
+      )
+
+  def delete_file(self, item: File):
+    os.unlink(item.filename)
+    self.managed_files_store.remove(item.filename)
+    print(f"file {item.filename} deleted")
+
+  def plan_dir_cleanup(self, items_to_keep: Sequence[Directory], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+    installed_dirs = self.installed_dirs()
+    for item in installed_dirs:
+      if item in items_to_keep:
+        continue
+      yield ExecutionPlan(
+        items = [item],
+        description = f"{RED}delete directory: {item.dirname}",
+        execute = lambda: self.delete_dir(item),
+      )
+
+  def delete_dir(self, item: Directory):
+    shutil.rmtree(item.dirname)
+    self.managed_dirs_store.remove(item.dirname),
+    print(f"directory {item.dirname} deleted")
+
+  def create_or_update_file(self, item: File, target: FileState, register_file: bool):
     assert item.content is not None
     uid = target.uid
     gid = target.gid
@@ -240,14 +223,20 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     os.chown(item.filename, uid = uid, gid = gid)
     os.chmod(item.filename, mode)
     assert mode == (os.stat(item.filename).st_mode & 0o777), "cannot apply file permissions (incompatible file system?)"
-    print(f"file {item.filename} successfully updated")
+    if register_file:
+      self.managed_files_store.add(item.filename)
+    print(f"file {item.filename} successfully created/updated")
 
-  def fix_file_owner(self, item: File, target: FileState):
+  def fix_file_owner(self, item: File, target: FileState, register_file: bool):
     os.chown(item.filename, uid = target.uid, gid = target.gid)
+    if register_file:
+      self.managed_files_store.add(item.filename)
     print(f"file owner of {item.filename} successfully updated")
 
-  def fix_file_mode(self, item: File, target: FileState):
+  def fix_file_mode(self, item: File, target: FileState, register_file: bool):
     os.chmod(item.filename, mode = target.mode)
+    if register_file:
+      self.managed_files_store.add(item.filename)
     print(f"permissions of {item.filename} successfully updated")
 
   def file_state_current(self, item: File) -> FileState | None:

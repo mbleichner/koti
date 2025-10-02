@@ -4,7 +4,7 @@ from koti.model import *
 from koti.items.package import Package
 from koti.items.pacman_key import PacmanKey
 from koti.utils.json_store import JsonCollection, JsonStore
-from koti.utils.shell import ShellAction, shell, shell_output, shell_success
+from koti.utils.shell import shell, shell_output, shell_success
 from koti.utils.colors import *
 
 
@@ -77,50 +77,54 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
       yield ExecutionPlan(
         items = additional_explicit_items,
         description = f"{GREEN}mark package(s) explicitly installed: {", ".join([item.name for item in additional_explicit_items])}",
-        actions = [
-          ShellAction(f"pacman -D --asexplicit {" ".join([item.name for item in additional_explicit_items])}"),
-          lambda: self.add_managed_packages(additional_explicit_items),
-          lambda: self.update_explicit_package_list(),
-        ]
+        execute = lambda: self.mark_explicit(additional_explicit_items)
       )
 
     for item in additional_items_from_script:
-      assert item.script is not None, "illegal state"
       yield ExecutionPlan(
         items = additional_items_from_urls,
         description = f"{GREEN}install {len(additional_items_from_urls)} package from script: {item.name}",
-        actions = [
-          item.script,
-          lambda: self.add_managed_packages(additional_items_from_urls),
-          lambda: self.update_explicit_package_list(),
-        ]
+        execute = lambda: self.install_from_script(item)
       )
 
     if additional_items_from_urls:
       yield ExecutionPlan(
         items = additional_items_from_urls,
         description = f"{GREEN}install package(s) from URL(s): {", ".join([item.url for item in additional_items_from_urls if item.url])}",
-        actions = [
-          ShellAction(f"pacman -U {" ".join([item.url for item in additional_items_from_urls if item.url])}"),
-          lambda: self.add_managed_packages(additional_items_from_urls),
-          lambda: self.update_explicit_package_list(),
-        ]
+        execute = lambda: self.install_from_url(additional_items_from_urls)
       )
 
     if additional_items_from_repo:
-      pacman_or_helper = self.aur_helper[0] if self.aur_helper else "pacman"
       yield ExecutionPlan(
         items = additional_items_from_repo,
         description = f"{GREEN}install package(s): {" ".join([item.name for item in additional_items_from_repo])}",
-        actions = [
-          ShellAction(
-            f"{pacman_or_helper} -Syu {" ".join([item.name for item in additional_items_from_repo])}",
-            user = self.aur_helper[1] if self.aur_helper else None,
-          ),
-          lambda: self.add_managed_packages(additional_items_from_repo),
-          lambda: self.update_explicit_package_list(),
-        ]
+        execute = lambda: self.install_from_repo(additional_items_from_repo)
       )
+
+  def install_from_repo(self, additional_items_from_repo: list[Package]):
+    pacman_or_helper = self.aur_helper[0] if self.aur_helper else "pacman"
+    shell(
+      user = self.aur_helper[1] if self.aur_helper else None,
+      command = f"{pacman_or_helper} -Syu {" ".join([item.name for item in additional_items_from_repo])}",
+    )
+    self.add_managed_packages(additional_items_from_repo)
+    self.update_explicit_package_list()
+
+  def install_from_url(self, additional_items_from_urls: list[Package]):
+    shell(f"pacman -U {" ".join([item.url for item in additional_items_from_urls if item.url])}")
+    self.add_managed_packages(additional_items_from_urls)
+    self.update_explicit_package_list()
+
+  def install_from_script(self, item: Package):
+    assert item.script is not None, "illegal state"
+    item.script()
+    self.add_managed_packages([item])
+    self.update_explicit_package_list()
+
+  def mark_explicit(self, additional_explicit_items: list[Package]):
+    shell(f"pacman -D --asexplicit {" ".join([item.name for item in additional_explicit_items])}")
+    self.add_managed_packages(additional_explicit_items)
+    self.update_explicit_package_list()
 
   def plan_cleanup(self, items_to_keep: Sequence[Package], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
     installed_items = self.installed_packages()
@@ -129,20 +133,19 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
       yield ExecutionPlan(
         items = items_to_remove,
         description = f"{RED}mark package(s) non-explicitly installed: {", ".join([item.name for item in items_to_remove])}",
-        actions = [
-          ShellAction(f"pacman -D --asdeps {" ".join([item.name for item in items_to_remove])}"),
-          lambda: self.remove_managed_packages(items_to_remove),
-        ]
+        execute = lambda: self.mark_dependency(items_to_remove)
       )
 
     yield ExecutionPlan(
       items = [],
       description = f"{RED}prune unneeded packages",
-      details = f"pacman will additionally ask for confirmation before uninstalling any packages",
-      actions = [
-        lambda: self.pacman_prune_unneeded(),
-      ],
+      info = f"pacman will ask before actually deleting any packages",
+      execute = lambda: self.pacman_prune_unneeded(),
     )
+
+  def mark_dependency(self, items_to_remove: list[Package]):
+    shell(f"pacman -D --asdeps {" ".join([item.name for item in items_to_remove])}")
+    self.remove_managed_packages(items_to_remove)
 
   def installed_packages(self) -> list[Package]:
     installed_by_koti = self.managed_packages_store.elements()
@@ -207,12 +210,13 @@ class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
       yield ExecutionPlan(
         items = [item],
         description = f"{GREEN}install pacman-key {item.key_id} from {item.key_server}",
-        actions = [
-          ShellAction(f"pacman-key --init"),
-          ShellAction(f"pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}"),
-          ShellAction(f"pacman-key --lsign-key {item.key_id}"),
-        ]
+        execute = lambda: self.add_key(item),
       )
+
+  def add_key(self, item: PacmanKey):
+    shell(f"pacman-key --init")
+    shell(f"pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
+    shell(f"pacman-key --lsign-key {item.key_id}")
 
   def plan_cleanup(self, items_to_keep: Sequence[PacmanKey], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
     yield from ()

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Generator, Sequence
 
 from koti import ExecutionPlan
-from koti.utils.shell import ShellAction, shell_output
+from koti.utils.shell import shell, shell_output
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.group import GroupAssignment
 from koti.utils.json_store import JsonCollection, JsonStore
@@ -56,10 +56,7 @@ class GroupManager(ConfigManager[GroupAssignment, GroupAssignmentState]):
       yield ExecutionPlan(
         items = [item],
         description = f"{GREEN}assign user {item.username} to group {item.group}",
-        actions = [
-          ShellAction(f"gpasswd --add {item.username} {item.group}"),
-          lambda: self.managed_users_store.add(item.username),
-        ]
+        execute = lambda: self.assign_group(item),
       )
 
   def plan_cleanup(self, items_to_keep: Sequence[GroupAssignment], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
@@ -70,10 +67,16 @@ class GroupManager(ConfigManager[GroupAssignment, GroupAssignmentState]):
       yield ExecutionPlan(
         items = [item],
         description = f"{RED}unassign {item.username} from group {item.group}",
-        actions = [
-          ShellAction(f"gpasswd --delete {item.username} {item.group}"),
-        ]
+        execute = lambda: self.unassign_group(item),
       )
+
+  def assign_group(self, item: GroupAssignment):
+    shell(f"gpasswd --add {item.username} {item.group}")
+    self.managed_users_store.add(item.username)
+
+  def unassign_group(self, item: GroupAssignment):
+    shell(f"gpasswd --delete {item.username} {item.group}")
+    # do not delete user from list of managed users here, as there might be other assignments for this user
 
   def finalize(self, model: ConfigModel):
     usernames = set([item.username for phase in model.phases for item in phase.items if isinstance(item, GroupAssignment)])
