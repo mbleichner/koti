@@ -1,19 +1,11 @@
 from inspect import cleandoc
-from typing import Generator, TypedDict
+from typing import TypedDict
 
 from koti import *
 from koti.utils.shell import shell
 
 
 def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
-  # yield ConfigGroup(
-  #   description = "flatpak + flathub",
-  #   provides = [
-  #     Package("flatpak"),
-  #     FlatpakRepo("flathub", spec_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"),
-  #   ]
-  # )
-
   yield ConfigGroup(
     description = "optional dependencies for desktop",
     provides = [
@@ -30,7 +22,6 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
     requires = [
       Checkpoint("desktop-optional-dependencies"),  # avoid pacman asking for possible alternatives
       File("/etc/pacman.conf"),  # Damit NoExtract bei der ersten Ausführung angewendet wird
-      # FlatpakRepo("flathub"),
     ],
     provides = [
       Option("/etc/pacman.conf/NoExtract", "etc/xdg/autostart/org.kde.discover.notifier.desktop"),
@@ -62,7 +53,6 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
       Package("wine"),
       Package("chromium"),
       Package("google-chrome"),
-      Package("linphone-desktop-appimage"),
       Package("ttf-ms-win10-auto"),  # Das win11 Package war zuletzt broken
       Package("noto-fonts"),
       Package("noto-fonts-emoji"),
@@ -71,7 +61,6 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
       Package("vdpauinfo") if nvidia else None,
       Package("libva-nvidia-driver") if nvidia else None,
       Package("xwaylandvideobridge"),
-      # FlatpakPackage("us.zoom.Zoom"),
       SystemdUnit("coolercontrold.service"),
       SystemdUnit("bluetooth.service"),
     ]

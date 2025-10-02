@@ -75,6 +75,10 @@ def dan() -> Generator[ConfigGroup | None]:
   yield ConfigGroup(
     description = "homeoffice stuff",
     provides = [
-      Package("microsoft-edge-stable-bin"),  # Homeoffice/Teams
+      Package("linphone-desktop-appimage"),
+      Package("microsoft-edge-stable-bin"),
+      Package("flatpak"),
+      FlatpakRepo("flathub", spec_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"),
+      FlatpakPackage("us.zoom.Zoom"),
     ]
   )
