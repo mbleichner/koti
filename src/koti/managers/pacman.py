@@ -18,14 +18,23 @@ class PacmanKeyState(ConfigItemState):
     return "-"
 
 
+class AurHelper:
+  command: str
+  user: str | None
+
+  def __init__(self, command: str, user: str | None = None):
+    self.command = command
+    self.user = user
+
+
 class PacmanPackageManager(ConfigManager[Package, PackageState]):
   managed_classes = [Package]
   ignore_manually_installed_packages: bool
   managed_packages_store: JsonCollection[str]
   explicit_packages_on_system: set[str]  # holds the list of explicitly installed packages on the system; will be updated whenever the manager adds/removes explicit packages.
-  aur_helper: tuple[str, str] | None  # FIXME: besseren Type ausdenken
+  aur_helper: AurHelper | None
 
-  def __init__(self, keep_unmanaged_packages: bool, aur_helper: tuple[str, str] | None = None):
+  def __init__(self, keep_unmanaged_packages: bool, aur_helper: AurHelper | None = None):
     super().__init__()
     store = JsonStore("/var/cache/koti/PacmanPackageManager.json")
     self.aur_helper = aur_helper
@@ -102,11 +111,9 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
       )
 
   def install_from_repo(self, additional_items_from_repo: list[Package]):
-    pacman_or_helper = self.aur_helper[0] if self.aur_helper else "pacman"
-    shell(
-      user = self.aur_helper[1] if self.aur_helper else None,
-      command = f"{pacman_or_helper} -Syu {" ".join([item.name for item in additional_items_from_repo])}",
-    )
+    pacman_or_helper = self.aur_helper.command if self.aur_helper else "pacman"
+    user = self.aur_helper.user if self.aur_helper else None
+    shell(f"{pacman_or_helper} -Syu {" ".join([item.name for item in additional_items_from_repo])}", user = user)
     self.add_managed_packages(additional_items_from_repo)
     self.update_explicit_package_list()
 

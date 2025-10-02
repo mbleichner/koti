@@ -116,6 +116,8 @@ class Koti:
     for manager in self.managers:
       manager.warnings.clear()
 
+    # FIXME: confirm unreviewed changes
+
     # execute install phases
     for phase_idx, phase in enumerate(model.phases):
       for install_step in phase.steps:

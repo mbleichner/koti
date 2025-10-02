@@ -21,10 +21,10 @@ my_arch_systems = {
 }
 
 koti = Koti(
-  configs = my_arch_systems[gethostname()],  # .... choose system config based on the current hostname
-  managers = ConfigManagerPresets.arch(  # ........ use preconfigured default managers for Arch Linux
-    aur_helper = ("paru", "manuel"),  # ........... but use paru instead of pacman to install stuff
-    keep_unmanaged_packages = False,  # ........... remove any packages that aren't mentioned in the koti config (this is the default)
+  configs = my_arch_systems[gethostname()],  # ..... choose system config based on the current hostname
+  managers = ConfigManagerPresets.arch(  # ......... use preconfigured default managers for Arch Linux
+    aur_helper = AurHelper("paru", "manuel"),  # ... but use paru instead of pacman to install packages
+    keep_unmanaged_packages = False,  # ............ remove any packages that aren't mentioned in the koti config (this is the default)
   ),
 )
 

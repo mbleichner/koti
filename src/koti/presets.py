@@ -1,3 +1,4 @@
+from koti.managers.pacman import AurHelper
 from koti.managers.user import UserManager
 from koti.model import ConfigManager
 from koti.managers import *
@@ -7,7 +8,7 @@ class ConfigManagerPresets:
 
   @staticmethod
   def arch(
-    aur_helper: tuple[str, str] | None = None,
+    aur_helper: AurHelper | None = None,
     keep_unmanaged_packages: bool = False,
   ) -> list[ConfigManager]:
     return [
