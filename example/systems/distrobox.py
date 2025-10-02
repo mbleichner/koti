@@ -23,7 +23,6 @@ def distrobox() -> Generator[ConfigGroup | None]:
 
   yield ConfigGroup(
     description = "firmware, drivers and filesystems for lenovo",
-    tags = ["CRITICAL"],
     requires = [Swapfile("/swapfile")],
     provides = [
       Package("linux-firmware-other"),

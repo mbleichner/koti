@@ -164,7 +164,6 @@ def base() -> Generator[ConfigGroup]:
 
   yield ConfigGroup(
     description = "pacman related utilities",
-    tags = ["CRITICAL"],
     provides = [
       Package("pacman-contrib"),
       Package("pacutils"),

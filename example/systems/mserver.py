@@ -30,7 +30,6 @@ def mserver() -> Generator[ConfigGroup | None]:
 
   yield ConfigGroup(
     description = "firmware, drivers and filesystems for lenovo",
-    tags = ["CRITICAL"],
     requires = [Swapfile("/swapfile")],
     provides = [
       Package("linux-firmware-other"),
@@ -47,7 +46,6 @@ def mserver() -> Generator[ConfigGroup | None]:
 
   yield ConfigGroup(
     description = "networking via systemd-networkd",
-    tags = ["CRITICAL"],
     provides = [
       SystemdUnit("systemd-networkd.service"),
 
@@ -74,7 +72,6 @@ def mserver() -> Generator[ConfigGroup | None]:
 
   yield ConfigGroup(
     description = "docker and services",
-    tags = ["CRITICAL"],
     provides = [
       Package("docker"),
       Package("docker-compose"),
