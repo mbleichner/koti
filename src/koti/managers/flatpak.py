@@ -59,8 +59,8 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     package_items = [item for item in items_to_check if isinstance(item, FlatpakPackage)]
 
     if dryrun and not shell_success("flatpak --version"):
-      if model.contains(lambda item: isinstance(item, FlatpakPackage)):
-        self.warnings.append(f"{RED}could not plan installation of flatpak repos/packages due to (currently) missing flatpak installation")
+      if model.contains(lambda item: isinstance(item, FlatpakPackage) or isinstance(item, FlatpakRepo)):
+        self.warnings.append(f"{RED}could not plan installation/cleanup of flatpak repos + packages due to (currently) missing flatpak installation")
       return None
 
     if repo_items:
@@ -92,8 +92,8 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
 
   def plan_cleanup(self, items_to_keep: Sequence[FlatpakRepo | FlatpakPackage], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
     if dryrun and not shell_success("flatpak --version"):
-      if model.contains(lambda item: isinstance(item, FlatpakPackage)):
-        self.warnings.append(f"{RED}could not plan cleanup of flatpak repos/packages due to (currently) missing flatpak installation")
+      if model.contains(lambda item: isinstance(item, FlatpakPackage) or isinstance(item, FlatpakRepo)):
+        self.warnings.append(f"{RED}could not plan installation/cleanup of flatpak repos + packages due to (currently) missing flatpak installation")
       return None
 
     installed_packages = [FlatpakPackage(name) for name in shell_output("flatpak list --app --columns application").splitlines()]

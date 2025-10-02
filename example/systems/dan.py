@@ -82,6 +82,6 @@ def dan() -> Generator[ConfigGroup | None]:
       FlatpakRepo("flathub", spec_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"),
       #FlatpakPackage("org.freedesktop.Platform"),
       #FlatpakPackage("com.discordapp.Discord"),
-      FlatpakPackage("us.zoom.Zoom"),
+      # FlatpakPackage("us.zoom.Zoom"),
     ]
   )

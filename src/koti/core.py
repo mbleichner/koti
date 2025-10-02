@@ -27,6 +27,11 @@ class Koti:
     self.managers = [m for m in managers if m is not None]
     self.assert_manager_consistency(self.managers, self.configs)
 
+  def execute(self):
+    reviewed_plans = self.plan()
+    confirm("confirm execution")
+    self.apply(reviewed_plans)
+
   def create_model(self) -> ConfigModel:
     merged_configs = self.merge_configs(self.configs)
     phases_with_duplicates = self.resolve_dependencies(merged_configs)
@@ -119,8 +124,6 @@ class Koti:
     for manager in self.managers:
       manager.warnings.clear()
 
-    # FIXME: confirm unreviewed changes
-
     # execute install phases
     for phase_idx, phase in enumerate(model.phases):
       for install_step in phase.steps:
@@ -156,7 +159,7 @@ class Koti:
       if plan.hash() not in reviewed_plan_hashes:
         for info in plan.info:
           printc(f"{info}")
-        confirm("This action has not been foreseen during planning phase. Please confirm to continue")
+        confirm("This action was not predicted during planning phase - please confirm to continue")
       plan.execute()
     finally:
       shell_module.verbose_mode = False
