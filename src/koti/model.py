@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
 from functools import reduce
+from hashlib import sha256
 from typing import Any, Callable, Generator, Iterable, Literal, Sequence, Type, cast, overload
 
 
@@ -115,6 +116,15 @@ class ExecutionPlan[T: ManagedConfigItem]:
     self.description = description
     self.execute = execute
     self.info = [info] if isinstance(info, str) else (info or [])
+
+  def hash(self) -> str:
+    sha256_hash = sha256()
+    sha256_hash.update(self.description.encode())
+    for item in self.items:
+      sha256_hash.update(item.identifier().encode())
+    for info in self.info:
+      sha256_hash.update(info.encode())
+    return sha256_hash.hexdigest()
 
 
 class ItemToInstall[T: ManagedConfigItem, S: ConfigItemState]:

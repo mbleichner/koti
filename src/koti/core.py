@@ -7,6 +7,7 @@ from typing import Iterator
 import koti.utils.shell as shell_module
 from koti.model import *
 from koti.utils.colors import *
+from koti.utils.confirm import confirm
 from koti.utils.json_store import *
 
 
@@ -50,7 +51,7 @@ class Koti:
       ))
     return CleanupPhase(steps)
 
-  def plan(self, groups: bool = True, items: bool = False) -> bool:
+  def plan(self, groups: bool = True, items: bool = False) -> list[ExecutionPlan]:
     dryrun = True
 
     # clear warnings from previous runs
@@ -106,11 +107,13 @@ class Koti:
           printc(f"  {info}")
       print()
 
-    return len(execution_plans) > 0
+    return execution_plans
 
-  def apply(self):
+  def apply(self, reviewed_plans: list[ExecutionPlan]):
     model = self.create_model()
     dryrun = False
+
+    reviewed_plan_hashes = {plan.hash() for plan in reviewed_plans}
 
     # clear warnings before execution
     for manager in self.managers:
@@ -122,13 +125,13 @@ class Koti:
     for phase_idx, phase in enumerate(model.phases):
       for install_step in phase.steps:
         for plan in install_step.manager.plan_install(install_step.items_to_install, model, dryrun):
-          self.execute_plan(plan)
+          self.execute_plan(plan, reviewed_plan_hashes)
 
     # execute cleanup phase
     cleanup_phase = self.create_cleanup_phase(model)
     for cleanup_step in cleanup_phase.steps:
       for plan in cleanup_step.manager.plan_cleanup(cleanup_step.items_to_keep, model, dryrun):
-        self.execute_plan(plan)
+        self.execute_plan(plan, reviewed_plan_hashes)
 
     # updating persistent data
     self.save_tags(self.store, model)
@@ -145,11 +148,15 @@ class Koti:
     self.print_divider_line()
     print("execution finished.")
 
-  def execute_plan(self, plan: ExecutionPlan):
+  def execute_plan(self, plan: ExecutionPlan, reviewed_plan_hashes: set[str]):
     try:
       shell_module.verbose_mode = True
       self.print_divider_line()
       printc(f"executing: {plan.description}")
+      if plan.hash() not in reviewed_plan_hashes:
+        for info in plan.info:
+          printc(f"{info}")
+        confirm("This action has not been foreseen during planning phase. Please confirm to continue")
       plan.execute()
     finally:
       shell_module.verbose_mode = False
