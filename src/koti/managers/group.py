@@ -54,7 +54,7 @@ class GroupManager(ConfigManager[GroupAssignment, GroupAssignmentState]):
       if current == target:
         continue
       yield ExecutionPlan(
-        items = [item],
+        installs = [item],
         description = f"{GREEN}assign user {item.username} to group {item.group}",
         execute = lambda: self.assign_group(item),
       )
@@ -65,7 +65,7 @@ class GroupManager(ConfigManager[GroupAssignment, GroupAssignmentState]):
       if item in items_to_keep:
         continue
       yield ExecutionPlan(
-        items = [item],
+        removes = [item],
         description = f"{RED}unassign {item.username} from group {item.group}",
         execute = lambda: self.unassign_group(item),
       )

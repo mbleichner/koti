@@ -78,28 +78,28 @@ class UserManager(ConfigManager[User, UserState]):
 
       if current is None:
         yield ExecutionPlan(
-          items = [user],
+          installs = [user],
           description = f"{GREEN}create new user",
           execute = lambda: self.create_user(user, target),
         )
 
       if current is not None and current.shell != target.shell:
         yield ExecutionPlan(
-          items = [user],
+          updates = [user],
           description = f"{YELLOW}update user shell",
           execute = lambda: self.fix_user_shell(user, target),
         )
 
       if current is not None and current.home_dir != target.home_dir:
         yield ExecutionPlan(
-          items = [user],
+          updates = [user],
           description = f"{YELLOW}update user homedir",
           execute = lambda: self.fix_user_home(user, target),
         )
 
       if current is not None and not current.home_exists:
         yield ExecutionPlan(
-          items = [user],
+          updates = [user],
           description = f"{GREEN}create user homedir",
           info = target.home_dir,
           execute = lambda: self.create_user_home(user, target),
@@ -111,7 +111,7 @@ class UserManager(ConfigManager[User, UserState]):
       if user in items_to_keep:
         continue
       yield ExecutionPlan(
-        items = [user],
+        removes = [user],
         description = f"{RED}user will be deleted",
         execute = lambda: self.delete_user(user),
       )

@@ -20,8 +20,8 @@ class ConfigManagerPresets:
       ),
       GroupManager(),
       SwapfileManager(),
-      FlatpakManager(),
       FileManager(),
+      FlatpakManager(),
       SystemdUnitManager(),
       PostHookManager(),
     ]

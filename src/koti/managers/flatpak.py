@@ -70,11 +70,18 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
         if current == target:
           continue
         already_installed = repo_item.name in installed_remotes
-        yield ExecutionPlan(
-          items = [repo_item],
-          description = f"{YELLOW}update flatpak repo" if already_installed else f"{GREEN}install flatpak repo",
-          execute = lambda: self.update_remote(repo_item, already_installed = already_installed),
-        )
+        if not already_installed:
+          yield ExecutionPlan(
+            installs = [repo_item],
+            description = f"{GREEN}install flatpak repo",
+            execute = lambda: self.update_remote(repo_item, remove_existing = False),
+          )
+        else:
+          yield ExecutionPlan(
+            updates = [repo_item],
+            description = f"{YELLOW}update flatpak repo",
+            execute = lambda: self.update_remote(repo_item, remove_existing = True),
+          )
 
     if package_items:
       items_to_install: list[FlatpakPackage] = []
@@ -85,7 +92,7 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
         items_to_install.append(item)
       if items_to_install:
         yield ExecutionPlan(
-          items = items_to_install,
+          installs = items_to_install,
           description = f"{GREEN}install flatpak(s): {", ".join(item.id for item in items_to_install)}",
           execute = lambda: shell(f"flatpak install {" ".join(item.id for item in items_to_install)}"),
         )
@@ -100,7 +107,7 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     packages_to_remove = [item for item in installed_packages if item not in items_to_keep]
     if packages_to_remove:
       yield ExecutionPlan(
-        items = packages_to_remove,
+        removes = packages_to_remove,
         description = f"{RED}uninstall flatpak(s): {", ".join(item.id for item in packages_to_remove)}",
         execute = lambda: shell(f"flatpak uninstall {" ".join(item.id for item in packages_to_remove)}"),
       )
@@ -109,20 +116,19 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     repos_to_remove = [item for item in installed_repos if item not in items_to_keep]
     for item in repos_to_remove:
       yield ExecutionPlan(
-        items = [item],
+        removes = [item],
         description = f"{RED}uninstall flatpak remote: {item.name}",
         execute = lambda: shell(f"flatpak remote-delete --force '{item.name}'"),
       )
 
     yield ExecutionPlan(
-      items = [],
       description = f"{RED}prune unneeded flatpaks",
       info = "flatpak will ask before actually deleting any packages",
       execute = lambda: shell(f"flatpak uninstall --unused"),
     )
 
-  def update_remote(self, item: FlatpakRepo, already_installed: bool):
-    if already_installed:
+  def update_remote(self, item: FlatpakRepo, remove_existing: bool):
+    if remove_existing:
       shell(f"flatpak remote-delete --force '{item.name}'")
     shell(f"flatpak remote-add '{item.name}' '{item.spec_url}'")
 

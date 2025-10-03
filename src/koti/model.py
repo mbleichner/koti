@@ -105,14 +105,26 @@ type ConfigItemToInstall[T: ManagedConfigItem, S: ConfigItemState] = tuple[T, S 
 type ConfigItemToUninstall[T: ManagedConfigItem, S: ConfigItemState] = tuple[T, S | None]
 
 
-class ExecutionPlan[T: ManagedConfigItem]:
-  items: list[T]
-  description: str
+class ExecutionPlan:
+  installs: Sequence[ManagedConfigItem]
+  updates: Sequence[ManagedConfigItem]
+  removes: Sequence[ManagedConfigItem]
   execute: Callable[[], None]
+  description: str
   info: list[str]
 
-  def __init__(self, items: list[T], description: str, execute: Callable[[], None], info: list[str] | str | None = None):
-    self.items = items
+  def __init__(
+    self,
+    description: str,
+    execute: Callable[[], None],
+    info: list[str] | str | None = None,
+    installs: Sequence[ManagedConfigItem] | None = None,
+    updates: Sequence[ManagedConfigItem] | None = None,
+    removes: Sequence[ManagedConfigItem] | None = None,
+  ):
+    self.installs = installs or []
+    self.updates = updates or []
+    self.removes = removes or []
     self.description = description
     self.execute = execute
     self.info = [info] if isinstance(info, str) else (info or [])
@@ -120,10 +132,14 @@ class ExecutionPlan[T: ManagedConfigItem]:
   def hash(self) -> str:
     sha256_hash = sha256()
     sha256_hash.update(self.description.encode())
-    for item in self.items:
-      sha256_hash.update(item.identifier().encode())
     for info in self.info:
       sha256_hash.update(info.encode())
+    for item in self.installs:
+      sha256_hash.update(f"installs:{item.identifier()}".encode())
+    for item in self.updates:
+      sha256_hash.update(f"updates:{item.identifier()}".encode())
+    for item in self.removes:
+      sha256_hash.update(f"removes:{item.identifier()}".encode())
     return sha256_hash.hexdigest()
 
 

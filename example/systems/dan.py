@@ -56,7 +56,7 @@ def dan() -> Generator[ConfigGroup | None]:
 
       GroupAssignment("manuel", "docker"),
       File("/tmp/test", permissions = "r--", content = cleandoc('''
-        moep moep moep
+        moep moep
       ''')),
 
       PostHook("moep hook 1", execute = lambda: shell("echo moep 1"), trigger = File("/tmp/test")),

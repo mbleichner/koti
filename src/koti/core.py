@@ -27,11 +27,6 @@ class Koti:
     self.managers = [m for m in managers if m is not None]
     self.assert_manager_consistency(self.managers, self.configs)
 
-  def execute(self):
-    reviewed_plans = self.plan()
-    confirm("confirm execution")
-    self.apply(reviewed_plans)
-
   def create_model(self) -> ConfigModel:
     merged_configs = self.merge_configs(self.configs)
     phases_with_duplicates = self.resolve_dependencies(merged_configs)
@@ -85,11 +80,13 @@ class Koti:
         printc(f"Phase {phase_idx + 1}:", BOLD)
         if groups:
           for group in phase.groups:
-            printc(f"- {group.description}")
+            prefix = self.get_change_prefix(execution_plans, *(item for item in group.provides if isinstance(item, ManagedConfigItem)))
+            printc(f"{prefix} {group.description}")
         if items:
           for install_step in phase.steps:
             for item in install_step.items_to_install:
-              printc(f"- {item.description()}")
+              prefix = self.get_change_prefix(execution_plans, item)
+              printc(f"{prefix} {item.description()}")
         print()
 
     printc(f"{len(items_total)} items total")
@@ -336,3 +333,16 @@ class Koti:
           if group_item.identifier() == required_item.identifier():
             return idx_phase, group
     return None
+
+  @classmethod
+  def get_change_prefix(cls, plans: Sequence[ExecutionPlan], *items: ManagedConfigItem) -> str:
+    changes: list[Literal["install", "update", "remove"]] = []
+    for item in items:
+      for plan in plans:
+        if item in plan.installs: changes.append("install")
+        if item in plan.updates: changes.append("update")
+        if item in plan.removes: changes.append("remove")
+    if "remove" in changes: return f"{RED}~"
+    if "update" in changes: return f"{YELLOW}~"
+    if "install" in changes: return f"{GREEN}~"
+    return "-"

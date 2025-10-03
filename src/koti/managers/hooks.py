@@ -89,11 +89,18 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
       if current == target:
         continue
       assert target is not None
-      yield ExecutionPlan(
-        items = [hook],
-        description = f"{YELLOW}execute hook '{hook.name}' {"for the first time" if current is None else "because of updated dependencies"}",
-        execute = lambda: self.execute_hook(hook, target),
-      )
+      if current is None:
+        yield ExecutionPlan(
+          installs = [hook],
+          description = f"{GREEN}execute hook '{hook.name}' for the first time",
+          execute = lambda: self.execute_hook(hook, target),
+        )
+      else:
+        yield ExecutionPlan(
+          updates = [hook],
+          description = f"{YELLOW}execute hook '{hook.name}' because of updated dependencies",
+          execute = lambda: self.execute_hook(hook, target),
+        )
 
   def plan_cleanup(self, items_to_keep: Sequence[PostHook], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
     currently_tracked_hooks = [PostHook(name) for name in self.trigger_hash_store.keys()]
@@ -101,7 +108,7 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
       if hook in items_to_keep:
         continue
       yield ExecutionPlan(
-        items = [hook],
+        removes = [hook],
         description = f"{RED}hook will no longer be tracked: {hook.name}",
         execute = lambda: self.unregister_hook(hook)
       )

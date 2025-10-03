@@ -4,7 +4,6 @@ import os
 import pwd
 import shutil
 from hashlib import sha256
-from tempfile import NamedTemporaryFile
 from typing import Generator, Sequence
 
 from koti import ExecutionPlan
@@ -102,30 +101,31 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
 
       if current is None:
         yield ExecutionPlan(
-          items = [item],
+          installs = [item],
           description = f"{GREEN}create new file: {item.filename}",
           info = f"uid = {target.uid}, gid = {target.gid}, mode = {oct(target.mode)}",
           execute = lambda: self.create_or_update_file(item, target, register_file),
         )
 
       if current is not None and current.content_hash != target.content_hash:
-        with NamedTemporaryFile(prefix = "koti.", delete = False) as tmp:
-          tmp.write(target.content)
-          os.chown(tmp.name, uid = target.uid, gid = target.gid)
-          os.chmod(tmp.name, mode = target.mode)
+        tmpfile = f"/tmp/koti.{target.hash()}"
+        with open(tmpfile, "wb+") as fh:
+          fh.write(target.content)
+          os.chown(fh.name, uid = target.uid, gid = target.gid)
+          os.chmod(fh.name, mode = target.mode)
         yield ExecutionPlan(
-          items = [item],
+          updates = [item],
           description = f"{YELLOW}update file content: {item.filename}",
           info = [
             f"filesize {len(current.content)} => {len(target.content)} bytes",
-            f"preview changes: diff '{item.filename}' '{tmp.name}'",
+            f"preview changes: diff '{item.filename}' '{tmpfile}'",
           ],
           execute = lambda: self.create_or_update_file(item, target, register_file),
         )
 
       if current is not None and (current.uid != target.uid or current.gid != target.gid):
         yield ExecutionPlan(
-          items = [item],
+          updates = [item],
           description = f"{YELLOW}update file ownership: {item.filename}",
           info = f"uid {current.uid} => {target.uid}, gid {current.gid} => {target.gid}",
           execute = lambda: self.fix_file_owner(item, target, register_file),
@@ -133,7 +133,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
 
       if current is not None and current.mode != target.mode:
         yield ExecutionPlan(
-          items = [item],
+          updates = [item],
           description = f"{YELLOW}update file permissions: {item.filename}",
           info = f"mode {oct(current.mode)} => {oct(target.mode)}",
           execute = lambda: self.fix_file_mode(item, target, register_file),
@@ -155,23 +155,24 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       files_current = [f"{base}/{subfile}" for base, subdirs, subfiles in os.walk(item.dirname) for subfile in subfiles]
       files_target = [file.filename for file in item.files]
       files_to_remove = [f for f in files_current if f not in files_target]
-      if files_to_remove:
+      for filename in files_to_remove:
+        orphan_file = File(filename)
         yield ExecutionPlan(
-          items = [File(filename) for filename in files_to_remove],
-          description = f"{RED}remove orphan file(s)",
+          removes = [orphan_file],
+          updates = [item],
+          description = f"{RED}remove orphan file {filename}",
           info = "leftover empty directories will also be removed",
-          execute = lambda: self.remove_orphaned_files(item, files_to_remove),
+          execute = lambda: self.remove_orphaned_file_and_clean_leftover_dirs(orphan_file, item),
         )
 
-  def remove_orphaned_files(self, item: Directory, files_to_remove: list[str]):
-    for filename in files_to_remove:
-      os.unlink(filename)
-      print(f"file {filename} deleted")
+  def remove_orphaned_file_and_clean_leftover_dirs(self, file: File, directory: Directory):
+    os.unlink(file.filename)
+    print(f"file {file.filename} deleted")
 
     # remove empty dirs (repeatedly, since they may be nested)
     while True:
       empty_dir = next((
-        f"{base}/{subdir}" for base, subdirs, subfiles in os.walk(item.dirname) for subdir in subdirs
+        f"{base}/{subdir}" for base, subdirs, subfiles in os.walk(directory.dirname) for subdir in subdirs
         if len(os.listdir(f"{base}/{subdir}")) == 0
       ), None)
       if empty_dir is None:
@@ -185,7 +186,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       if item in items_to_keep:
         continue
       yield ExecutionPlan(
-        items = [item],
+        removes = [item],
         description = f"{RED}delete file: {item.filename}",
         execute = lambda: self.delete_file(item)
       )
@@ -201,7 +202,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       if item in items_to_keep:
         continue
       yield ExecutionPlan(
-        items = [item],
+        removes = [item],
         description = f"{RED}delete directory: {item.dirname}",
         execute = lambda: self.delete_dir(item),
       )
