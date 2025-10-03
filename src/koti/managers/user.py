@@ -5,7 +5,7 @@ import pwd
 from hashlib import sha256
 from typing import Generator, Sequence
 
-from koti import ExecutionPlan
+from koti import Action
 from koti.utils.shell import shell, shell_output
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.user import User
@@ -71,46 +71,46 @@ class UserManager(ConfigManager[User, UserState]):
       home_exists = os.path.isdir(home),
     )
 
-  def plan_install(self, items_to_check: Sequence[User], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+  def plan_install(self, items_to_check: Sequence[User], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     for user in items_to_check:
       current, target = self.states(user, model, dryrun)
       assert target is not None
 
       if current is None:
-        yield ExecutionPlan(
+        yield Action(
           installs = [user],
           description = f"{GREEN}create new user",
           execute = lambda: self.create_user(user, target),
         )
 
       if current is not None and current.shell != target.shell:
-        yield ExecutionPlan(
+        yield Action(
           updates = [user],
           description = f"{YELLOW}update user shell",
           execute = lambda: self.fix_user_shell(user, target),
         )
 
       if current is not None and current.home_dir != target.home_dir:
-        yield ExecutionPlan(
+        yield Action(
           updates = [user],
           description = f"{YELLOW}update user homedir",
           execute = lambda: self.fix_user_home(user, target),
         )
 
       if current is not None and not current.home_exists:
-        yield ExecutionPlan(
+        yield Action(
           updates = [user],
           description = f"{GREEN}create user homedir",
           additional_info = target.home_dir,
           execute = lambda: self.create_user_home(user, target),
         )
 
-  def plan_cleanup(self, items_to_keep: Sequence[User], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+  def plan_cleanup(self, items_to_keep: Sequence[User], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     managed_users = [User(username) for username in self.managed_users_store.elements()]
     for user in managed_users:
       if user in items_to_keep:
         continue
-      yield ExecutionPlan(
+      yield Action(
         removes = [user],
         description = f"{RED}user will be deleted",
         execute = lambda: self.delete_user(user),

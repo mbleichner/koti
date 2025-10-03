@@ -27,6 +27,6 @@ koti = Koti(
   ),
 )
 
-reviewed_plans = koti.plan()
+plan = koti.plan()
 confirm("confirm execution")
-koti.apply(reviewed_plans)
+koti.apply(plan)

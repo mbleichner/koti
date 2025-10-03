@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Generator, Sequence
 
-from koti import ExecutionPlan
+from koti import Action
 from koti.utils.shell import shell, shell_output
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.group import GroupAssignment
@@ -37,22 +37,22 @@ class GroupManager(ConfigManager[GroupAssignment, GroupAssignmentState]):
         return GroupAssignmentState()
     return None
 
-  def plan_install(self, items_to_check: Sequence[GroupAssignment], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+  def plan_install(self, items_to_check: Sequence[GroupAssignment], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     for item in items_to_check:
       current, target = self.states(item, model, dryrun)
       if current == target:
         continue
-      yield ExecutionPlan(
+      yield Action(
         installs = [item],
         description = f"{GREEN}assign user {item.username} to group {item.group}",
         execute = lambda: self.assign_group(item),
       )
 
-  def plan_cleanup(self, items_to_keep: Sequence[GroupAssignment], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+  def plan_cleanup(self, items_to_keep: Sequence[GroupAssignment], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     for item in self.get_current_assignments(model):
       if item in items_to_keep:
         continue
-      yield ExecutionPlan(
+      yield Action(
         removes = [item],
         description = f"{RED}unassign {item.username} from group {item.group}",
         execute = lambda: self.unassign_group(item),

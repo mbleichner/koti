@@ -103,10 +103,6 @@ class ConfigItemState(metaclass = ABCMeta):
 class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMeta):
   managed_classes: list[Type] = []
   order_in_cleanup_phase: Literal["reverse_install_order", "first", "last"] = "reverse_install_order"
-  warnings: list[str]  # collects warnings during evaluation and execution
-
-  def __init__(self):
-    self.warnings = []
 
   @abstractmethod
   def assert_installable(self, item: T, model: ConfigModel):
@@ -132,13 +128,13 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     return self.state_current(item), self.state_target(item, model, dryrun)
 
   @abstractmethod
-  def plan_install(self, items_to_check: Sequence[T], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+  def plan_install(self, items_to_check: Sequence[T], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     """Called during install phases. This method checks a set of items if any actions need to be
     performed and returns them via a Generator. Returned ExecutionPlans will immediately be executed."""
     pass
 
   @abstractmethod
-  def plan_cleanup(self, items_to_keep: Sequence[T], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+  def plan_cleanup(self, items_to_keep: Sequence[T], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     """Called during cleanup phase. This method is repsonsible for uninstalling items that are no longer needed.
     Returned ExecutionPlans will immediately be executed."""
     pass
@@ -152,7 +148,7 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     pass
 
 
-class ExecutionPlan:
+class Action:
   """Represents an executable action to update one or multiple ManagedConfigItems on the system."""
   installs: Sequence[ManagedConfigItem]
   updates: Sequence[ManagedConfigItem]
@@ -189,6 +185,16 @@ class ExecutionPlan:
     for item in self.removes:
       sha256_hash.update(f"removes:{item.identifier()}".encode())
     return sha256_hash.hexdigest()
+
+
+class ExecutionPlan:
+  model: ConfigModel
+  actions: Sequence[Action]
+
+  def __init__(self, model: ConfigModel, actions: Sequence[Action]):
+    self.model = model
+    self.actions = actions
+    self.action_hashes = [action.hash() for action in actions]
 
 
 class ConfigModel:

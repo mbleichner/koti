@@ -2,8 +2,9 @@ from hashlib import sha256
 import re
 from typing import Generator, Sequence
 
-from koti import ExecutionPlan
+from koti import Action
 from koti.utils.colors import *
+from koti.utils.logging import logger
 from koti.utils.shell import shell, shell_output, shell_success
 from koti.items.flatpak_package import FlatpakPackage
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
@@ -54,13 +55,13 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     else:
       return FlatpakPackageState()
 
-  def plan_install(self, items_to_check: Sequence[FlatpakRepo | FlatpakPackage], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+  def plan_install(self, items_to_check: Sequence[FlatpakRepo | FlatpakPackage], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     repo_items = [item for item in items_to_check if isinstance(item, FlatpakRepo)]
     package_items = [item for item in items_to_check if isinstance(item, FlatpakPackage)]
 
     if dryrun and not shell_success("flatpak --version"):
       if model.contains(lambda item: isinstance(item, FlatpakPackage) or isinstance(item, FlatpakRepo)):
-        self.warnings.append(f"{RED}could not plan installation/cleanup of flatpak repos + packages due to (currently) missing flatpak installation")
+        logger.error("could not plan installation/cleanup of flatpak repos + packages due to (currently) missing flatpak installation")
       return None
 
     if repo_items:
@@ -71,13 +72,13 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
           continue
         already_installed = repo_item.name in installed_remotes
         if not already_installed:
-          yield ExecutionPlan(
+          yield Action(
             installs = [repo_item],
             description = f"{GREEN}install flatpak repo",
             execute = lambda: self.update_remote(repo_item, remove_existing = False),
           )
         else:
-          yield ExecutionPlan(
+          yield Action(
             updates = [repo_item],
             description = f"{YELLOW}update flatpak repo",
             execute = lambda: self.update_remote(repo_item, remove_existing = True),
@@ -91,22 +92,22 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
           continue
         items_to_install.append(item)
       if items_to_install:
-        yield ExecutionPlan(
+        yield Action(
           installs = items_to_install,
           description = f"{GREEN}install flatpak(s): {", ".join(item.id for item in items_to_install)}",
           execute = lambda: shell(f"flatpak install {" ".join(item.id for item in items_to_install)}"),
         )
 
-  def plan_cleanup(self, items_to_keep: Sequence[FlatpakRepo | FlatpakPackage], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+  def plan_cleanup(self, items_to_keep: Sequence[FlatpakRepo | FlatpakPackage], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     if not shell_success("flatpak --version"):
       if model.contains(lambda item: isinstance(item, FlatpakPackage) or isinstance(item, FlatpakRepo)):
-        self.warnings.append(f"{RED}could not plan installation/cleanup of flatpak repos + packages due to (currently) missing flatpak installation")
+        logger.error("could not plan installation/cleanup of flatpak repos + packages due to (currently) missing flatpak installation")
       return None
 
     installed_packages = [FlatpakPackage(name) for name in shell_output("flatpak list --app --columns application").splitlines()]
     packages_to_remove = [item for item in installed_packages if item not in items_to_keep]
     if packages_to_remove:
-      yield ExecutionPlan(
+      yield Action(
         removes = packages_to_remove,
         description = f"{RED}uninstall flatpak(s): {", ".join(item.id for item in packages_to_remove)}",
         execute = lambda: shell(f"flatpak uninstall {" ".join(item.id for item in packages_to_remove)}"),
@@ -115,13 +116,13 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     installed_repos = [FlatpakRepo(name) for name in shell_output("flatpak remotes --columns name").splitlines()]
     repos_to_remove = [item for item in installed_repos if item not in items_to_keep]
     for item in repos_to_remove:
-      yield ExecutionPlan(
+      yield Action(
         removes = [item],
         description = f"{RED}uninstall flatpak remote: {item.name}",
         execute = lambda: shell(f"flatpak remote-delete --force '{item.name}'"),
       )
 
-    yield ExecutionPlan(
+    yield Action(
       description = f"{RED}prune unneeded flatpaks",
       additional_info = "flatpak will ask before actually deleting any packages",
       execute = lambda: shell(f"flatpak uninstall --unused"),

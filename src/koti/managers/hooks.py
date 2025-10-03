@@ -3,7 +3,7 @@ from __future__ import annotations
 from hashlib import sha256
 from typing import Generator, Sequence
 
-from koti import ExecutionPlan
+from koti import Action
 from koti.utils.colors import *
 from koti.model import ConfigItem, ConfigItemState, ConfigManager, ConfigModel, ManagedConfigItem
 from koti.items.hooks import PostHook
@@ -80,31 +80,31 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
 
     return manager.state_current(reference)
 
-  def plan_install(self, items_to_check: Sequence[PostHook], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+  def plan_install(self, items_to_check: Sequence[PostHook], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     for hook in items_to_check:
       current, target = self.states(hook, model, dryrun)
       if current == target:
         continue
       assert target is not None
       if current is None:
-        yield ExecutionPlan(
+        yield Action(
           installs = [hook],
           description = f"{GREEN}execute hook '{hook.name}' for the first time",
           execute = lambda: self.execute_hook(hook, target),
         )
       else:
-        yield ExecutionPlan(
+        yield Action(
           updates = [hook],
           description = f"{YELLOW}execute hook '{hook.name}' because of updated dependencies",
           execute = lambda: self.execute_hook(hook, target),
         )
 
-  def plan_cleanup(self, items_to_keep: Sequence[PostHook], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+  def plan_cleanup(self, items_to_keep: Sequence[PostHook], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     currently_tracked_hooks = [PostHook(name) for name in self.trigger_hash_store.keys()]
     for hook in currently_tracked_hooks:
       if hook in items_to_keep:
         continue
-      yield ExecutionPlan(
+      yield Action(
         removes = [hook],
         description = f"{RED}hook will no longer be tracked: {hook.name}",
         execute = lambda: self.unregister_hook(hook)

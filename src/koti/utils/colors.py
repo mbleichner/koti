@@ -8,9 +8,8 @@ UNDERLINE = '\033[4m'
 ENDC = '\033[0m'
 
 
-def printc(line: str, *styles: str | None):
-  style = "".join((style for style in styles if style is not None))
-  print(f"{ENDC}{style}{line.rstrip()}{ENDC}")
+def printc(line: str):
+  print(f"{ENDC}{line}{ENDC}")
 
 
 def strip_colors(line: str) -> str:

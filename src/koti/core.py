@@ -9,6 +9,7 @@ from koti.model import *
 from koti.utils.colors import *
 from koti.utils.confirm import confirm
 from koti.utils.json_store import *
+from koti.utils.logging import logger
 
 
 class Koti:
@@ -49,43 +50,43 @@ class Koti:
       ))
     return CleanupPhase(steps)
 
-  def plan(self, groups: bool = True, items: bool = False) -> list[ExecutionPlan]:
+  def plan(self, groups: bool = True, items: bool = False) -> ExecutionPlan:
+    logger.clear()
     dryrun = True
     model = self.create_model()
-    execution_plans: list[ExecutionPlan] = []
 
     for manager in self.managers:
-      manager.warnings.clear()  # clear warnings from previous runs
       manager.initialize(model, dryrun)
 
-    # plan installation phases
+    # collect actions during installation phases
+    actions: list[Action] = []
     items_total = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
     for phase in model.phases:
       for install_step in phase.steps:
         for plan in install_step.manager.plan_install(install_step.items_to_install, model, dryrun):
-          execution_plans.append(plan)
+          actions.append(plan)
 
-    # plan cleanup phase
+    # collect actions during  cleanup phase
     cleanup_phase = self.create_cleanup_phase(model)
     for cleanup_step in cleanup_phase.steps:
       for plan in cleanup_step.manager.plan_cleanup(cleanup_step.items_to_keep, model, dryrun):
-        execution_plans.append(plan)
+        actions.append(plan)
 
     for manager in self.managers:
       manager.finalize(model, dryrun)
 
-    # list all groups
+    # list all groups + items
     if groups or items:
       for phase_idx, phase in enumerate(model.phases):
-        printc(f"Phase {phase_idx + 1}:", BOLD)
+        printc(f"{BOLD}Phase {phase_idx + 1}:")
         if groups:
           for group in phase.groups:
-            prefix = self.get_change_prefix(execution_plans, *(item for item in group.provides if isinstance(item, ManagedConfigItem)))
+            prefix = self.get_change_prefix(actions, *(item for item in group.provides if isinstance(item, ManagedConfigItem)))
             printc(f"{prefix} {group.description}")
         if items:
           for install_step in phase.steps:
             for item in install_step.items_to_install:
-              prefix = self.get_change_prefix(execution_plans, item)
+              prefix = self.get_change_prefix(actions, item)
               printc(f"{prefix} {item.description()}")
         print()
 
@@ -93,73 +94,69 @@ class Koti:
     print()
 
     # print warnings generated during evaluation
-    warnings = [message for manager in self.managers for message in manager.warnings]
-    if warnings:
-      printc(f"Evaluation warnings:", BOLD)
-      for message in set(warnings):
+    if logger.messages:
+      printc(f"{BOLD}Messages logged during planning:")
+      for message in set(logger.messages):
         printc(f"- {message}")
       print()
 
     # list all changed items
-    if len(execution_plans) > 0:
-      printc(f"Actions that will be executed (in order):", BOLD)
-      for plan in execution_plans:
+    if len(actions) > 0:
+      printc(f"{BOLD}Actions that will be executed (in order):")
+      for plan in actions:
         printc(f"- {plan.description}")
         for info in plan.additional_info:
           printc(f"  {info}")
       print()
 
-    return execution_plans
+    return ExecutionPlan(
+      actions = actions,
+      model = model,
+    )
 
-  def apply(self, reviewed_plans: list[ExecutionPlan]):
-    reviewed_plan_hashes = {plan.hash() for plan in reviewed_plans}
-    model = self.create_model()
+  def apply(self, plan: ExecutionPlan):
+    logger.clear()
     dryrun = False
+    model = plan.model
 
     for manager in self.managers:
-      manager.warnings.clear()  # clear warnings from previous runs
       manager.initialize(model, dryrun)
-
-    # clear warnings before execution
-    for manager in self.managers:
-      manager.warnings.clear()
 
     # execute install phases
     for phase_idx, phase in enumerate(model.phases):
       for install_step in phase.steps:
-        for plan in install_step.manager.plan_install(install_step.items_to_install, model, dryrun):
-          self.execute_plan(plan, reviewed_plan_hashes)
+        for action in install_step.manager.plan_install(install_step.items_to_install, model, dryrun):
+          self.execute_plan(action, plan)
 
     # execute cleanup phase
     cleanup_phase = self.create_cleanup_phase(model)
     for cleanup_step in cleanup_phase.steps:
-      for plan in cleanup_step.manager.plan_cleanup(cleanup_step.items_to_keep, model, dryrun):
-        self.execute_plan(plan, reviewed_plan_hashes)
+      for action in cleanup_step.manager.plan_cleanup(cleanup_step.items_to_keep, model, dryrun):
+        self.execute_plan(action, plan)
 
     # updating persistent data
     for manager in self.managers:
       manager.finalize(model, dryrun)
 
-    warnings = [message for manager in self.managers for message in manager.warnings]
-    if warnings:
-      printc(f"Warnings during execution:", BOLD)
-      for message in warnings:
-        printc(f"- {message}")
-      print()
-
     self.print_divider_line()
     print("execution finished.")
 
-  def execute_plan(self, plan: ExecutionPlan, reviewed_plan_hashes: set[str]):
+    if logger.messages:
+      print()
+      printc(f"{BOLD}Messages logged during execution:")
+      for message in set(logger.messages):
+        printc(f"- {message}")
+
+  def execute_plan(self, action: Action, plan: ExecutionPlan):
     try:
       shell_module.verbose_mode = True
       self.print_divider_line()
-      printc(f"executing: {plan.description}")
-      for info in plan.additional_info:
+      printc(f"executing: {action.description}")
+      for info in action.additional_info:
         printc(f"{info}")
-      if plan.hash() not in reviewed_plan_hashes:
+      if action.hash() not in plan.action_hashes:
         confirm("This action was not predicted during planning phase - please confirm to continue")
-      plan.execute()
+      action.execute()
     finally:
       shell_module.verbose_mode = False
 
@@ -321,13 +318,13 @@ class Koti:
     return None
 
   @classmethod
-  def get_change_prefix(cls, plans: Sequence[ExecutionPlan], *items: ManagedConfigItem) -> str:
-    changes: list[Literal["install", "update", "remove"]] = []
+  def get_change_prefix(cls, plans: Sequence[Action], *items: ManagedConfigItem) -> str:
+    changes: set[Literal["install", "update", "remove"]] = set()
     for item in items:
       for plan in plans:
-        if item in plan.installs: changes.append("install")
-        if item in plan.updates: changes.append("update")
-        if item in plan.removes: changes.append("remove")
+        if item in plan.installs: changes.add("install")
+        if item in plan.updates: changes.add("update")
+        if item in plan.removes: changes.add("remove")
     if "remove" in changes: return f"{RED}~"
     if "update" in changes: return f"{YELLOW}~"
     if "install" in changes: return f"{GREEN}~"

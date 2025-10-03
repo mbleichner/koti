@@ -1,6 +1,6 @@
 from typing import Generator, Sequence
 
-from koti import ExecutionPlan
+from koti import Action
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.systemd import SystemdUnit
 from koti.managers.pacman import shell
@@ -49,7 +49,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
   def state_target(self, item: SystemdUnit, model: ConfigModel, dryrun: bool) -> SystemdUnitState:
     return SystemdUnitState()
 
-  def plan_install(self, items_to_check: Sequence[SystemdUnit], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+  def plan_install(self, items_to_check: Sequence[SystemdUnit], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     users = {item.user for item in items_to_check}
     for username in users:
       items_to_activate_for_user: list[SystemdUnit] = []
@@ -62,13 +62,13 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
         continue
 
       if items_to_activate_for_user:
-        yield ExecutionPlan(
+        yield Action(
           installs = items_to_activate_for_user,
           description = f"{GREEN}enable systemd unit(s)",
           execute = lambda: self.activate_units(username, items_to_activate_for_user),
         )
 
-  def plan_cleanup(self, items_to_keep: Sequence[SystemdUnit], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+  def plan_cleanup(self, items_to_keep: Sequence[SystemdUnit], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     installed_units = self.installed_units()
     users = {item.user for item in installed_units}
     for username in users:
@@ -78,7 +78,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
           items_to_deactivate_for_user.append(item)
       if not items_to_deactivate_for_user:
         continue
-      yield ExecutionPlan(
+      yield Action(
         removes = items_to_deactivate_for_user,
         description = f"{RED}disable systemd unit(s) {" ".join([item.name for item in items_to_deactivate_for_user])}",
         execute = lambda: self.deactivate_units(username, items_to_deactivate_for_user),

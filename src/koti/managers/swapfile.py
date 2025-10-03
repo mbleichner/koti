@@ -2,7 +2,7 @@ import os.path
 from hashlib import sha256
 from typing import Generator, Sequence
 
-from koti import ExecutionPlan
+from koti import Action
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.swapfile import Swapfile
 from koti.utils.json_store import JsonCollection, JsonStore
@@ -67,7 +67,7 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
     assert item.size_bytes is not None
     return SwapfileState(size_bytes = item.size_bytes)
 
-  def plan_install(self, items_to_check: Sequence[Swapfile], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+  def plan_install(self, items_to_check: Sequence[Swapfile], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     for item in items_to_check:
       current, target = self.states(item, model, dryrun)
       if current == target:
@@ -77,7 +77,7 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
       assert item.size_bytes is not None
 
       if current is None:
-        yield ExecutionPlan(
+        yield Action(
           installs = [item],
           description = f"{GREEN}create swapfile",
           additional_info = f"size = {target.size_bytes}",
@@ -85,19 +85,19 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
         )
 
       if current is not None and current.size_bytes != target.size_bytes:
-        yield ExecutionPlan(
+        yield Action(
           updates = [item],
           description = f"{YELLOW}resize swapfile",
           additional_info = f"{current.size_bytes} => {target.size_bytes}",
           execute = lambda: self.recreate_swapfile(item),
         )
 
-  def plan_cleanup(self, items_to_keep: Sequence[Swapfile], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
+  def plan_cleanup(self, items_to_keep: Sequence[Swapfile], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     currently_managed_swapfiles = [Swapfile(filename) for filename in self.managed_files_store.elements()]
     for item in currently_managed_swapfiles:
       if item in items_to_keep:
         continue
-      yield ExecutionPlan(
+      yield Action(
         removes = [item],
         description = f"{RED}delete swapfile",
         additional_info = "please make sure the swapfile isn't referenced in fstab any more",
