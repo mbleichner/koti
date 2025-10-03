@@ -58,9 +58,6 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
   def is_mounted(self, swapfile: str) -> bool:
     return shell_success(f"swapon --show | grep {swapfile}")
 
-  def installed(self) -> list[Swapfile]:
-    return [Swapfile(filename) for filename in self.managed_files_store.elements()]
-
   def state_current(self, item: Swapfile) -> SwapfileState | None:
     if not os.path.isfile(item.filename):
       return None
@@ -83,7 +80,7 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
         yield ExecutionPlan(
           installs = [item],
           description = f"{GREEN}create swapfile",
-          info = f"size = {target.size_bytes}",
+          additional_info = f"size = {target.size_bytes}",
           execute = lambda: self.create_swapfile(item),
         )
 
@@ -91,22 +88,22 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
         yield ExecutionPlan(
           updates = [item],
           description = f"{YELLOW}resize swapfile",
-          info = f"{current.size_bytes} => {target.size_bytes}",
+          additional_info = f"{current.size_bytes} => {target.size_bytes}",
           execute = lambda: self.recreate_swapfile(item),
         )
 
   def plan_cleanup(self, items_to_keep: Sequence[Swapfile], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
-    installed_items = self.installed()
-    for item in installed_items:
+    currently_managed_swapfiles = [Swapfile(filename) for filename in self.managed_files_store.elements()]
+    for item in currently_managed_swapfiles:
       if item in items_to_keep:
         continue
       yield ExecutionPlan(
         removes = [item],
         description = f"{RED}delete swapfile",
-        info = "please make sure the swapfile isn't referenced in fstab any more",
+        additional_info = "please make sure the swapfile isn't referenced in fstab any more",
         execute = lambda: self.delete_swapfile(item),
       )
 
-  def finalize(self, model: ConfigModel):
-    swapfiles = [item.filename for phase in model.phases for item in phase.items if isinstance(item, Swapfile)]
-    self.managed_files_store.replace_all(swapfiles)
+  def finalize(self, model: ConfigModel, dryrun: bool):
+    if not dryrun:
+      self.managed_files_store.replace_all([item.filename for phase in model.phases for item in phase.items if isinstance(item, Swapfile)])

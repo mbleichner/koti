@@ -103,7 +103,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         yield ExecutionPlan(
           installs = [item],
           description = f"{GREEN}create new file: {item.filename}",
-          info = f"uid = {target.uid}, gid = {target.gid}, mode = {oct(target.mode)}",
+          additional_info = f"uid = {target.uid}, gid = {target.gid}, mode = {oct(target.mode)}",
           execute = lambda: self.create_or_update_file(item, target, register_file),
         )
 
@@ -116,7 +116,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         yield ExecutionPlan(
           updates = [item],
           description = f"{YELLOW}update file content: {item.filename}",
-          info = [
+          additional_info = [
             f"filesize {len(current.content)} => {len(target.content)} bytes",
             f"preview changes: diff '{item.filename}' '{tmpfile}'",
           ],
@@ -127,7 +127,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         yield ExecutionPlan(
           updates = [item],
           description = f"{YELLOW}update file ownership: {item.filename}",
-          info = f"uid {current.uid} => {target.uid}, gid {current.gid} => {target.gid}",
+          additional_info = f"uid {current.uid} => {target.uid}, gid {current.gid} => {target.gid}",
           execute = lambda: self.fix_file_owner(item, target, register_file),
         )
 
@@ -135,7 +135,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         yield ExecutionPlan(
           updates = [item],
           description = f"{YELLOW}update file permissions: {item.filename}",
-          info = f"mode {oct(current.mode)} => {oct(target.mode)}",
+          additional_info = f"mode {oct(current.mode)} => {oct(target.mode)}",
           execute = lambda: self.fix_file_mode(item, target, register_file),
         )
 
@@ -161,7 +161,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
           removes = [orphan_file],
           updates = [item],
           description = f"{RED}remove orphan file {filename}",
-          info = "leftover empty directories will also be removed",
+          additional_info = "leftover empty directories will also be removed",
           execute = lambda: self.remove_orphaned_file_and_clean_leftover_dirs(orphan_file, item),
         )
 
@@ -287,8 +287,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     getpwnam = pwd.getpwnam(owner)
     os.chown(dirname, uid = getpwnam.pw_uid, gid = getpwnam.pw_gid)
 
-  def finalize(self, model: ConfigModel):
-    filenames = [item.filename for phase in model.phases for item in phase.items if isinstance(item, File)]
-    dirnames = [item.dirname for phase in model.phases for item in phase.items if isinstance(item, Directory)]
-    self.managed_files_store.replace_all(filenames)
-    self.managed_dirs_store.replace_all(dirnames)
+  def finalize(self, model: ConfigModel, dryrun: bool):
+    if not dryrun:
+      self.managed_files_store.replace_all([item.filename for phase in model.phases for item in phase.items if isinstance(item, File)])
+      self.managed_dirs_store.replace_all([item.dirname for phase in model.phases for item in phase.items if isinstance(item, Directory)])

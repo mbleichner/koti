@@ -53,9 +53,6 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
           result += 1
     return None
 
-  # def installed(self, model: ConfigModel) -> list[PostHook]:
-  #   return [PostHook(name) for name in self.trigger_hash_store.keys()]
-
   def state_current(self, hook: PostHook) -> PostHookState | None:
     stored_value = self.trigger_hash_store.get(hook.name, None)
     if stored_value is None or not isinstance(stored_value, dict):
@@ -121,9 +118,10 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
   def unregister_hook(self, hook: PostHook):
     self.trigger_hash_store.remove(hook.name),
 
-  def finalize(self, model: ConfigModel):
-    currently_installed = [item.name for phase in model.phases for item in phase.items if isinstance(item, PostHook)]
-    previously_installed = self.trigger_hash_store.keys()
-    for name in previously_installed:
-      if name not in currently_installed:
-        self.trigger_hash_store.remove(name)
+  def finalize(self, model: ConfigModel, dryrun: bool):
+    if not dryrun:
+      currently_installed = [item.name for phase in model.phases for item in phase.items if isinstance(item, PostHook)]
+      previously_installed = self.trigger_hash_store.keys()
+      for name in previously_installed:
+        if name not in currently_installed:
+          self.trigger_hash_store.remove(name)

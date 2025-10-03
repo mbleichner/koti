@@ -31,11 +31,9 @@ class Koti:
     merged_configs = self.merge_configs(self.configs)
     phases_with_duplicates = self.resolve_dependencies(merged_configs)
     phases_without_duplicates = self.remove_duplicates(phases_with_duplicates)
-    tags_archive = self.load_tags(self.store)
     model = ConfigModel(
       managers = self.managers,
       phases = [self.create_install_phase(self.managers, groups_in_phase) for groups_in_phase in phases_without_duplicates],
-      tags_archive = tags_archive
     )
 
     self.assert_config_items_installable(model)
@@ -53,13 +51,12 @@ class Koti:
 
   def plan(self, groups: bool = True, items: bool = False) -> list[ExecutionPlan]:
     dryrun = True
-
-    # clear warnings from previous runs
-    for manager in self.managers:
-      manager.warnings.clear()
-
     model = self.create_model()
     execution_plans: list[ExecutionPlan] = []
+
+    for manager in self.managers:
+      manager.warnings.clear()  # clear warnings from previous runs
+      manager.initialize(model, dryrun)
 
     # plan installation phases
     items_total = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
@@ -73,6 +70,9 @@ class Koti:
     for cleanup_step in cleanup_phase.steps:
       for plan in cleanup_step.manager.plan_cleanup(cleanup_step.items_to_keep, model, dryrun):
         execution_plans.append(plan)
+
+    for manager in self.managers:
+      manager.finalize(model, dryrun)
 
     # list all groups
     if groups or items:
@@ -105,17 +105,20 @@ class Koti:
       printc(f"Actions that will be executed (in order):", BOLD)
       for plan in execution_plans:
         printc(f"- {plan.description}")
-        for info in plan.info:
+        for info in plan.additional_info:
           printc(f"  {info}")
       print()
 
     return execution_plans
 
   def apply(self, reviewed_plans: list[ExecutionPlan]):
+    reviewed_plan_hashes = {plan.hash() for plan in reviewed_plans}
     model = self.create_model()
     dryrun = False
 
-    reviewed_plan_hashes = {plan.hash() for plan in reviewed_plans}
+    for manager in self.managers:
+      manager.warnings.clear()  # clear warnings from previous runs
+      manager.initialize(model, dryrun)
 
     # clear warnings before execution
     for manager in self.managers:
@@ -134,9 +137,8 @@ class Koti:
         self.execute_plan(plan, reviewed_plan_hashes)
 
     # updating persistent data
-    self.save_tags(self.store, model)
     for manager in self.managers:
-      manager.finalize(model)
+      manager.finalize(model, dryrun)
 
     warnings = [message for manager in self.managers for message in manager.warnings]
     if warnings:
@@ -153,7 +155,7 @@ class Koti:
       shell_module.verbose_mode = True
       self.print_divider_line()
       printc(f"executing: {plan.description}")
-      for info in plan.info:
+      for info in plan.additional_info:
         printc(f"{info}")
       if plan.hash() not in reviewed_plan_hashes:
         confirm("This action was not predicted during planning phase - please confirm to continue")
@@ -164,22 +166,6 @@ class Koti:
   @classmethod
   def print_divider_line(cls):
     printc(f"{"-" * (get_terminal_size().columns - 1)}")
-
-  @classmethod
-  def load_tags(cls, store: JsonStore) -> dict[str, set[str]]:
-    stored: dict[str, list[str]] | None = store.get("item_tags")
-    if stored is not None:
-      return {identifier: set(tags) for identifier, tags in stored.items()}
-    else:
-      return {}
-
-  @classmethod
-  def save_tags(cls, store: JsonStore, model: ConfigModel):
-    result: dict[str, list[str]] = {
-      item.identifier(): list(item.tags)
-      for phase in model.phases for install_step in phase.steps for item in install_step.items_to_install
-    }
-    store.put("item_tags", result)
 
   @classmethod
   def get_cleanup_phase_manager_order(cls, managers: Sequence[ConfigManager]) -> Sequence[ConfigManager]:

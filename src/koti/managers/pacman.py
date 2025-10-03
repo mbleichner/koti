@@ -40,7 +40,15 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     self.aur_helper = aur_helper
     self.managed_packages_store = store.collection("managed_packages")
     self.ignore_manually_installed_packages = keep_unmanaged_packages
+    self.explicit_packages_on_system = set()
+
+  def initialize(self, model: ConfigModel, dryrun: bool):
     self.explicit_packages_on_system = set(self.pacman_list_explicit_packages())
+
+  def finalize(self, model: ConfigModel, dryrun: bool):
+    if not dryrun:
+      packages = [item.name for phase in model.phases for item in phase.items if isinstance(item, Package)]
+      self.managed_packages_store.replace_all(packages)
 
   def assert_installable(self, item: Package, model: ConfigModel):
     if item.url is not None:
@@ -145,7 +153,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
 
     yield ExecutionPlan(
       description = f"{RED}prune unneeded packages",
-      info = f"pacman will ask before actually deleting any packages",
+      additional_info = f"pacman will ask before actually deleting any packages",
       execute = lambda: self.pacman_prune_unneeded(),
     )
 
@@ -160,10 +168,6 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
       if not self.ignore_manually_installed_packages or pkg in installed_by_koti
     }
     return [Package(pkg) for pkg in package_names]
-
-  def finalize(self, model: ConfigModel):
-    packages = [item.name for phase in model.phases for item in phase.items if isinstance(item, Package)]
-    self.managed_packages_store.replace_all(packages)
 
   def update_explicit_package_list(self):
     self.explicit_packages_on_system = set(self.pacman_list_explicit_packages())
@@ -198,9 +202,6 @@ class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
   def assert_installable(self, item: PacmanKey, model: ConfigModel):
     pass
 
-  def installed(self, model: ConfigModel) -> list[PacmanKey]:
-    return []
-
   def state_current(self, item: PacmanKey) -> PacmanKeyState | None:
     installed: bool = shell_success(f"pacman-key --list-keys | grep {item.key_id}")
     return PacmanKeyState() if installed else None
@@ -226,6 +227,3 @@ class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
 
   def plan_cleanup(self, items_to_keep: Sequence[PacmanKey], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
     yield from ()
-
-  def finalize(self, model: ConfigModel):
-    pass

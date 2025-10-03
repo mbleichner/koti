@@ -123,7 +123,7 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
 
     yield ExecutionPlan(
       description = f"{RED}prune unneeded flatpaks",
-      info = "flatpak will ask before actually deleting any packages",
+      additional_info = "flatpak will ask before actually deleting any packages",
       execute = lambda: shell(f"flatpak uninstall --unused"),
     )
 
@@ -141,6 +141,3 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
 
   def is_package_installed(self, package: str) -> bool:
     return package in shell_output("flatpak list --app --columns application").splitlines()
-
-  def finalize(self, model: ConfigModel):
-    pass

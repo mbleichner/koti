@@ -101,7 +101,7 @@ class UserManager(ConfigManager[User, UserState]):
         yield ExecutionPlan(
           updates = [user],
           description = f"{GREEN}create user homedir",
-          info = target.home_dir,
+          additional_info = target.home_dir,
           execute = lambda: self.create_user_home(user, target),
         )
 
@@ -140,6 +140,6 @@ class UserManager(ConfigManager[User, UserState]):
     os.chown(target.home_dir, uid, gid)
     self.managed_users_store.add(user.username)
 
-  def finalize(self, model: ConfigModel):
-    usernames = [item.username for phase in model.phases for item in phase.items if isinstance(item, User)]
-    self.managed_users_store.replace_all(usernames)
+  def finalize(self, model: ConfigModel, dryrun: bool):
+    if not dryrun:
+      self.managed_users_store.replace_all([item.username for phase in model.phases for item in phase.items if isinstance(item, User)])

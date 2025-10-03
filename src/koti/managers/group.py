@@ -27,17 +27,6 @@ class GroupManager(ConfigManager[GroupAssignment, GroupAssignmentState]):
   def assert_installable(self, item: GroupAssignment, model: ConfigModel):
     pass
 
-  def installed(self, model: ConfigModel) -> list[GroupAssignment]:
-    result: list[GroupAssignment] = []
-    currently_managed_users = set([item.username for phase in model.phases for item in phase.items if isinstance(item, GroupAssignment)])
-    previously_managed_users = self.managed_users_store.elements()
-    for username in {*previously_managed_users, *currently_managed_users}:
-      for line in shell_output("getent group | cut -d: -f1,4").splitlines():
-        [group, users_csv] = line.split(":")
-        if username in users_csv.split(","):
-          result.append(GroupAssignment(username, group))
-    return result
-
   def state_target(self, item: GroupAssignment, model: ConfigModel, dryrun: bool) -> GroupAssignmentState:
     return GroupAssignmentState()
 
@@ -60,8 +49,7 @@ class GroupManager(ConfigManager[GroupAssignment, GroupAssignmentState]):
       )
 
   def plan_cleanup(self, items_to_keep: Sequence[GroupAssignment], model: ConfigModel, dryrun: bool) -> Generator[ExecutionPlan]:
-    installed = self.installed(model)
-    for item in installed:
+    for item in self.get_current_assignments(model):
       if item in items_to_keep:
         continue
       yield ExecutionPlan(
@@ -69,6 +57,17 @@ class GroupManager(ConfigManager[GroupAssignment, GroupAssignmentState]):
         description = f"{RED}unassign {item.username} from group {item.group}",
         execute = lambda: self.unassign_group(item),
       )
+
+  def get_current_assignments(self, model: ConfigModel) -> list[GroupAssignment]:
+    result: list[GroupAssignment] = []
+    currently_managed_users = set([item.username for phase in model.phases for item in phase.items if isinstance(item, GroupAssignment)])
+    previously_managed_users = self.managed_users_store.elements()
+    for username in {*previously_managed_users, *currently_managed_users}:
+      for line in shell_output("getent group | cut -d: -f1,4").splitlines():
+        [group, users_csv] = line.split(":")
+        if username in users_csv.split(","):
+          result.append(GroupAssignment(username, group))
+    return result
 
   def assign_group(self, item: GroupAssignment):
     shell(f"gpasswd --add {item.username} {item.group}")
@@ -78,6 +77,7 @@ class GroupManager(ConfigManager[GroupAssignment, GroupAssignmentState]):
     shell(f"gpasswd --delete {item.username} {item.group}")
     # do not delete user from list of managed users here, as there might be other assignments for this user
 
-  def finalize(self, model: ConfigModel):
-    usernames = set([item.username for phase in model.phases for item in phase.items if isinstance(item, GroupAssignment)])
-    self.managed_users_store.replace_all(list(usernames))
+  def finalize(self, model: ConfigModel, dryrun: bool):
+    if not dryrun:
+      usernames = set([item.username for phase in model.phases for item in phase.items if isinstance(item, GroupAssignment)])
+      self.managed_users_store.replace_all(list(usernames))

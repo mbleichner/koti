@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from functools import reduce
 from hashlib import sha256
 from typing import Any, Callable, Generator, Iterable, Literal, Sequence, Type, cast, overload
 
@@ -101,64 +100,6 @@ class ConfigItemState(metaclass = ABCMeta):
     return hash(self.hash())
 
 
-type ConfigItemToInstall[T: ManagedConfigItem, S: ConfigItemState] = tuple[T, S | None, S]
-type ConfigItemToUninstall[T: ManagedConfigItem, S: ConfigItemState] = tuple[T, S | None]
-
-
-class ExecutionPlan:
-  installs: Sequence[ManagedConfigItem]
-  updates: Sequence[ManagedConfigItem]
-  removes: Sequence[ManagedConfigItem]
-  execute: Callable[[], None]
-  description: str
-  info: list[str]
-
-  def __init__(
-    self,
-    description: str,
-    execute: Callable[[], None],
-    info: list[str] | str | None = None,
-    installs: Sequence[ManagedConfigItem] | None = None,
-    updates: Sequence[ManagedConfigItem] | None = None,
-    removes: Sequence[ManagedConfigItem] | None = None,
-  ):
-    self.installs = installs or []
-    self.updates = updates or []
-    self.removes = removes or []
-    self.description = description
-    self.execute = execute
-    self.info = [info] if isinstance(info, str) else (info or [])
-
-  def hash(self) -> str:
-    sha256_hash = sha256()
-    sha256_hash.update(self.description.encode())
-    for info in self.info:
-      sha256_hash.update(info.encode())
-    for item in self.installs:
-      sha256_hash.update(f"installs:{item.identifier()}".encode())
-    for item in self.updates:
-      sha256_hash.update(f"updates:{item.identifier()}".encode())
-    for item in self.removes:
-      sha256_hash.update(f"removes:{item.identifier()}".encode())
-    return sha256_hash.hexdigest()
-
-
-class ItemToInstall[T: ManagedConfigItem, S: ConfigItemState]:
-  def __init__(self, item: T, state_current: Callable[[], S | None], state_target: Callable[[], S]):
-    self.item = item
-    self.state_target = state_target
-    self.state_current = state_current
-
-  def states(self) -> tuple[S | None, S]:
-    return self.state_current(), self.state_target()
-
-
-class ItemToUninstall[T: ManagedConfigItem, S: ConfigItemState]:
-  def __init__(self, item: T, state_current: Callable[[], S | None]):
-    self.item = item
-    self.state_current = state_current
-
-
 class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMeta):
   managed_classes: list[Type] = []
   order_in_cleanup_phase: Literal["reverse_install_order", "first", "last"] = "reverse_install_order"
@@ -187,7 +128,7 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     pass
 
   def states(self, item: T, model: ConfigModel, dryrun: bool) -> tuple[S | None, S | None]:
-    """Convenience method to get both current and target state of an item"""
+    """Convenience method to get both current and target state of an item."""
     return self.state_current(item), self.state_target(item, model, dryrun)
 
   @abstractmethod
@@ -202,27 +143,62 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     Returned ExecutionPlans will immediately be executed."""
     pass
 
-  @abstractmethod
-  def finalize(self, model: ConfigModel):
+  def initialize(self, model: ConfigModel, dryrun: bool):
+    pass
+
+  def finalize(self, model: ConfigModel, dryrun: bool):
     """Called at the end of a successful run. This method is primarily used to synchronise internal persistent
     state with the model (e.g. the list of koti-managed files currently installed on the system)."""
     pass
 
 
-class ConfigModel:
-  managers: Sequence[ConfigManager]
-  phases: Sequence[InstallPhase]
-  tags_archive: dict[str, set[str]]
+class ExecutionPlan:
+  """Represents an executable action to update one or multiple ManagedConfigItems on the system."""
+  installs: Sequence[ManagedConfigItem]
+  updates: Sequence[ManagedConfigItem]
+  removes: Sequence[ManagedConfigItem]
+  execute: Callable[[], None]
+  description: str
+  additional_info: list[str]
 
   def __init__(
     self,
-    managers: Sequence[ConfigManager],
-    phases: Sequence[InstallPhase],
-    tags_archive: dict[str, set[str]],
+    description: str,
+    execute: Callable[[], None],
+    additional_info: list[str] | str | None = None,
+    installs: Sequence[ManagedConfigItem] | None = None,
+    updates: Sequence[ManagedConfigItem] | None = None,
+    removes: Sequence[ManagedConfigItem] | None = None,
   ):
+    self.installs = installs or []
+    self.updates = updates or []
+    self.removes = removes or []
+    self.description = description
+    self.execute = execute
+    self.additional_info = [additional_info] if isinstance(additional_info, str) else (additional_info or [])
+
+  def hash(self) -> str:
+    sha256_hash = sha256()
+    sha256_hash.update(self.description.encode())
+    for info in self.additional_info:
+      sha256_hash.update(info.encode())
+    for item in self.installs:
+      sha256_hash.update(f"installs:{item.identifier()}".encode())
+    for item in self.updates:
+      sha256_hash.update(f"updates:{item.identifier()}".encode())
+    for item in self.removes:
+      sha256_hash.update(f"removes:{item.identifier()}".encode())
+    return sha256_hash.hexdigest()
+
+
+class ConfigModel:
+  """Models the target system state and all phases for installation and cleanup during the koti run."""
+  managers: Sequence[ConfigManager]
+  phases: Sequence[InstallPhase]
+
+  def __init__(self, managers: Sequence[ConfigManager], phases: Sequence[InstallPhase]):
     self.managers = managers
     self.phases = phases
-    self.tags_archive = tags_archive
 
   @overload
   def item[T: ConfigItem](self, reference: T) -> T:
@@ -266,17 +242,6 @@ class ConfigModel:
       if reference.__class__ in manager.managed_classes:
         return manager
     raise AssertionError(f"manager not found for {reference.identifier()}")
-
-  def tags(self, *args: ManagedConfigItem) -> set[str]:
-    return reduce(lambda a, b: a.union(b), (self.__tags(arg) for arg in args), set())
-
-  def __tags(self, arg: ManagedConfigItem) -> set[str]:
-    if arg.tags:
-      return arg.tags
-    item = self.item(arg, optional = True)
-    if item is not None:
-      return item.tags
-    return self.tags_archive.get(arg.identifier(), set())
 
 
 class InstallPhase:
