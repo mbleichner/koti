@@ -113,7 +113,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       if updates:
         yield Action(
           updates = [item],
-          description = f"update file content: {item.filename}",
+          description = f"update file: {item.filename}",
           additional_info = updates,
           execute = lambda: self.create_or_update_file(item, current, target, register_file),
         )

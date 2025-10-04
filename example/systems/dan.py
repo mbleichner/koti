@@ -46,18 +46,17 @@ def dan() -> Generator[ConfigGroup | None]:
       Package("nvidia-open-dkms"),
       Package("nvidia-settings"),
 
-      # moep
-      Package("python-flask"),
-      Package("python-bottle"),
-      Package("python-numpy"),
-      Package("python-steam"),
-      Package("python-tests"),
-      Package("python-mock"),
-      Package("python-mock"),
+      # Package("python-flask"),
+      # Package("python-bottle"),
+      # Package("python-numpy"),
+      # Package("python-steam"),
+      # Package("python-tests"),
+      # Package("python-mock"),
+      # Package("python-mock"),
 
       GroupAssignment("manuel", "docker"),
       File("/tmp/test", permissions = "r--", content = cleandoc('''
-        moep moep
+        moep moep moep
       ''')),
 
       PostHook("moep hook 1", execute = lambda: shell("echo moep 1"), trigger = File("/tmp/test")),
