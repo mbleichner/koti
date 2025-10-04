@@ -127,13 +127,13 @@ class Koti:
     for phase_idx, phase in enumerate(model.phases):
       for install_step in phase.steps:
         for action in install_step.manager.plan_install(install_step.items_to_install, model, dryrun):
-          self.execute_plan(action, plan)
+          self.execute_action(action, plan)
 
     # execute cleanup phase
     cleanup_phase = self.create_cleanup_phase(model)
     for cleanup_step in cleanup_phase.steps:
       for action in cleanup_step.manager.plan_cleanup(cleanup_step.items_to_keep, model, dryrun):
-        self.execute_plan(action, plan)
+        self.execute_action(action, plan)
 
     # updating persistent data
     for manager in self.managers:
@@ -148,7 +148,7 @@ class Koti:
       for message in set(logger.messages):
         printc(f"- {message}")
 
-  def execute_plan(self, action: Action, plan: ExecutionPlan):
+  def execute_action(self, action: Action, plan: ExecutionPlan):
     try:
       shell_module.verbose_mode = True
       self.print_divider_line()
@@ -156,7 +156,7 @@ class Koti:
       for info in action.additional_info:
         printc(f"{info}")
       if action not in plan.expected_actions:
-        confirm("This action was not predicted during planning phase - please confirm to continue")
+        confirm("this action was not predicted during planning phase - please confirm to continue")
       action.execute()
       sleep(0.1)  # add a small delay so it's easier to follow when a lot of actions happen
     finally:
