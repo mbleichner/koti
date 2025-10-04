@@ -4,16 +4,21 @@ from modules.desktop import desktop
 from modules.fish import fish
 from modules.gaming import gaming
 from modules.systray import systray
+"""
 
+wget https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-basic.qcow2
+create file: archlinux.conf:
+  guest_os="linux"
+  disk_img="Arch-Linux-x86_64-basic.qcow2"
+quickemu --vm archlinux.conf
+ssh arch@localhost -p 22220
+  (can take a while until the ssh server is up; password is "arch")
+sudo pacman -Syu git base-devel python python-urllib3
+git clone https://github.com/mbleichner/koti.git && cd koti/example
+git pull --rebase; sudo PYTHONPATH=/home/arch/koti/src ./koti-apply
 
-# wget https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-basic.qcow2
-# quickemu --vm archlinux-latest.conf --display spice
-# > Login: arch/arch
-# ssh arch@localhost -p 22220
-# sudo pacman -Syu git base-devel
-# git clone https://github.com/mbleichner/koti.git
-# cd /home/arch/koti/example
-# git pull --rebase; sudo PYTHONPATH=/home/arch/koti/src ./koti-apply
+"""
+
 
 # Configuration for my Lenovo X13 laptop
 def quickemu() -> Generator[ConfigGroup | None]:

@@ -76,13 +76,12 @@ def base() -> Generator[ConfigGroup]:
   )
 
   yield ConfigGroup(
-    description = "bootstrap (user, sudo, pacman, paru)",
+    description = "bootstrap user and permissions",
     tags = ["bootstrap"],
     before = lambda item: isinstance(item, Package) and not "bootstrap" in item.tags,
     provides = [
       User(username = "manuel", home = "/home/manuel", shell = "/usr/bin/fish"),
       GroupAssignment("manuel", "wheel"),
-
       Package("sudo"),
       File("/etc/sudoers", permissions = "r--", content = cleandoc('''
         Defaults!/usr/bin/visudo env_keep += "SUDO_EDITOR EDITOR VISUAL"
@@ -106,7 +105,15 @@ def base() -> Generator[ConfigGroup]:
         manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/paccache *
         manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/checkservices *
       ''')),
+    ]
+  )
 
+  yield ConfigGroup(
+    description = "bootstrap pacman and paru",
+    tags = ["bootstrap"],
+    before = lambda item: isinstance(item, Package) and not "bootstrap" in item.tags,
+    requires = [User("manuel")],
+    provides = [
       PacmanKey("F3B607488DB35A47"),  # CachyOS
       Package("cachyos-keyring", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst"),
       Package("cachyos-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst"),
