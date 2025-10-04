@@ -94,28 +94,28 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     if additional_explicit_items:
       yield Action(
         updates = additional_explicit_items,
-        description = f"{GREEN}mark package(s) explicitly installed: {", ".join([item.name for item in additional_explicit_items])}",
+        description = f"mark package(s) explicitly installed: {", ".join([item.name for item in additional_explicit_items])}",
         execute = lambda: self.mark_explicit(additional_explicit_items)
       )
 
     for item in additional_items_from_script:
       yield Action(
         installs = additional_items_from_urls,
-        description = f"{GREEN}install {len(additional_items_from_urls)} package from script: {item.name}",
+        description = f"install {len(additional_items_from_urls)} package from script: {item.name}",
         execute = lambda: self.install_from_script(item)
       )
 
     if additional_items_from_urls:
       yield Action(
         installs = additional_items_from_urls,
-        description = f"{GREEN}install package(s) from URL(s): {", ".join([item.url for item in additional_items_from_urls if item.url])}",
+        description = f"install package(s) from URL(s): {", ".join([item.url for item in additional_items_from_urls if item.url])}",
         execute = lambda: self.install_from_url(additional_items_from_urls)
       )
 
     if additional_items_from_repo:
       yield Action(
         installs = additional_items_from_repo,
-        description = f"{GREEN}install package(s): {" ".join([item.name for item in additional_items_from_repo])}",
+        description = f"install package(s): {" ".join([item.name for item in additional_items_from_repo])}",
         execute = lambda: self.install_from_repo(additional_items_from_repo)
       )
 
@@ -148,12 +148,12 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     if items_to_remove:
       yield Action(
         removes = items_to_remove,
-        description = f"{RED}mark package(s) non-explicitly installed: {", ".join([item.name for item in items_to_remove])}",
+        description = f"mark package(s) non-explicitly installed: {", ".join([item.name for item in items_to_remove])}",
         execute = lambda: self.mark_dependency(items_to_remove)
       )
 
     yield Action(
-      description = f"{RED}prune unneeded packages",
+      description = f"prune unneeded packages",
       additional_info = f"pacman will ask before actually deleting any packages",
       execute = lambda: self.pacman_prune_unneeded(),
     )
@@ -217,7 +217,7 @@ class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
         continue
       yield Action(
         installs = [item],
-        description = f"{GREEN}install pacman-key {item.key_id} from {item.key_server}",
+        description = f"install pacman-key {item.key_id} from {item.key_server}",
         execute = lambda: self.add_key(item),
       )
 

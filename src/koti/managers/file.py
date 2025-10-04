@@ -102,7 +102,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       if current is None:
         yield Action(
           installs = [item],
-          description = f"{GREEN}create new file: {item.filename}",
+          description = f"create new file: {item.filename}",
           additional_info = f"uid = {target.uid}, gid = {target.gid}, mode = {oct(target.mode)}",
           execute = lambda: self.create_or_update_file(item, target, register_file),
         )
@@ -115,7 +115,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
           os.chmod(fh.name, mode = target.mode)
         yield Action(
           updates = [item],
-          description = f"{YELLOW}update file content: {item.filename}",
+          description = f"update file content: {item.filename}",
           additional_info = [
             f"filesize {len(current.content)} => {len(target.content)} bytes",
             f"preview changes: diff '{item.filename}' '{tmpfile}'",
@@ -126,7 +126,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       if current is not None and (current.uid != target.uid or current.gid != target.gid):
         yield Action(
           updates = [item],
-          description = f"{YELLOW}update file ownership: {item.filename}",
+          description = f"update file ownership: {item.filename}",
           additional_info = f"uid {current.uid} => {target.uid}, gid {current.gid} => {target.gid}",
           execute = lambda: self.fix_file_owner(item, target, register_file),
         )
@@ -134,7 +134,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       if current is not None and current.mode != target.mode:
         yield Action(
           updates = [item],
-          description = f"{YELLOW}update file permissions: {item.filename}",
+          description = f"update file permissions: {item.filename}",
           additional_info = f"mode {oct(current.mode)} => {oct(target.mode)}",
           execute = lambda: self.fix_file_mode(item, target, register_file),
         )
@@ -160,7 +160,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         yield Action(
           removes = [orphan_file],
           updates = [item],
-          description = f"{RED}remove orphan file {filename}",
+          description = f"remove orphan file {filename}",
           additional_info = "leftover empty directories will also be removed",
           execute = lambda: self.remove_orphaned_file_and_clean_leftover_dirs(orphan_file, item),
         )
@@ -187,7 +187,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         continue
       yield Action(
         removes = [item],
-        description = f"{RED}delete file: {item.filename}",
+        description = f"delete file: {item.filename}",
         execute = lambda: self.delete_file(item)
       )
 
@@ -203,7 +203,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         continue
       yield Action(
         removes = [item],
-        description = f"{RED}delete directory: {item.dirname}",
+        description = f"delete directory: {item.dirname}",
         execute = lambda: self.delete_dir(item),
       )
 

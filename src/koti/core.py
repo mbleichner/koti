@@ -63,14 +63,14 @@ class Koti:
     items_total = [item for phase in model.phases for step in phase.steps for item in step.items_to_install]
     for phase in model.phases:
       for install_step in phase.steps:
-        for plan in install_step.manager.plan_install(install_step.items_to_install, model, dryrun):
-          actions.append(plan)
+        for action in install_step.manager.plan_install(install_step.items_to_install, model, dryrun):
+          actions.append(action)
 
     # collect actions during  cleanup phase
     cleanup_phase = self.create_cleanup_phase(model)
     for cleanup_step in cleanup_phase.steps:
-      for plan in cleanup_step.manager.plan_cleanup(cleanup_step.items_to_keep, model, dryrun):
-        actions.append(plan)
+      for action in cleanup_step.manager.plan_cleanup(cleanup_step.items_to_keep, model, dryrun):
+        actions.append(action)
 
     for manager in self.managers:
       manager.finalize(model, dryrun)
@@ -81,12 +81,12 @@ class Koti:
         printc(f"{BOLD}Phase {phase_idx + 1}:")
         if groups:
           for group in phase.groups:
-            prefix = self.get_change_prefix(actions, *(item for item in group.provides if isinstance(item, ManagedConfigItem)))
+            prefix = self.prefix_for_item(actions, *(item for item in group.provides if isinstance(item, ManagedConfigItem)))
             printc(f"{prefix} {group.description}")
         if items:
           for install_step in phase.steps:
             for item in install_step.items_to_install:
-              prefix = self.get_change_prefix(actions, item)
+              prefix = self.prefix_for_item(actions, item)
               printc(f"{prefix} {item}")
         print()
 
@@ -103,9 +103,9 @@ class Koti:
     # list all changed items
     if len(actions) > 0:
       printc(f"{BOLD}Actions that will be executed (in order):")
-      for plan in actions:
-        printc(f"- {plan.description}")
-        for info in plan.additional_info:
+      for action in actions:
+        printc(f"- {self.color_for_action(action)}{action.description}")
+        for info in action.additional_info:
           printc(f"  {info}")
       print()
 
@@ -151,7 +151,7 @@ class Koti:
     try:
       shell_module.verbose_mode = True
       self.print_divider_line()
-      printc(f"executing: {action.description}")
+      printc(f"executing: {self.color_for_action(action)}{action.description}")
       for info in action.additional_info:
         printc(f"{info}")
       if action not in plan.expected_actions:
@@ -314,14 +314,25 @@ class Koti:
     return None
 
   @classmethod
-  def get_change_prefix(cls, plans: Sequence[Action], *items: ManagedConfigItem) -> str:
+  def prefix_for_item(cls, actions: Sequence[Action], *items: ManagedConfigItem) -> str:
     changes: set[Literal["install", "update", "remove"]] = set()
     for item in items:
-      for plan in plans:
-        if item in plan.installs: changes.add("install")
-        if item in plan.updates: changes.add("update")
-        if item in plan.removes: changes.add("remove")
+      for action in actions:
+        if item in action.installs: changes.add("install")
+        if item in action.updates: changes.add("update")
+        if item in action.removes: changes.add("remove")
     if "remove" in changes: return f"{RED}~"
     if "update" in changes: return f"{YELLOW}~"
     if "install" in changes: return f"{GREEN}~"
     return "-"
+
+  @classmethod
+  def color_for_action(cls, action: Action) -> str:
+    if action.removes:
+      return RED
+    elif action.updates:
+      return YELLOW
+    elif action.installs:
+      return GREEN
+    else:
+      return CYAN

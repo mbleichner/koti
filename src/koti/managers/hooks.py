@@ -89,13 +89,13 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
       if current is None:
         yield Action(
           installs = [hook],
-          description = f"{GREEN}execute hook '{hook.name}' for the first time",
+          description = f"execute hook '{hook.name}' for the first time",
           execute = lambda: self.execute_hook(hook, target),
         )
       else:
         yield Action(
           updates = [hook],
-          description = f"{YELLOW}execute hook '{hook.name}' because of updated dependencies",
+          description = f"execute hook '{hook.name}' because of updated dependencies",
           execute = lambda: self.execute_hook(hook, target),
         )
 
@@ -106,7 +106,7 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
         continue
       yield Action(
         removes = [hook],
-        description = f"{RED}hook will no longer be tracked: {hook.name}",
+        description = f"hook will no longer be tracked: {hook.name}",
         execute = lambda: self.unregister_hook(hook)
       )
 

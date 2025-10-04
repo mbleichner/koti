@@ -74,13 +74,13 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
         if not already_installed:
           yield Action(
             installs = [repo_item],
-            description = f"{GREEN}install flatpak repo",
+            description = f"install flatpak repo",
             execute = lambda: self.update_remote(repo_item, remove_existing = False),
           )
         else:
           yield Action(
             updates = [repo_item],
-            description = f"{YELLOW}update flatpak repo",
+            description = f"update flatpak repo",
             execute = lambda: self.update_remote(repo_item, remove_existing = True),
           )
 
@@ -94,7 +94,7 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
       if items_to_install:
         yield Action(
           installs = items_to_install,
-          description = f"{GREEN}install flatpak(s): {", ".join(item.id for item in items_to_install)}",
+          description = f"install flatpak(s): {", ".join(item.id for item in items_to_install)}",
           execute = lambda: shell(f"flatpak install {" ".join(item.id for item in items_to_install)}"),
         )
 
@@ -109,7 +109,7 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     if packages_to_remove:
       yield Action(
         removes = packages_to_remove,
-        description = f"{RED}uninstall flatpak(s): {", ".join(item.id for item in packages_to_remove)}",
+        description = f"uninstall flatpak(s): {", ".join(item.id for item in packages_to_remove)}",
         execute = lambda: shell(f"flatpak uninstall {" ".join(item.id for item in packages_to_remove)}"),
       )
 
@@ -118,12 +118,12 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     for item in repos_to_remove:
       yield Action(
         removes = [item],
-        description = f"{RED}uninstall flatpak remote: {item.name}",
+        description = f"uninstall flatpak remote: {item.name}",
         execute = lambda: shell(f"flatpak remote-delete --force '{item.name}'"),
       )
 
     yield Action(
-      description = f"{RED}prune unneeded flatpaks",
+      description = f"prune unneeded flatpaks",
       additional_info = "flatpak will ask before actually deleting any packages",
       execute = lambda: shell(f"flatpak uninstall --unused"),
     )

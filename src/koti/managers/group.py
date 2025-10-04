@@ -44,7 +44,7 @@ class GroupManager(ConfigManager[GroupAssignment, GroupAssignmentState]):
         continue
       yield Action(
         installs = [item],
-        description = f"{GREEN}assign user {item.username} to group {item.group}",
+        description = f"assign user {item.username} to group {item.group}",
         execute = lambda: self.assign_group(item),
       )
 
@@ -54,7 +54,7 @@ class GroupManager(ConfigManager[GroupAssignment, GroupAssignmentState]):
         continue
       yield Action(
         removes = [item],
-        description = f"{RED}unassign {item.username} from group {item.group}",
+        description = f"unassign {item.username} from group {item.group}",
         execute = lambda: self.unassign_group(item),
       )
 
