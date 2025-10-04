@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from inspect import cleandoc
 from subprocess import CalledProcessError, Popen, run
 from os import environ
 
@@ -8,7 +9,10 @@ verbose_mode: bool = False
 
 def shell(command: str, check: bool = True, executable: str = "/bin/sh", user: str | None = None):
   if verbose_mode:
-    print(f"$ {command}")
+    lines = cleandoc(command).split("\n")
+    for idx, line in enumerate(lines):
+      prefix = "$" if idx == 0 else " "
+      print(f"{prefix} {line}")
   with Popen(
     command,
     shell = True,

@@ -13,7 +13,7 @@ def printc(line: str):
 
 def strip_colors(line: str) -> str:
   result = line
-  for x in [BLUE, PURPLE, GREEN, YELLOW, RED, BOLD, UNDERLINE, ENDC]:
+  for x in [BLUE, PURPLE, GREEN, YELLOW, RED, BOLD, ENDC]:
     result = result.replace(x, "")
   return result
 
