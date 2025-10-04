@@ -5,7 +5,7 @@ from koti import *
 from koti.utils.shell import shell
 
 
-def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
+def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGroup]:
   yield ConfigGroup(
     description = "optional dependencies for desktop",
     provides = [
@@ -54,7 +54,7 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
       Package("wine"),
       Package("chromium"),
       Package("google-chrome"),
-      Package("ttf-ms-win10-auto"),  # Das win11 Package war zuletzt broken
+      Package("ttf-ms-win10-auto") if ms_fonts else None,  # Das win11 Package war zuletzt broken
       Package("noto-fonts-emoji"),
       Package("pycharm-community-edition"),
       Package("libva-utils"),

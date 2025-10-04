@@ -13,14 +13,14 @@ from modules.systray import systray
 # sudo pacman -Syu git base-devel
 # git clone https://github.com/mbleichner/koti.git
 # cd /home/arch/koti/example
-# sudo PYTHONPATH=/home/arch/koti/src ./koti-apply
+# git pull --rebase; sudo PYTHONPATH=/home/arch/koti/src ./koti-apply
 
 # Configuration for my Lenovo X13 laptop
 def quickemu() -> Generator[ConfigGroup | None]:
   yield from base()
   yield from swapfile(size_gb = 1)
   yield from fish()
-  yield from desktop(nvidia = False, autologin = True)
+  yield from desktop(nvidia = False, autologin = True, ms_fonts = False)
   yield from systray(ryzen = True, nvidia = False)
   yield from gaming()
 

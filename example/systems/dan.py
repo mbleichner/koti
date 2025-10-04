@@ -24,7 +24,7 @@ def dan() -> Generator[ConfigGroup | None]:
   yield from kernel_cachyos(sortkey = 1)
   yield from kernel_stock(sortkey = 2)
   yield from fish()
-  yield from desktop(nvidia = True, autologin = True)
+  yield from desktop(nvidia = True, autologin = True, ms_fonts = True)
   yield from systray(ryzen = True, nvidia = True)
   yield from gaming()
   yield from nvme_thermal_throttling()

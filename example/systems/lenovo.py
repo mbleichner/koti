@@ -21,7 +21,7 @@ def lenovo() -> Generator[ConfigGroup | None]:
   yield from kernel_cachyos(sortkey = 1)
   yield from kernel_stock(sortkey = 2)
   yield from fish()
-  yield from desktop(nvidia = False, autologin = True)
+  yield from desktop(nvidia = False, autologin = True, ms_fonts = True)
   yield from systray(ryzen = True, nvidia = False)
   yield from gaming()
   # yield from ollama_aichat(cuda = False)
