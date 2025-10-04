@@ -154,7 +154,7 @@ class Koti:
       printc(f"executing: {action.description}")
       for info in action.additional_info:
         printc(f"{info}")
-      if action.hash() not in plan.expected_actions_hashes:
+      if action not in plan.expected_actions:
         confirm("This action was not predicted during planning phase - please confirm to continue")
       action.execute()
     finally:

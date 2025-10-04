@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from hashlib import sha256
 from typing import Any, Callable, Generator, Iterable, Literal, Sequence, Type, cast, overload
 
 
@@ -156,6 +155,7 @@ class Action:
   execute: Callable[[], None]
   description: str
   additional_info: list[str]
+  hash: str
 
   def __init__(
     self,
@@ -173,29 +173,23 @@ class Action:
     self.execute = execute
     self.additional_info = [additional_info] if isinstance(additional_info, str) else (additional_info or [])
 
-  def hash(self) -> str:
-    sha256_hash = sha256()
-    sha256_hash.update(self.description.encode())
-    for info in self.additional_info:
-      sha256_hash.update(info.encode())
-    for item in self.installs:
-      sha256_hash.update(f"installs:{item.identifier()}".encode())
-    for item in self.updates:
-      sha256_hash.update(f"updates:{item.identifier()}".encode())
-    for item in self.removes:
-      sha256_hash.update(f"removes:{item.identifier()}".encode())
-    return sha256_hash.hexdigest()
+  def __tuple(self):
+    return self.description, self.additional_info, self.installs, self.updates, self.removes
+
+  def __hash__(self) -> int:
+    return hash(self.__tuple())
+
+  def __eq__(self, other) -> bool:
+    return self.__tuple() == other.__tuple() if isinstance(other, Action) else False
 
 
 class ExecutionPlan:
   model: ConfigModel
   expected_actions: Sequence[Action]
-  expected_actions_hashes: set[str]
 
   def __init__(self, model: ConfigModel, actions: Sequence[Action]):
     self.model = model
     self.expected_actions = actions
-    self.expected_actions_hashes = {action.hash() for action in actions}
 
 
 class ConfigModel:
