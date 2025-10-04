@@ -53,6 +53,7 @@ def dan() -> Generator[ConfigGroup | None]:
       Package("python-steam"),
       Package("python-tests"),
       Package("python-mock"),
+      Package("python-mock"),
 
       GroupAssignment("manuel", "docker"),
       File("/tmp/test", permissions = "r--", content = cleandoc('''

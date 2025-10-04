@@ -10,13 +10,13 @@
 from socket import gethostname
 
 from koti import *
-from systems import dan, distrobox, lenovo, mserver
+from systems import dan, lenovo, mserver, quickemu
 
 my_arch_systems = {
-  "dan":       dan(),  # ......... DAN A4-SFX desktop PC
-  "lenovo":    lenovo(),  # ...... Lenovo X13 laptop
-  "mserver":   mserver(),  # ..... Homelab server
-  "distrobox": distrobox(),  # ... koti testing
+  "dan":       dan(),  # ........ DAN A4-SFX desktop PC
+  "lenovo":    lenovo(),  # ..... Lenovo X13 laptop
+  "mserver":   mserver(),  # .... Homelab server
+  "archlinux": quickemu(),  # ... koti testing
 }
 
 koti = Koti(
