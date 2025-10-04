@@ -1,15 +1,10 @@
-from inspect import cleandoc
-from typing import Generator
-
 from koti import *
 from modules.base import base, swapfile
-from modules.cpufreq import cpufreq, throttle_after_boot
 from modules.desktop import desktop
 from modules.fish import fish
 from modules.gaming import gaming
-from modules.kernel import kernel_cachyos, kernel_stock
-from modules.networking import network_manager
 from modules.systray import systray
+
 
 # wget https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-basic.qcow2
 # quickemu --vm archlinux-latest.conf --display spice
@@ -23,7 +18,7 @@ from modules.systray import systray
 # Configuration for my Lenovo X13 laptop
 def quickemu() -> Generator[ConfigGroup | None]:
   yield from base()
-  yield from swapfile(1)
+  yield from swapfile(size_gb = 1)
   yield from fish()
   yield from desktop(nvidia = False, autologin = True)
   yield from systray(ryzen = True, nvidia = False)
@@ -36,5 +31,6 @@ def quickemu() -> Generator[ConfigGroup | None]:
       Package("linux-firmware-other"),
       Package("linux-firmware-intel"),
       Package("linux-firmware-nvidia"),
+      Package("grub"),
     ]
   )

@@ -63,7 +63,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
       if items_to_activate_for_user:
         yield Action(
           installs = items_to_activate_for_user,
-          description = f"enable systemd unit(s)",
+          description = f"enable systemd unit(s) {", ".join([item.name for item in items_to_activate_for_user])}",
           execute = lambda: self.activate_units(username, items_to_activate_for_user),
         )
 
@@ -79,7 +79,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
         continue
       yield Action(
         removes = items_to_deactivate_for_user,
-        description = f"disable systemd unit(s) {" ".join([item.name for item in items_to_deactivate_for_user])}",
+        description = f"disable systemd unit(s) {", ".join([item.name for item in items_to_deactivate_for_user])}",
         execute = lambda: self.deactivate_units(username, items_to_deactivate_for_user),
       )
 

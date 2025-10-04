@@ -78,28 +78,28 @@ class UserManager(ConfigManager[User, UserState]):
       if current is None:
         yield Action(
           installs = [user],
-          description = f"create new user",
+          description = f"create new user {user.username}",
           execute = lambda: self.create_user(user, target),
         )
 
       if current is not None and current.shell != target.shell:
         yield Action(
           updates = [user],
-          description = f"update user shell",
+          description = f"update shell of user {user.username} to {user.shell}",
           execute = lambda: self.fix_user_shell(user, target),
         )
 
       if current is not None and current.home_dir != target.home_dir:
         yield Action(
           updates = [user],
-          description = f"update user homedir",
+          description = f"update homedir of user {user.username} to {target.home_dir}",
           execute = lambda: self.fix_user_home(user, target),
         )
 
       if current is not None and not current.home_exists:
         yield Action(
           updates = [user],
-          description = f"create user homedir",
+          description = f"create homedir for user {user.username} in {target.home_dir}",
           additional_info = target.home_dir,
           execute = lambda: self.create_user_home(user, target),
         )
@@ -111,7 +111,7 @@ class UserManager(ConfigManager[User, UserState]):
         continue
       yield Action(
         removes = [user],
-        description = f"user will be deleted",
+        description = f"delete user {user.username}",
         execute = lambda: self.delete_user(user),
       )
 
