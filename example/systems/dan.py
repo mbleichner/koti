@@ -1,7 +1,6 @@
 from inspect import cleandoc
 
 from koti import *
-from koti.utils.shell import shell
 from modules.base import base, swapfile
 from modules.cpufreq import cpufreq, throttle_after_boot
 from modules.desktop import desktop
@@ -46,22 +45,6 @@ def dan() -> Generator[ConfigGroup | None]:
       Package("nvidia-open-dkms"),
       Package("nvidia-settings"),
 
-      # Package("python-flask"),
-      # Package("python-bottle"),
-      # Package("python-numpy"),
-      # Package("python-steam"),
-      # Package("python-tests"),
-      # Package("python-mock"),
-      # Package("python-mock"),
-
-      GroupAssignment("manuel", "docker"),
-      File("/tmp/test", content = cleandoc('''
-        moep moep moep
-      ''')),
-
-      PostHook("moep hook 1", execute = lambda: shell("echo moep 1"), trigger = File("/tmp/test")),
-      PostHook("moep hook 2", execute = lambda: shell("echo moep 2"), trigger = PostHook("moep hook 1")),
-
       File("/etc/fstab", content = cleandoc('''
         UUID=3409a847-0bd6-43e4-96fd-6e8be4e3c58d  /             ext4  rw,noatime 0 1
         UUID=AF4E-18BD                             /boot         vfat  rw,defaults 0 2
@@ -73,13 +56,28 @@ def dan() -> Generator[ConfigGroup | None]:
   )
 
   yield ConfigGroup(
-    description = "homeoffice stuff",
+    description = "stuff for koti testing",
     provides = [
-      Package("linphone-desktop-appimage"),
-      Package("microsoft-edge-stable-bin"),
+      Package("quickemu-git"),
+
+      # Package("python-flask"),
+      # Package("python-bottle"),
+
+      # File("/tmp/test", content = "moep moep moep"),
+      # PostHook("moep hook 1", execute = lambda: shell("echo moep 1"), trigger = File("/tmp/test")),
+      # PostHook("moep hook 2", execute = lambda: shell("echo moep 2"), trigger = PostHook("moep hook 1")),
+
       # Package("flatpak"),
       # FlatpakRepo("flathub", spec_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"),
       # FlatpakPackage("com.discordapp.Discord"),
       # FlatpakPackage("us.zoom.Zoom"),
+    ]
+  )
+
+  yield ConfigGroup(
+    description = "homeoffice stuff",
+    provides = [
+      Package("linphone-desktop-appimage"),
+      Package("microsoft-edge-stable-bin"),
     ]
   )

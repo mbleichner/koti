@@ -72,10 +72,8 @@ def mserver() -> Generator[ConfigGroup | None]:
 
   yield ConfigGroup(
     description = "docker and services",
+    requires = [User("manuel")],
     provides = [
-      Package("docker"),
-      Package("docker-compose"),
-      Package("containerd"),
       SystemdUnit("docker.service"),
       GroupAssignment("manuel", "docker"),
 

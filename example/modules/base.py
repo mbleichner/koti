@@ -6,76 +6,6 @@ from koti.utils.shell import shell
 
 def base() -> Generator[ConfigGroup]:
   yield ConfigGroup(
-    description = "base packages needed on every system",
-    provides = [
-      Package("efibootmgr"),
-      Package("base"),
-      Package("terminus-font"),
-      Package("ca-certificates"),
-      Package("ca-certificates-mozilla"),
-
-      # Command Line Utilities
-      Package("nano"),
-      Package("less"),
-      Package("bat"),
-      Package("moreutils"),  # enthält sponge
-      Package("jq"),
-      Package("man-db"),
-      Package("man-pages"),
-      Package("tealdeer"),
-      Package("unrar"),
-      Package("zip"),
-      Package("unzip"),
-      Package("7zip"),
-      Package("yazi"),
-      Package("zoxide"),
-
-      # Monitoring + Analyse
-      Package("btop"),
-      Package("htop"),
-      Package("iotop"),
-      Package("ncdu"),
-      Package("bandwhich"),
-      Package("nload"),
-
-      # Development und Libraries
-      Package("git"),
-      Package("git-lfs"),
-      Package("tig"),
-      Package("python"),
-      Package("pyenv"),
-
-      # Networking
-      Package("bind"),
-      Package("openbsd-netcat"),
-      Package("traceroute"),
-      Package("wireguard-tools"),
-      Package("wget"),
-      Package("ethtool"),
-      Package("tcpdump"),
-
-      # Hardware Utilities
-      Package("cpupower"),
-      Package("bluez-utils"),
-      Package("fwupd"),
-
-      # Dateisysteme
-      Package("gparted"),
-      Package("ntfs-3g"),
-      Package("dosfstools"),
-
-      # Alternatives
-      Package("zlib-ng"),
-      Package("zlib-ng-compat"),
-
-      SystemdUnit("systemd-timesyncd.service"),
-      SystemdUnit("systemd-boot-update.service"),
-      SystemdUnit("fstrim.timer"),
-      SystemdUnit("fwupd.service"),
-    ]
-  )
-
-  yield ConfigGroup(
     description = "bootstrap user and permissions",
     tags = ["bootstrap"],
     before = lambda item: isinstance(item, Package) and not "bootstrap" in item.tags,
@@ -187,17 +117,6 @@ def base() -> Generator[ConfigGroup]:
         CombinedUpgrade
         CleanAfter
       ''')),
-    ]
-  )
-
-  yield ConfigGroup(
-    description = "pacman related utilities",
-    provides = [
-      Package("pacman-contrib"),
-      Package("pacutils"),
-      Package("base-devel"),
-      Package("reflector"),
-      Package("lostfiles"),
 
       File("/etc/pacman.d/hooks/nvidia.hook", content = cleandoc('''
         [Trigger]
@@ -206,7 +125,7 @@ def base() -> Generator[ConfigGroup]:
         Operation=Remove
         Type=Package
         Target=nvidia-open
-  
+    
         [Action]
         Description=Updating NVIDIA module in initcpio
         Depends=mkinitcpio
@@ -214,59 +133,91 @@ def base() -> Generator[ConfigGroup]:
         NeedsTargets
         Exec=/usr/bin/mkinitcpio -P
       ''')),
-
-      File("/etc/xdg/reflector/reflector.conf", content = cleandoc('''
-        --save /etc/pacman.d/mirrorlist
-        --protocol https
-        --country France,Germany,Switzerland
-        --latest 5
-        --sort delay
-      ''')),
-
-      PostHook(
-        name = "reflector: update mirrorlist",
-        trigger = File("/etc/xdg/reflector/reflector.conf"),
-        execute = lambda: shell("systemctl start reflector"),
-      ),
     ]
   )
 
   yield ConfigGroup(
-    description = "tools for koti development",
+    description = "base packages and configs needed on every system",
     provides = [
+      Package("base"),
+      Package("base-devel"),
+      Package("efibootmgr"),
+      Package("terminus-font"),
+      Package("ca-certificates"),
+      Package("ca-certificates-mozilla"),
+
+      # Command Line Utilities
+      Package("nano"),
+      Package("less"),
+      Package("bat"),
+      Package("moreutils"),  # enthält sponge
+      Package("jq"),
+      Package("man-db"),
+      Package("man-pages"),
+      Package("tealdeer"),
+      Package("unrar"),
+      Package("zip"),
+      Package("unzip"),
+      Package("7zip"),
+      Package("yazi"),
+      Package("zoxide"),
+
+      # Arch + Pacman Utilities
+      Package("pacman-contrib"),
+      Package("pacutils"),
+      Package("reflector"),
+      Package("lostfiles"),
+
+      # Monitoring + Analyse
+      Package("btop"),
+      Package("htop"),
+      Package("iotop"),
+      Package("ncdu"),
+      Package("bandwhich"),
+      Package("nload"),
+
+      # Development und Libraries
+      Package("git"),
+      Package("git-lfs"),
+      Package("tig"),
       Package("python"),
       Package("pyenv"),
       Package("mypy"),
       Package("python-urllib3"),
-      Package("quickemu-git"),
       Package("docker"),
+      Package("docker-compose"),
       Package("containerd"),
+      GroupAssignment("manuel", "docker"),
+
+      # Networking
+      Package("bind"),
+      Package("openbsd-netcat"),
+      Package("traceroute"),
+      Package("wireguard-tools"),
+      Package("wget"),
+      Package("ethtool"),
+      Package("tcpdump"),
+
+      # Hardware Utilities
+      Package("cpupower"),
+      Package("bluez-utils"),
+      Package("fwupd"),
+
+      # Dateisysteme
+      Package("gparted"),
+      Package("ntfs-3g"),
+      Package("dosfstools"),
+
+      # Alternatives
+      Package("zlib-ng"),
+      Package("zlib-ng-compat"),
+
+      SystemdUnit("systemd-timesyncd.service"),
+      SystemdUnit("systemd-boot-update.service"),
+      SystemdUnit("fstrim.timer"),
+      SystemdUnit("fwupd.service"),
       SystemdUnit("docker.socket"),
-    ]
-  )
 
-  yield ConfigGroup(
-    description = "arch-update (for user manuel)",
-    provides = [
-      Package("arch-update"),
-      File("/home/manuel/.config/arch-update/arch-update.conf", owner = "manuel", content = cleandoc('''
-        NoNotification
-        KeepOldPackages=2
-        KeepUninstalledPackages=0
-        DiffProg=diff
-        TrayIconStyle=light
-      ''')),
-      SystemdUnit("arch-update-tray.service", user = "manuel"),
-      SystemdUnit("arch-update.timer", user = "manuel"),
-      PostHook("restart-arch-update-tray", execute = lambda: "systemctl --user -M manuel@ restart arch-update-tray.service", trigger = [
-        File("/home/manuel/.config/arch-update/arch-update.conf"),
-      ]),
-    ]
-  )
-
-  yield ConfigGroup(
-    description = "various system config files",
-    provides = [
       File("/etc/environment.d/editor.conf", content = cleandoc(f'''
         EDITOR=nano
       ''')),
@@ -320,6 +271,46 @@ def base() -> Generator[ConfigGroup]:
       PostHook("regenerate-locales", execute = lambda: shell("locale-gen"), trigger = [
         File("/etc/locale.gen"),
       ]),
+    ]
+  )
+
+  yield ConfigGroup(
+    description = "reflector",
+    provides = [
+      *PostHookScope(
+        File("/etc/xdg/reflector/reflector.conf", content = cleandoc('''
+          --save /etc/pacman.d/mirrorlist
+          --protocol https
+          --country France,Germany,Switzerland
+          --latest 5
+          --sort delay
+        ''')),
+        PostHook(
+          name = "reflector: update mirrorlist",
+          execute = lambda: shell("systemctl start reflector"),
+        ),
+      )
+    ]
+  )
+
+  yield ConfigGroup(
+    description = "arch-update",
+    provides = [
+      Package("arch-update"),
+      File("/home/manuel/.config/arch-update/arch-update.conf", owner = "manuel", content = cleandoc('''
+        NoNotification
+        KeepOldPackages=2
+        KeepUninstalledPackages=0
+        DiffProg=diff
+        TrayIconStyle=light
+      ''')),
+      SystemdUnit("arch-update-tray.service", user = "manuel"),
+      SystemdUnit("arch-update.timer", user = "manuel"),
+      PostHook(
+        "restart-arch-update-tray",
+        execute = lambda: "systemctl --user -M manuel@ restart arch-update-tray.service",
+        trigger = File("/home/manuel/.config/arch-update/arch-update.conf"),
+      ),
     ]
   )
 
