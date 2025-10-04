@@ -59,7 +59,7 @@ class File(ManagedConfigItem):
     return f"File('{self.filename}')"
 
   def merge(self, other: ConfigItem):
-    raise AssertionError(f"File('{self.filename}') may not be declared twice")
+    raise AssertionError(f"{self} may not be declared twice")
 
   @staticmethod
   def parse_permissions(permissions: str) -> int:

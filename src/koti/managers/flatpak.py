@@ -73,13 +73,13 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
         if not already_installed:
           yield Action(
             installs = [repo_item],
-            description = f"install flatpak repo",
+            description = f"install flatpak repo {repo_item.name}",
             execute = lambda: self.update_remote(repo_item, remove_existing = False),
           )
         else:
           yield Action(
             updates = [repo_item],
-            description = f"update flatpak repo",
+            description = f"update flatpak repo {repo_item.name}",
             execute = lambda: self.update_remote(repo_item, remove_existing = True),
           )
 

@@ -38,9 +38,9 @@ class Package(ManagedConfigItem):
   def merge(self, other: ConfigItem) -> Package:
     assert isinstance(other, Package) and self == other
     if self.url is not None and other.url is not None:
-      assert self.url == other.url, f"Package('{self.name}') has conflicting url parameter"
+      assert self.url == other.url, f"{self} has conflicting url parameter"
     if self.script is not None and other.script is not None:
-      assert self.script == other.script, f"Package('{self.name}') has conflicting script parameter"
+      assert self.script == other.script, f"{self} has conflicting script parameter"
     return Package(
       name = self.name,
       url = self.url,
