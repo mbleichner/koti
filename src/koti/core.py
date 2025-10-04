@@ -335,4 +335,4 @@ class Koti:
     elif action.installs:
       return GREEN
     else:
-      return CYAN
+      return PURPLE
