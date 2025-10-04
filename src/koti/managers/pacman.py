@@ -10,12 +10,12 @@ from koti.utils.colors import *
 
 
 class PackageState(ConfigItemState):
-  def hash(self) -> str:
+  def sha256(self) -> str:
     return "-"
 
 
 class PacmanKeyState(ConfigItemState):
-  def hash(self) -> str:
+  def sha256(self) -> str:
     return "-"
 
 

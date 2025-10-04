@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Any, Callable, Iterable
 from re import match
 
 from urllib3 import request
@@ -48,7 +48,13 @@ class File(ManagedConfigItem):
     self.owner = owner
     self.tags = set(tags or [])
 
-  def identifier(self):
+  def __eq__(self, other: Any) -> bool:
+    return isinstance(other, File) and self.filename == other.filename
+
+  def __hash__(self):
+    return hash(self.filename)
+
+  def __str__(self):
     return f"File('{self.filename}')"
 
   def merge(self, other: ConfigItem):

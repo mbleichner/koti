@@ -15,9 +15,9 @@ class GroupAssignment(ManagedConfigItem):
     self.username = username
     self.group = group
 
-  def identifier(self):
+  def __str__(self) -> str:
     return f"GroupAssignment('{self.username}', '{self.group}')"
 
   def merge(self, other: ConfigItem):
-    assert isinstance(other, GroupAssignment)
+    assert isinstance(other, GroupAssignment) and self == other
     return self

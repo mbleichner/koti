@@ -14,7 +14,7 @@ class SwapfileState(ConfigItemState):
   def __init__(self, size_bytes: int):
     self.size_bytes = size_bytes
 
-  def hash(self) -> str:
+  def sha256(self) -> str:
     sha256_hash = sha256()
     sha256_hash.update(str(self.size_bytes).encode())
     return sha256_hash.hexdigest()
@@ -33,8 +33,8 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
     assert item.size_bytes is not None, "missing size_bytes parameter"
 
   def create_swapfile(self, item: Swapfile):
-    shell(f"mkswap -U clear --size {item.size_bytes} --file {item.identifier}")
-    shell(f"chmod 600 {item.identifier}")
+    shell(f"mkswap -U clear --size {item.size_bytes} --file {item.filename}")
+    shell(f"chmod 600 {item.filename}")
     self.managed_files_store.add(item.filename)
 
   def recreate_swapfile(self, item: Swapfile):

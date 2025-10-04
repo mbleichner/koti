@@ -87,7 +87,7 @@ class Koti:
           for install_step in phase.steps:
             for item in install_step.items_to_install:
               prefix = self.get_change_prefix(actions, item)
-              printc(f"{prefix} {item.description()}")
+              printc(f"{prefix} {item}")
         print()
 
     printc(f"{len(items_total)} items total")
@@ -195,19 +195,19 @@ class Koti:
   @classmethod
   def merge_configs(cls, configs: list[ConfigGroup]) -> list[ConfigGroup]:
     # merge all items with the same identifier
-    merged_items: dict[str, ConfigItem] = {}
+    merged_items: dict[ConfigItem, ConfigItem] = {}
     for group in configs:
       for idx, item in enumerate(group.provides):
-        item_prev = merged_items.get(item.identifier(), None)
+        item_prev = merged_items.get(item, None)
         item_merged = item_prev.merge(item) if item_prev is not None else item
-        merged_items[item.identifier()] = item_merged
+        merged_items[item] = item_merged
 
     # create new groups with the items replaced by their merged versions
     result: list[ConfigGroup] = []
     for group in configs:
       provides_updated = list(group.provides)
       for idx, item in enumerate(provides_updated):
-        provides_updated[idx] = merged_items[item.identifier()]
+        provides_updated[idx] = merged_items[item]
       new_group = copy(group)
       new_group.provides = provides_updated
       result.append(new_group)
@@ -215,16 +215,16 @@ class Koti:
 
   @classmethod
   def remove_duplicates(cls, phases: list[list[ConfigGroup]]) -> list[list[ConfigGroup]]:
-    seen_item_identifiers: set[str] = set()
+    seen_items: set[ConfigItem] = set()
     phases_filtered: list[list[ConfigGroup]] = []
     for phase in phases:
       phase_filtered: list[ConfigGroup] = []
       for group in phase:
         filtered_provides: list[ConfigItem] = []
         for item in group.provides:
-          if item.identifier() not in seen_item_identifiers:
+          if item not in seen_items:
             filtered_provides.append(item)
-            seen_item_identifiers.add(item.identifier())
+            seen_items.add(item)
         group_filtered = copy(group)
         group_filtered.provides = filtered_provides
         phase_filtered.append(group_filtered)
@@ -280,7 +280,7 @@ class Koti:
         # check "requires" dependencies
         for required_item in group.requires:
           required_phase_and_group = cls.find_required_group(required_item, phases)
-          assert required_phase_and_group is not None, f"required item not found: {required_item.identifier()}"
+          assert required_phase_and_group is not None, f"required item not found: {required_item}"
           required_phase_idx, required_group = required_phase_and_group
           if required_phase_idx >= phase_idx:
             assert required_group is not group, f"group with requires-dependency to itself: {group.description}"
@@ -309,7 +309,7 @@ class Koti:
     for idx_phase, phase in enumerate(phases):
       for group in phase:
         for group_item in group.provides:
-          if group_item.identifier() == required_item.identifier():
+          if group_item == required_item:
             return idx_phase, group
     return None
 

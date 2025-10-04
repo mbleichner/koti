@@ -27,11 +27,11 @@ class PostHook(ManagedConfigItem):
       self.trigger = [item for item in (trigger or []) if item is not None]
     self.tags = set(tags or [])
 
-  def identifier(self):
+  def __str__(self) -> str:
     return f"PostHook('{self.name}')"
 
   def merge(self, other: ConfigItem) -> PostHook:
-    raise AssertionError(f"PostHook('{self.name}') cannot be declared twice")
+    raise AssertionError(f"{self} cannot be declared twice")
 
 
 # noinspection PyPep8Naming

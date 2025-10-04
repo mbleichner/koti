@@ -47,7 +47,7 @@ class Directory(ManagedConfigItem):
     self.owner = owner
     self.tags = set(tags or [])
 
-  def identifier(self):
+  def __str__(self) -> str:
     return f"Directory('{self.dirname}')"
 
   def merge(self, other: ConfigItem):

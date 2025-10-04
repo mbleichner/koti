@@ -51,15 +51,20 @@ class ConfigItem(metaclass = ABCMeta):
   tags: set[str] = set()
 
   @abstractmethod
-  def identifier(self) -> str:
-    """ConfigItems with the same identifier are considered to be the same thing (with possibly
-    differing attributes) that will be merged together before running the installation process."""
-    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.identifier()")
+  def __str__(self):
+    """Used whenever this item gets printed (during planning and in logs/exceptions). Also, items
+    that are different with respect to __eq__ should als return different string representations
+    (e.g. PostHookManager relies on this property)."""
+    pass
 
-  def description(self) -> str:
-    """Usually, the identifier will be printed in all outputs by koti. Sometimes it may be necessary to
-    add some human-readable information. This can be done by overriding this function."""
-    return self.identifier()
+  def __eq__(self, other: Any) -> bool:
+    """Should return true if the two object refer to the same thing (with possibly differing attributes).
+    Multiple ConfigItems that are equal will be merged together by koti."""
+    return str(self) == str(other)
+
+  def __hash__(self):
+    """Needs to be consistent with __eq__ (https://docs.python.org/3/reference/datamodel.html#object.__hash__)"""
+    return hash(str(self))
 
   @abstractmethod
   def merge(self, other: ConfigItem) -> ConfigItem:
@@ -67,16 +72,11 @@ class ConfigItem(metaclass = ABCMeta):
     attempt to merge those definitions together (or throw an error if they're incompatible)."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.merge()")
 
-  def __eq__(self, other: Any) -> bool:
-    return self.identifier() == other.identifier() if other.__class__ == self.__class__ else False
-
-  def __hash__(self):
-    return hash(self.identifier())
-
 
 class ManagedConfigItem(ConfigItem, metaclass = ABCMeta):
   """ConfigItems that can be installed to the system. ManagedConfigItem require a corresponding
   ConfigManager being registered in koti."""
+  pass
 
 
 class UnmanagedConfigItem(ConfigItem, metaclass = ABCMeta):
@@ -87,16 +87,16 @@ class UnmanagedConfigItem(ConfigItem, metaclass = ABCMeta):
 
 class ConfigItemState(metaclass = ABCMeta):
   @abstractmethod
-  def hash(self) -> str:
+  def sha256(self) -> str:
     """Method that condenses the whole state into a hash-string that can easily be stored or
     used by foreign managers without having to inspect the implementation of the item state."""
-    raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.hash()")
+    pass
 
   def __eq__(self, other: Any) -> bool:
-    return self.hash() == other.hash() if other.__class__ == self.__class__ else False
+    return self.sha256() == other.sha256() if other.__class__ == self.__class__ else False
 
   def __hash__(self):
-    return hash(self.hash())
+    return hash(self.sha256())
 
 
 class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMeta):
@@ -214,11 +214,8 @@ class ConfigModel:
     pass
 
   def item[T: ConfigItem](self, reference: T, optional: bool = False) -> T | None:
-    result = next((
-      cast(T, item) for phase in self.phases for item in phase.items
-      if item.identifier() == reference.identifier()
-    ), None)
-    assert result is not None or optional, f"Item not found: {reference.identifier()}"
+    result = next((cast(T, item) for phase in self.phases for item in phase.items if item == reference), None)
+    assert result is not None or optional, f"Item not found: {reference}"
     return result
 
   @overload
@@ -232,7 +229,7 @@ class ConfigModel:
   def contains(self, needle: ConfigItem | Callable[[ConfigItem], bool]) -> bool:
     for phase in self.phases:
       for item in phase.items:
-        if isinstance(needle, ConfigItem) and needle.identifier() == item.identifier():
+        if isinstance(needle, ConfigItem) and needle == item:
           return True
         if callable(needle) and needle(item):
           return True
@@ -242,7 +239,7 @@ class ConfigModel:
     for manager in self.managers:
       if reference.__class__ in manager.managed_classes:
         return manager
-    raise AssertionError(f"manager not found for {reference.identifier()}")
+    raise AssertionError(f"manager not found for {reference}")
 
 
 class InstallPhase:

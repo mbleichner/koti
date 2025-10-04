@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from koti.model import ConfigItem, UnmanagedConfigItem
 
 
@@ -11,10 +13,9 @@ class Checkpoint(UnmanagedConfigItem):
   def __init__(self, name: str):
     self.name = name
 
-  def identifier(self):
+  def __str__(self) -> str:
     return f"Checkpoint('{self.name}')"
 
   def merge(self, other: ConfigItem) -> Checkpoint:
-    assert isinstance(other, Checkpoint)
-    assert other.identifier() == self.identifier()
+    assert isinstance(other, Checkpoint) and self == other
     return self

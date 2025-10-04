@@ -24,7 +24,7 @@ class UserState(ConfigItemState):
     self.home_dir = home_dir
     self.home_exists = home_exists
 
-  def hash(self) -> str:
+  def sha256(self) -> str:
     sha256_hash = sha256()
     sha256_hash.update(self.shell.encode())
     sha256_hash.update(self.home_dir.encode())

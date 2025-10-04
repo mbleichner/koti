@@ -18,11 +18,11 @@ class User(ManagedConfigItem):
     self.shell = shell
     self.home = home
 
-  def identifier(self):
+  def __str__(self) -> str:
     return f"User('{self.username}')"
 
   def merge(self, other: ConfigItem):
-    assert isinstance(other, User)
+    assert isinstance(other, User) and self == other
     if self.shell is not None and other.shell is not None:
       assert self.shell == other.shell, f"User('{self.username}') has conflicting shell parameter"
     if self.home is not None and other.home is not None:

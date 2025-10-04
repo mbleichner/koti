@@ -24,7 +24,7 @@ class FileState(ConfigItemState):
     sha256_hash.update(content)
     self.content_hash = sha256_hash.hexdigest()
 
-  def hash(self) -> str:
+  def sha256(self) -> str:
     sha256_hash = sha256()
     sha256_hash.update(str(self.uid).encode())
     sha256_hash.update(str(self.gid).encode())
@@ -37,11 +37,11 @@ class DirectoryState(ConfigItemState):
   def __init__(self, files: dict[str, FileState]):
     self.files = files
 
-  def hash(self) -> str:
+  def sha256(self) -> str:
     sha256_hash = sha256()
     for filename in sorted(self.files.keys()):
       file_state = self.files[filename]
-      sha256_hash.update(file_state.hash().encode())
+      sha256_hash.update(file_state.sha256().encode())
     return sha256_hash.hexdigest()
 
 
@@ -108,7 +108,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         )
 
       if current is not None and current.content_hash != target.content_hash:
-        tmpfile = f"/tmp/koti.{target.hash()}"
+        tmpfile = f"/tmp/koti.{target.sha256()[:8]}"
         with open(tmpfile, "wb+") as fh:
           fh.write(target.content)
           os.chown(fh.name, uid = target.uid, gid = target.gid)
@@ -254,7 +254,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     )
 
   def file_state_target(self, item: File, model: ConfigModel) -> FileState:
-    assert item.content is not None, f"{item.description()}: content missing"
+    assert item.content is not None
     getpwnam = pwd.getpwnam(item.owner)
     return FileState(
       content = item.content(model),

@@ -16,7 +16,7 @@ class PostHookState(ConfigItemState):
   def __init__(self, trigger_hashes: dict[str, str]):
     self.trigger_hashes = trigger_hashes
 
-  def hash(self) -> str:
+  def sha256(self) -> str:
     sha256_hash = sha256()
     for identifier, trigger_hash in self.trigger_hashes.items():
       sha256_hash.update(identifier.encode())
@@ -39,8 +39,8 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
     for item in hook.trigger:
       exec_order_item = PostHookManager.index_in_execution_order(model, item)  # can be None in case the item isn't set up by koti (i.e. files created by pacman hooks or such)
       exec_order_hook = PostHookManager.index_in_execution_order(model, hook)
-      assert exec_order_hook is not None, f"{hook.description()} not found in execution order"
-      assert exec_order_item is None or exec_order_item < exec_order_hook, f"{hook.description()} has trigger that is evaluated too late: {item.description()}"
+      assert exec_order_hook is not None, f"{hook} not found in execution order"
+      assert exec_order_item is None or exec_order_item < exec_order_hook, f"{hook} has trigger that is evaluated too late: {item}"
 
   @staticmethod
   def index_in_execution_order(model: ConfigModel, needle: ConfigItem) -> int | None:
@@ -48,7 +48,7 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
     for phase in model.phases:
       for step in phase.steps:
         for item in step.items_to_install:
-          if item.identifier() == needle.identifier():
+          if item == needle:
             return result
           result += 1
     return None
@@ -62,10 +62,10 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
 
   def state_target(self, hook: PostHook, model: ConfigModel, dryrun: bool) -> PostHookState:
     trigger_hashes: dict[str, str] = {}
-    for ref in hook.trigger:
-      trigger_state = self.state_for_trigger(ref, model, dryrun)
+    for trigger_ref in hook.trigger:
+      trigger_state = self.state_for_trigger(trigger_ref, model, dryrun)
       if trigger_state is not None:
-        trigger_hashes[ref.identifier()] = trigger_state.hash()
+        trigger_hashes[str(trigger_ref)] = trigger_state.sha256()
     return PostHookState(trigger_hashes)
 
   def state_for_trigger(self, reference: ManagedConfigItem, model: ConfigModel, dryrun: bool) -> ConfigItemState | None:

@@ -10,7 +10,7 @@ from koti.utils.colors import *
 
 
 class SystemdUnitState(ConfigItemState):
-  def hash(self) -> str:
+  def sha256(self) -> str:
     return "-"
 
 

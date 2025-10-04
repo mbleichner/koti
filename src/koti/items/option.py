@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Any, Sequence
 
 from koti.model import ConfigItem, UnmanagedConfigItem
 
@@ -38,21 +38,26 @@ class Option[T](UnmanagedConfigItem):
     """Returns the value that has been provided for this option if it is unique. Throws an error otherwise."""
     if len(self._values) == 0: return None
     first = self._values[0]
-    assert all((first == value for value in self._values[1:])), f"{self.identifier()} contains non-unique values"
+    assert all((first == value for value in self._values[1:])), f"{self} contains non-unique values"
     return first
 
   def single(self) -> T:
     """Returns the value that has been provided for this option if it is unique. Throws an error otherwise."""
     result = self.optional()
-    assert result is not None, f"No value provided for {self.identifier()}"
+    assert result is not None, f"No value provided for {self}"
     return result
 
-  def identifier(self):
+  def __eq__(self, other: Any) -> bool:
+    return isinstance(other, Option) and self.name == other.name
+
+  def __hash__(self):
+    return hash(self.name)
+
+  def __str__(self):
     return f"Option('{self.name}')"
 
   def merge(self, other: ConfigItem) -> Option:
-    assert isinstance(other, Option)
-    assert other.identifier() == self.identifier()
+    assert isinstance(other, Option) and self == other
     return Option(
       name = self.name,
       value = list([*self._values, *other._values]),

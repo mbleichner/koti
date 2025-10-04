@@ -19,13 +19,12 @@ class Swapfile(ManagedConfigItem):
     self.filename = filename
     self.size_bytes = size_bytes
 
-  def identifier(self):
+  def __str__(self) -> str:
     return f"Swapfile('{self.filename}')"
 
   def merge(self, other: ConfigItem) -> Swapfile:
-    assert isinstance(other, Swapfile)
-    assert other.identifier() == self.identifier()
-    assert other.size_bytes == self.size_bytes, f"Conflicting size_bytes in {self.identifier()}"
+    assert isinstance(other, Swapfile) and self == other
+    assert other.size_bytes == self.size_bytes, f"Conflicting size_bytes in {self}"
     return Swapfile(
       filename = self.filename,
       size_bytes = self.size_bytes,

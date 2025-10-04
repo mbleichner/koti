@@ -19,15 +19,14 @@ class SystemdUnit(ManagedConfigItem):
     self.name = name
     self.user = user
 
-  def identifier(self):
+  def __str__(self) -> str:
     if self.user is not None:
       return f"SystemdUnit('{self.name}', user = '{self.user}')"
     else:
       return f"SystemdUnit('{self.name}')"
 
   def merge(self, other: ConfigItem) -> SystemdUnit:
-    assert isinstance(other, SystemdUnit)
-    assert self.identifier() == other.identifier()
+    assert isinstance(other, SystemdUnit) and self == other
     return SystemdUnit(
       name = self.name,
       user = self.user,

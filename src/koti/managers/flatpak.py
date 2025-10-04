@@ -15,14 +15,14 @@ class FlatpakRepoState(ConfigItemState):
   def __init__(self, repo_url: str):
     self.repo_url = repo_url
 
-  def hash(self) -> str:
+  def sha256(self) -> str:
     sha256_hash = sha256()
     sha256_hash.update(self.repo_url.encode())
     return sha256_hash.hexdigest()
 
 
 class FlatpakPackageState(ConfigItemState):
-  def hash(self) -> str:
+  def sha256(self) -> str:
     return "-"
 
 

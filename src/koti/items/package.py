@@ -21,18 +21,22 @@ class Package(ManagedConfigItem):
     self.script = script
     self.tags = set(tags or [])
 
-  def identifier(self):
-    return f"Package('{self.name}')"
+  def __eq__(self, other: Any) -> bool:
+    return isinstance(other, Package) and self.name == other.name
 
-  def description(self):
-    if self.url is not None:
+  def __hash__(self):
+    return hash(self.name)
+
+  def __str__(self):
+    if self.script is not None:
+      return f"Package('{self.name}', script = '...')"
+    elif self.url is not None:
       return f"Package('{self.name}', url = '{self.url}')"
     else:
       return f"Package('{self.name}')"
 
   def merge(self, other: ConfigItem) -> Package:
-    assert isinstance(other, Package)
-    assert other.identifier() == self.identifier()
+    assert isinstance(other, Package) and self == other
     if self.url is not None and other.url is not None:
       assert self.url == other.url, f"Package('{self.name}') has conflicting url parameter"
     if self.script is not None and other.script is not None:

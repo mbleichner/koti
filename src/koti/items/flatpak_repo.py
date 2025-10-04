@@ -30,14 +30,13 @@ class FlatpakRepo(ManagedConfigItem):
       self.repo_url = None
     self.tags = set(tags or [])
 
-  def identifier(self):
+  def __str__(self) -> str:
     return f"FlatpakRepo('{self.name}')"
 
   def merge(self, other: ConfigItem) -> FlatpakRepo:
-    assert isinstance(other, FlatpakRepo)
-    assert other.identifier() == self.identifier()
-    assert other.spec_url == self.spec_url, f"Conflicting spec_url in {self.identifier()}"
-    assert other.repo_url == self.repo_url, f"Conflicting repo_url in {self.identifier()}"
+    assert isinstance(other, FlatpakRepo) and self == other
+    assert other.spec_url == self.spec_url, f"Conflicting spec_url in {self}"
+    assert other.repo_url == self.repo_url, f"Conflicting repo_url in {self}"
     return FlatpakRepo(
       name = self.name,
       spec_url = self.spec_url,

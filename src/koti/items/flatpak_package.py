@@ -16,12 +16,11 @@ class FlatpakPackage(ManagedConfigItem):
     self.id = id
     self.tags = set(tags or [])
 
-  def identifier(self):
+  def __str__(self) -> str:
     return f"FlatpakPackage('{self.id}')"
 
   def merge(self, other: ConfigItem) -> FlatpakPackage:
-    assert isinstance(other, FlatpakPackage)
-    assert other.identifier() == self.identifier()
+    assert isinstance(other, FlatpakPackage) and self == other
     return FlatpakPackage(
       id = self.id,
       tags = self.tags.union(other.tags),

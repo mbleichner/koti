@@ -11,7 +11,7 @@ from koti.utils.colors import *
 
 
 class GroupAssignmentState(ConfigItemState):
-  def hash(self) -> str:
+  def sha256(self) -> str:
     return "-"
 
 
