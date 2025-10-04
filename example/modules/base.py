@@ -83,7 +83,7 @@ def base() -> Generator[ConfigGroup]:
       User(username = "manuel", home = "/home/manuel", shell = "/usr/bin/fish"),
       GroupAssignment("manuel", "wheel"),
       Package("sudo"),
-      File("/etc/sudoers", permissions = "r--", content = cleandoc('''
+      File("/etc/sudoers", content = cleandoc('''
         Defaults!/usr/bin/visudo env_keep += "SUDO_EDITOR EDITOR VISUAL"
         Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"
         Defaults passwd_tries=3, passwd_timeout=180
@@ -129,7 +129,7 @@ def base() -> Generator[ConfigGroup]:
       Option[str]("/etc/pacman.conf/NoExtract"),
       Option[str]("/etc/pacman.conf/NoUpgrade"),
 
-      File("/etc/pacman.conf", permissions = "r--", content = lambda model: cleandoc(f'''
+      File("/etc/pacman.conf", content = lambda model: cleandoc(f'''
         [options]
         HoldPkg = pacman glibc
         Architecture = auto x86_64_v3
@@ -176,7 +176,7 @@ def base() -> Generator[ConfigGroup]:
         Include = /etc/pacman.d/cachyos-mirrorlist
       ''')),
 
-      File("/etc/paru.conf", permissions = "r--", content = cleandoc('''
+      File("/etc/paru.conf", content = cleandoc('''
         [options]
         PgpFetch
         Devel
@@ -199,7 +199,7 @@ def base() -> Generator[ConfigGroup]:
       Package("reflector"),
       Package("lostfiles"),
 
-      File("/etc/pacman.d/hooks/nvidia.hook", permissions = "r--", content = cleandoc('''
+      File("/etc/pacman.d/hooks/nvidia.hook", content = cleandoc('''
         [Trigger]
         Operation=Install
         Operation=Upgrade
@@ -215,7 +215,7 @@ def base() -> Generator[ConfigGroup]:
         Exec=/usr/bin/mkinitcpio -P
       ''')),
 
-      File("/etc/xdg/reflector/reflector.conf", permissions = "r--", content = cleandoc('''
+      File("/etc/xdg/reflector/reflector.conf", content = cleandoc('''
         --save /etc/pacman.d/mirrorlist
         --protocol https
         --country France,Germany,Switzerland
@@ -249,7 +249,7 @@ def base() -> Generator[ConfigGroup]:
     description = "arch-update (for user manuel)",
     provides = [
       Package("arch-update"),
-      File("/home/manuel/.config/arch-update/arch-update.conf", owner = "manuel", permissions = "r--", content = cleandoc('''
+      File("/home/manuel/.config/arch-update/arch-update.conf", owner = "manuel", content = cleandoc('''
         NoNotification
         KeepOldPackages=2
         KeepUninstalledPackages=0
@@ -267,25 +267,25 @@ def base() -> Generator[ConfigGroup]:
   yield ConfigGroup(
     description = "various system config files",
     provides = [
-      File("/etc/environment.d/editor.conf", permissions = "r--", content = cleandoc(f'''
+      File("/etc/environment.d/editor.conf", content = cleandoc(f'''
         EDITOR=nano
       ''')),
 
-      File("/boot/loader/loader.conf", permissions = "r-x", content = cleandoc(f'''
+      File("/boot/loader/loader.conf", permissions = "rwxr-xr-x", content = cleandoc(f'''
         timeout 3
         console-mode 2
       ''')),
 
-      File("/etc/vconsole.conf", permissions = "r--", content = cleandoc('''
+      File("/etc/vconsole.conf", content = cleandoc('''
         KEYMAP=de-latin1
         FONT=ter-124b
       ''')),
 
-      File("/etc/modprobe.d/disable-watchdog-modules.conf", permissions = "r--", content = cleandoc('''
+      File("/etc/modprobe.d/disable-watchdog-modules.conf", content = cleandoc('''
         blacklist sp5100_tco
       ''')),
 
-      File("/home/manuel/.gitconfig", owner = "manuel", permissions = "r--", content = cleandoc('''
+      File("/home/manuel/.gitconfig", owner = "manuel", content = cleandoc('''
         [user]
         email = mbleichner@gmail.com
         name = Manuel Bleichner
@@ -293,12 +293,12 @@ def base() -> Generator[ConfigGroup]:
         rebase = true
       ''')),
 
-      File("/home/manuel/.config/tealdeer/config.toml", owner = "manuel", permissions = "r--", content = cleandoc('''
+      File("/home/manuel/.config/tealdeer/config.toml", owner = "manuel", content = cleandoc('''
         [updates]
         auto_update = true
       ''')),
 
-      File("/etc/locale.conf", permissions = "r--", content = cleandoc('''
+      File("/etc/locale.conf", content = cleandoc('''
         LANG=en_US.UTF-8
         LC_ADDRESS=de_DE.UTF-8
         LC_IDENTIFICATION=de_DE.UTF-8
@@ -311,7 +311,7 @@ def base() -> Generator[ConfigGroup]:
         LC_TIME=de_DE.UTF-8
       ''')),
 
-      File("/etc/locale.gen", permissions = "r--", content = cleandoc('''
+      File("/etc/locale.gen", content = cleandoc('''
         en_US.UTF-8 UTF-8
         de_DE.UTF-8 UTF-8
         # Zeilenumbruch hinter den Locales ist wichtig, sonst werden sie ignoriert
@@ -328,7 +328,7 @@ def base() -> Generator[ConfigGroup]:
     provides = [
       Package("openssh"),
       SystemdUnit("sshd.service"),
-      File("/etc/ssh/sshd_config", owner = "root", permissions = "r--", content = cleandoc('''
+      File("/etc/ssh/sshd_config", owner = "root", content = cleandoc('''
         Include /etc/ssh/sshd_config.d/*.conf
         PermitRootLogin yes
         AuthorizedKeysFile .ssh/authorized_keys

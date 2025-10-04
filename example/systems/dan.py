@@ -55,14 +55,14 @@ def dan() -> Generator[ConfigGroup | None]:
       # Package("python-mock"),
 
       GroupAssignment("manuel", "docker"),
-      File("/tmp/test", permissions = "r--", content = cleandoc('''
+      File("/tmp/test", content = cleandoc('''
         moep moep moep
       ''')),
 
       PostHook("moep hook 1", execute = lambda: shell("echo moep 1"), trigger = File("/tmp/test")),
       PostHook("moep hook 2", execute = lambda: shell("echo moep 2"), trigger = PostHook("moep hook 1")),
 
-      File("/etc/fstab", permissions = "r--", content = cleandoc('''
+      File("/etc/fstab", content = cleandoc('''
         UUID=3409a847-0bd6-43e4-96fd-6e8be4e3c58d  /             ext4  rw,noatime 0 1
         UUID=AF4E-18BD                             /boot         vfat  rw,defaults 0 2
         UUID=CCA2A808A2A7F55C                      /mnt/windows  ntfs  rw,x-systemd.automount 0 0

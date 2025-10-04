@@ -65,7 +65,7 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGr
       Checkpoint("display-manager"),
       Package("greetd-tuigreet"),
       SystemdUnit("greetd.service"),
-      File("/etc/greetd/config.toml", permissions = "r--", content = cleandoc(f'''
+      File("/etc/greetd/config.toml", content = cleandoc(f'''
         [terminal]
         vt = 2
   
@@ -79,7 +79,7 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGr
   yield ConfigGroup(
     description = "wireplumber priorities",
     provides = [
-      File("/home/manuel/.config/wireplumber/wireplumber.conf.d/priorities.conf", permissions = "r--", owner = "manuel", content = cleandoc('''
+      File("/home/manuel/.config/wireplumber/wireplumber.conf.d/priorities.conf", owner = "manuel", content = cleandoc('''
         monitor.alsa.rules = [
         
           # Alle Bluetooth Devices bekommen immer Prio 1010 zugewiesen und diese kann hier
@@ -116,7 +116,7 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGr
       SystemdUnit("ananicy-cpp.service"),
 
       *PostHookTriggerScope(
-        File("/etc/ananicy.d/ananicy.conf", permissions = "r--", content = cleandoc('''
+        File("/etc/ananicy.d/ananicy.conf", content = cleandoc('''
           check_freq = 20
           loglevel = info
           cgroup_realtime_workaround = true
@@ -131,34 +131,34 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGr
           apply_nice = true
         ''')),
 
-        File("/etc/ananicy.d/arch-update.rules", permissions = "r--", content = cleandoc('''
+        File("/etc/ananicy.d/arch-update.rules", content = cleandoc('''
           {"name": "arch-update", "nice": 10}
         ''')),
 
-        File("/etc/ananicy.d/audio-system.rules", permissions = "r--", content = cleandoc('''
+        File("/etc/ananicy.d/audio-system.rules", content = cleandoc('''
           {"name": "pipewire", "nice": -10, "latency_nice": -10}
           {"name": "wireplumber", "nice": -10, "latency_nice": -10}
           {"name": "pipewire-pulse", "nice": -10, "latency_nice": -10}
         ''')),
 
-        File("/etc/ananicy.d/kwin.rules", permissions = "r--", content = cleandoc('''
+        File("/etc/ananicy.d/kwin.rules", content = cleandoc('''
           {"name": "kwin_wayland", "nice": -10, "latency_nice": -10}
         ''')),
 
-        File("/etc/ananicy.d/compilers.rules", permissions = "r--", content = cleandoc('''
+        File("/etc/ananicy.d/compilers.rules", content = cleandoc('''
           {"name": "gcc",   "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
           {"name": "make",  "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
           {"name": "clang", "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
         ''')),
 
-        File("/etc/ananicy.d/games.rules", permissions = "r--", content = cleandoc('''
+        File("/etc/ananicy.d/games.rules", content = cleandoc('''
           {"name": "steam",   "nice": -5, "latency_nice": -5}
           {"name": "ryujinx", "nice": -5, "latency_nice": -5}
           {"name": "lutris",  "nice": -5, "latency_nice": -5}
           {"name": "heroic",  "nice": -5, "latency_nice": -5}
         ''')),
 
-        File("/etc/ananicy.d/nextcloud.rules", permissions = "r--", content = cleandoc('''
+        File("/etc/ananicy.d/nextcloud.rules", content = cleandoc('''
           {"name": "nextcloud", "nice": 10}
         ''')),
 

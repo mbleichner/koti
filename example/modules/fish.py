@@ -17,7 +17,7 @@ def fish() -> Generator[ConfigGroup]:
         Package("fish"),
       ]),
 
-      File("/etc/fish/config.fish", permissions = "r--", content = cleandoc(r'''
+      File("/etc/fish/config.fish", content = cleandoc(r'''
         set fish_greeting ""
         pyenv init - fish | source
         if status is-interactive
@@ -37,7 +37,7 @@ def fish() -> Generator[ConfigGroup]:
         end
       ''')),
 
-      File("/etc/fish/functions/fish_prompt.fish", permissions = "r--", content = cleandoc(r'''
+      File("/etc/fish/functions/fish_prompt.fish", content = cleandoc(r'''
         function fish_prompt --description 'Moep'
           set -l last_pipestatus $pipestatus
           set -l host (prompt_hostname)
@@ -84,7 +84,7 @@ def fish() -> Generator[ConfigGroup]:
         end
       ''')),
 
-      File("/home/manuel/.config/fastfetch/config.jsonc", permissions = "r--", owner = "manuel", content = cleandoc(r'''
+      File("/home/manuel/.config/fastfetch/config.jsonc", owner = "manuel", content = cleandoc(r'''
         {
           "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
           "logo": { "source": "/home/manuel/.config/fastfetch/fastfetch-logo.png", "height": 13 },
@@ -93,6 +93,6 @@ def fish() -> Generator[ConfigGroup]:
         }
       ''')),
 
-      File("/home/manuel/.config/fastfetch/fastfetch-logo.png", permissions = "r--", owner = "manuel", source = "files/fastfetch-logo.png"),
+      File("/home/manuel/.config/fastfetch/fastfetch-logo.png", owner = "manuel", source = "files/fastfetch-logo.png"),
     ]
   )

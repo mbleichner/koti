@@ -56,14 +56,14 @@ def kernel_lts(sortkey: int) -> Generator[ConfigGroup]:
 
 # noinspection PyPep8Naming
 def SystemdBootLoader(filename: str, description: str, kernel: str, sortkey: int) -> Generator[File]:
-  yield File(filename, permissions = "r-x", content = cleandoc(f'''
+  yield File(filename, permissions = "rwxr-xr-x", content = cleandoc(f'''
     title    {description}
     linux    /vmlinuz-{kernel}
     initrd   /initramfs-{kernel}.img
     options  root=UUID={root_uuid} rw {kernel_params}
     sort-key {sortkey}
   '''))
-  yield File(filename.replace(".conf", "-fallback.conf"), permissions = "r-x", content = cleandoc(f'''
+  yield File(filename.replace(".conf", "-fallback.conf"), permissions = "rwxr-xr-x", content = cleandoc(f'''
     title    {description} (Fallback)
     linux    /vmlinuz-{kernel}
     initrd   /initramfs-{kernel}-fallback.img

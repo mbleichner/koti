@@ -12,7 +12,7 @@ from koti.model import ConfigItem, ConfigModel, ManagedConfigItem
 
 class File(ManagedConfigItem):
   content: Callable[[ConfigModel], bytes] | None
-  permissions: int = 0o755
+  permissions: int
   owner: str = "root"
   # FIXME: group?
   filename: str
@@ -44,8 +44,8 @@ class File(ManagedConfigItem):
       self.permissions = File.parse_permissions(permissions)
     elif isinstance(permissions, int):
       self.permissions = permissions
-    elif self.permissions is None:
-      self.permissions = 0o444  # r--r--r--
+    elif permissions is None:
+      self.permissions = 0o644  # rw-r--r--
     self.owner = owner
     self.tags = set(tags or [])
 

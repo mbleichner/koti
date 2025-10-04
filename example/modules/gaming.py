@@ -22,7 +22,7 @@ def gaming() -> Generator[ConfigGroup]:
 
       *PostHookTriggerScope(
         # https://wiki.cachyos.org/configuration/general_system_tweaks
-        File("/etc/sysctl.d/99-splitlock.conf", permissions = "r--", content = cleandoc('''
+        File("/etc/sysctl.d/99-splitlock.conf", content = cleandoc('''
           kernel.split_lock_mitigate=0
         ''')),
         PostHook("apply-splitlock-sysctl", execute = lambda: shell("sysctl --system")),
@@ -37,20 +37,20 @@ def gaming() -> Generator[ConfigGroup]:
       Package("protontricks"),
       Package("protonplus"),
 
-      File("/etc/modules-load.d/proton-ntsync.conf", permissions = "r--", content = cleandoc(f'''
+      File("/etc/modules-load.d/proton-ntsync.conf", content = cleandoc(f'''
         # ntsync module has to be loaded manually in order for proton to be able to use it
         # (not all proton version will actually use ntsync - e.g. proton-cachyos is built
         # without ntsync support atm due to technical issues)
         ntsync
       ''')),
 
-      File("/etc/environment.d/proton-wayland.conf", permissions = "r--", content = cleandoc(f'''
+      File("/etc/environment.d/proton-wayland.conf", content = cleandoc(f'''
         # Force use of wayland in proton if available
         PROTON_USE_WAYLAND=1
         PROTON_ENABLE_WAYLAND=1
       ''')),
 
-      File("/usr/bin/steam", permissions = "r-x", content = cleandoc(f'''
+      File("/usr/bin/steam", permissions = "rwxr-xr-x", content = cleandoc(f'''
         #!/bin/sh
         
         # Workaround für Wine/Wayland Keyboard Layout Bug
