@@ -35,7 +35,7 @@ class PostHook(ManagedConfigItem):
 
 
 # noinspection PyPep8Naming
-def PostHookTriggerScope(*items: ConfigItem) -> list[ConfigItem]:
+def PostHookScope(*items: ConfigItem) -> list[ConfigItem]:
   """Convenience wrapper to connect PostHooks with their triggers."""
   hooks = [item for item in items if isinstance(item, PostHook)]
   non_hooks = [item for item in items if not isinstance(item, PostHook) and isinstance(item, ManagedConfigItem)]

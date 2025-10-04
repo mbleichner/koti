@@ -20,7 +20,7 @@ def gaming() -> Generator[ConfigGroup]:
       Package("mangohud"),
       GroupAssignment("manuel", "games"),
 
-      *PostHookTriggerScope(
+      *PostHookScope(
         # https://wiki.cachyos.org/configuration/general_system_tweaks
         File("/etc/sysctl.d/99-splitlock.conf", content = cleandoc('''
           kernel.split_lock_mitigate=0

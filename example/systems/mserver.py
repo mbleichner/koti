@@ -9,7 +9,7 @@ from modules.kernel import kernel_lts, kernel_stock
 
 
 def DockerComposeService(composefile: File, *other: ConfigItem) -> list[ConfigItem]:
-  return PostHookTriggerScope(
+  return PostHookScope(
     composefile,
     *other,
     PostHook(

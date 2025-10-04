@@ -115,7 +115,7 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGr
       Package("ananicy-cpp"),
       SystemdUnit("ananicy-cpp.service"),
 
-      *PostHookTriggerScope(
+      *PostHookScope(
         File("/etc/ananicy.d/ananicy.conf", content = cleandoc('''
           check_freq = 20
           loglevel = info
