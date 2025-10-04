@@ -124,7 +124,7 @@ class UserManager(ConfigManager[User, UserState]):
     self.managed_users_store.add(user.username)
 
   def create_user(self, user: User, target: UserState):
-    shell(f"useradd -d {target.home_dir} -s {target.shell} {user.username}")
+    shell(f"useradd --create-home --home-dir {target.home_dir} --shell {target.shell} {user.username}")
     self.managed_users_store.add(user.username)
 
   def delete_user(self, user: User):

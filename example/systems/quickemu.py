@@ -8,8 +8,8 @@ from modules.systray import systray
 
 # wget https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-basic.qcow2
 # quickemu --vm archlinux-latest.conf --display spice
+# > Login: arch/arch
 # ssh arch@localhost -p 22220
-#   Password "arch"
 # sudo pacman -Syu git base-devel
 # git clone https://github.com/mbleichner/koti.git
 # cd /home/arch/koti/example
