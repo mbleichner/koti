@@ -4,20 +4,19 @@ import os
 import pwd
 import shutil
 from hashlib import sha256
+from pwd import getpwnam, getpwuid
 from typing import Generator, Sequence
 
-from koti import Action
-from koti.model import ConfigItemState, ConfigManager, ConfigModel
+from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel
 from koti.items.file import File
 from koti.items.directory import Directory
 from koti.utils.json_store import JsonCollection, JsonStore
 
 
 class FileState(ConfigItemState):
-  def __init__(self, content: bytes, uid: int, gid: int, mode: int):
+  def __init__(self, content: bytes, owner: str, mode: int):
     self.content = content
-    self.uid = uid
-    self.gid = gid
+    self.owner = owner
     self.mode = mode
     sha256_hash = sha256()
     sha256_hash.update(content)
@@ -25,8 +24,7 @@ class FileState(ConfigItemState):
 
   def sha256(self) -> str:
     sha256_hash = sha256()
-    sha256_hash.update(str(self.uid).encode())
-    sha256_hash.update(str(self.gid).encode())
+    sha256_hash.update(self.owner.encode())
     sha256_hash.update(str(self.mode & 0o777).encode())
     sha256_hash.update(self.content_hash.encode())
     return sha256_hash.hexdigest()
@@ -102,7 +100,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         yield Action(
           installs = [item],
           description = f"create new file: {item.filename}",
-          additional_info = f"uid = {target.uid}, gid = {target.gid}, mode = {oct(target.mode)}",
+          additional_info = f"owner = {target.owner}, mode = {oct(target.mode)}",
           execute = lambda: self.create_or_update_file(item, target, register_file),
         )
 
@@ -110,7 +108,8 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         tmpfile = f"/tmp/koti.{target.sha256()[:8]}"
         with open(tmpfile, "wb+") as fh:
           fh.write(target.content)
-          os.chown(fh.name, uid = target.uid, gid = target.gid)
+          pwnam = getpwnam(target.owner)
+          os.chown(fh.name, uid = pwnam.pw_uid, gid = pwnam.pw_gid)
           os.chmod(fh.name, mode = target.mode)
         yield Action(
           updates = [item],
@@ -122,11 +121,11 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
           execute = lambda: self.create_or_update_file(item, target, register_file),
         )
 
-      if current is not None and (current.uid != target.uid or current.gid != target.gid):
+      if current is not None and current.owner != target.owner:
         yield Action(
           updates = [item],
           description = f"update file ownership: {item.filename}",
-          additional_info = f"uid {current.uid} => {target.uid}, gid {current.gid} => {target.gid}",
+          additional_info = f"owner {current.owner} => {target.owner}",
           execute = lambda: self.fix_file_owner(item, target, register_file),
         )
 
@@ -213,14 +212,13 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
 
   def create_or_update_file(self, item: File, target: FileState, register_file: bool):
     assert item.content is not None
-    uid = target.uid
-    gid = target.gid
+    pwnam = getpwnam(target.owner)
     mode = target.mode
     content = target.content
     self.mkdirs(os.path.dirname(item.filename), item.owner)
     with open(item.filename, 'wb+') as fh:
       fh.write(content)  # type: ignore
-    os.chown(item.filename, uid = uid, gid = gid)
+    os.chown(item.filename, uid = pwnam.pw_uid, gid = pwnam.pw_gid)
     os.chmod(item.filename, mode)
     assert mode == (os.stat(item.filename).st_mode & 0o777), "cannot apply file permissions (incompatible file system?)"
     if register_file:
@@ -228,7 +226,8 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     print(f"file {item.filename} successfully created/updated")
 
   def fix_file_owner(self, item: File, target: FileState, register_file: bool):
-    os.chown(item.filename, uid = target.uid, gid = target.gid)
+    pwnam = getpwnam(target.owner)
+    os.chown(item.filename, uid = pwnam.pw_uid, gid = pwnam.pw_gid)
     if register_file:
       self.managed_files_store.add(item.filename)
     print(f"file owner of {item.filename} successfully updated")
@@ -247,18 +246,15 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     stat = os.stat(item.filename)
     return FileState(
       content = content,
-      uid = stat.st_uid,
-      gid = stat.st_gid,
+      owner = getpwuid(stat.st_uid).pw_name,
       mode = stat.st_mode & 0o777,
     )
 
   def file_state_target(self, item: File, model: ConfigModel) -> FileState:
     assert item.content is not None
-    getpwnam = pwd.getpwnam(item.owner)
     return FileState(
       content = item.content(model),
-      uid = getpwnam.pw_uid,
-      gid = getpwnam.pw_gid,
+      owner = item.owner,
       mode = item.permissions & 0o777,
     )
 

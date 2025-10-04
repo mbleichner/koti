@@ -14,6 +14,7 @@ class File(ManagedConfigItem):
   content: Callable[[ConfigModel], bytes] | None
   permissions: int = 0o755
   owner: str = "root"
+  # FIXME: group?
   filename: str
 
   def __init__(
