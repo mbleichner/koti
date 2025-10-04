@@ -7,26 +7,19 @@ from koti.utils.shell import shell
 
 def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGroup]:
   yield ConfigGroup(
-    description = "optional dependencies for desktop",
-    provides = [
-      Checkpoint("desktop-optional-dependencies"),
-      Package("qt6-multimedia-ffmpeg"),  # qt6-multimedia-backend
-      Package("phonon-qt6-vlc"),  # phonon-qt6-backend
-      Package("pipewire-jack"),  # jack
-      Package("jdk17-openjdk"),  # java-runtime=17
-      Package("noto-fonts"),
-    ]
-  )
-
-  yield ConfigGroup(
     description = "desktop packages",
-    requires = [
-      Checkpoint("desktop-optional-dependencies"),  # avoid pacman asking for possible alternatives
-      File("/etc/pacman.conf"),  # Damit NoExtract bei der ersten Ausführung angewendet wird
-    ],
+    requires = [File("/etc/pacman.conf")],  # Damit NoExtract bei der ersten Ausführung angewendet wird
     provides = [
       Option("/etc/pacman.conf/NoExtract", "etc/xdg/autostart/org.kde.discover.notifier.desktop"),
       Directory("/opt/gamma-icc-profiles", source = "files/gamma-icc-profiles", mask = "r--"),
+
+      # Dependencies that have multiple alternatives (pacman will ask during installation)
+      Package("qt6-multimedia-ffmpeg"),  # ... qt6-multimedia-backend
+      Package("phonon-qt6-vlc"),  # .......... phonon-qt6-backend
+      Package("pipewire-jack"),  # ........... jack
+      Package("jdk17-openjdk"),  # ........... java-runtime=17
+      Package("noto-fonts"),  # .............. ttf-fonts
+
       Package("archlinux-wallpaper"),
       Package("ark"),
       Package("code"),
@@ -72,7 +65,7 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGr
       Checkpoint("display-manager"),
       Package("greetd-tuigreet"),
       SystemdUnit("greetd.service"),
-      File("/etc/greetd/config.toml", permissions = "r--", owner = "manuel", content = cleandoc(f'''
+      File("/etc/greetd/config.toml", permissions = "r--", content = cleandoc(f'''
         [terminal]
         vt = 2
   

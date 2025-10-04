@@ -123,6 +123,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
           execute = lambda: self.create_or_update_file(item, target, register_file),
         )
 
+      # FIXME: zusammenlegen
       if current is not None and current.owner != target.owner:
         yield Action(
           updates = [item],
@@ -131,6 +132,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
           execute = lambda: self.fix_file_owner(item, target, register_file),
         )
 
+      # FIXME: zusammenlegen
       if current is not None and current.mode != target.mode:
         yield Action(
           updates = [item],
