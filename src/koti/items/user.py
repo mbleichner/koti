@@ -7,17 +7,19 @@ class User(ManagedConfigItem):
   username: str
   shell: str | None
   home: str | None
-  # FIXME: password prompt
+  password: bool | None
 
   def __init__(
     self,
     username: str,
     shell: str | None = None,
-    home: str | None = None,
+    home: str | None = None,  # FIXME: make optional
+    password: bool | None = None,
   ):
     self.username = username
     self.shell = shell
     self.home = home
+    self.password = password
 
   def __str__(self) -> str:
     return f"User('{self.username}')"
@@ -28,8 +30,11 @@ class User(ManagedConfigItem):
       assert self.shell == other.shell, f"User('{self.username}') has conflicting shell parameter"
     if self.home is not None and other.home is not None:
       assert self.home == other.home, f"User('{self.username}') has conflicting home parameter"
+    if self.password is not None and other.password is not None:
+      assert self.password == other.password, f"User('{self.username}') has conflicting password parameter"
     return User(
       username = self.username,
       shell = self.shell or other.shell or None,
       home = self.home or other.home or None,
+      password = self.password or other.password or None,
     )

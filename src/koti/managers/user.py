@@ -18,16 +18,19 @@ class UserState(ConfigItemState):
     shell: str,
     home_dir: str,
     home_exists: bool,
+    has_password: bool,
   ):
     self.shell = shell
     self.home_dir = home_dir
     self.home_exists = home_exists
+    self.has_password = has_password
 
   def sha256(self) -> str:
     sha256_hash = sha256()
     sha256_hash.update(self.shell.encode())
     sha256_hash.update(self.home_dir.encode())
     sha256_hash.update(str(self.home_exists).encode())
+    sha256_hash.update(str(self.has_password).encode())
     return sha256_hash.hexdigest()
 
 
@@ -46,10 +49,12 @@ class UserManager(ConfigManager[User, UserState]):
   def state_target(self, item: User, model: ConfigModel, dryrun: bool) -> UserState:
     home = item.home or f"/home/{item.username}"
     shell = item.shell or "/usr/bin/nologin"
+
     return UserState(
       shell = shell,
       home_dir = home,
       home_exists = True,
+      has_password = item.password or True,
     )
 
   def state_current(self, item: User) -> UserState | None:
@@ -64,10 +69,12 @@ class UserManager(ConfigManager[User, UserState]):
         groups.append(group)
     home = user_homes[item.username]
     shell = user_shells[item.username]
+    pw_status = shell_output(f"passwd --status {item.username}").split(" ")[1]
     return UserState(
       shell = shell,
       home_dir = home,
       home_exists = os.path.isdir(home),
+      has_password = pw_status == "P",
     )
 
   def plan_install(self, items_to_check: Sequence[User], model: ConfigModel, dryrun: bool) -> Generator[Action]:
@@ -82,6 +89,7 @@ class UserManager(ConfigManager[User, UserState]):
           execute = lambda: self.create_user(user, target),
         )
 
+      # FIXME: zusammenlegen
       if current is not None and current.shell != target.shell:
         yield Action(
           updates = [user],
@@ -89,6 +97,7 @@ class UserManager(ConfigManager[User, UserState]):
           execute = lambda: self.fix_user_shell(user, target),
         )
 
+      # FIXME: zusammenlegen
       if current is not None and current.home_dir != target.home_dir:
         yield Action(
           updates = [user],
@@ -96,12 +105,21 @@ class UserManager(ConfigManager[User, UserState]):
           execute = lambda: self.fix_user_home(user, target),
         )
 
+      # FIXME: zusammenlegen
       if current is not None and not current.home_exists:
         yield Action(
           updates = [user],
           description = f"create homedir for user {user.username} in {target.home_dir}",
           additional_info = target.home_dir,
           execute = lambda: self.create_user_home(user, target),
+        )
+
+      # FIXME: zusammenlegen
+      if current is not None and current.has_password != target.has_password:
+        yield Action(
+          updates = [user],
+          description = f"create homedir for user {user.username} in {target.home_dir}",
+          execute = lambda: self.fix_user_password(user, target),
         )
 
   def plan_cleanup(self, items_to_keep: Sequence[User], model: ConfigModel, dryrun: bool) -> Generator[Action]:
@@ -123,8 +141,16 @@ class UserManager(ConfigManager[User, UserState]):
     shell(f"usermod --shell {target.shell} {user.username}")
     self.managed_users_store.add(user.username)
 
+  def fix_user_password(self, user: User, target: UserState):
+    if target.has_password:
+      shell(f"passwd {user.username}")
+    else:
+      shell(f"passwd --lock {user.username}")
+    self.managed_users_store.add(user.username)
+
   def create_user(self, user: User, target: UserState):
     shell(f"useradd --create-home --home-dir {target.home_dir} --shell {target.shell} {user.username}")
+    shell(f"passwd {user.username}")
     self.managed_users_store.add(user.username)
 
   def delete_user(self, user: User):
