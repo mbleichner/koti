@@ -4,7 +4,6 @@ from hashlib import sha256
 from typing import Generator, Sequence
 
 from koti import Action
-from koti.utils.colors import *
 from koti.model import ConfigItem, ConfigItemState, ConfigManager, ConfigModel, ManagedConfigItem
 from koti.items.hooks import PostHook
 from koti.utils.json_store import JsonMapping, JsonStore

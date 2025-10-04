@@ -3,7 +3,6 @@ import re
 from typing import Generator, Sequence
 
 from koti import Action
-from koti.utils.colors import *
 from koti.utils.logging import logger
 from koti.utils.shell import shell, shell_output, shell_success
 from koti.items.flatpak_package import FlatpakPackage

@@ -6,7 +6,6 @@ from koti.items.pacman_key import PacmanKey
 from koti.utils.json_store import JsonCollection, JsonStore
 from koti.utils.logging import logger
 from koti.utils.shell import shell, shell_output, shell_success
-from koti.utils.colors import *
 
 
 class PackageState(ConfigItemState):

@@ -7,7 +7,6 @@ from hashlib import sha256
 from typing import Generator, Sequence
 
 from koti import Action
-from koti.utils.colors import *
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.file import File
 from koti.items.directory import Directory

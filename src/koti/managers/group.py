@@ -7,7 +7,6 @@ from koti.utils.shell import shell, shell_output
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.group import GroupAssignment
 from koti.utils.json_store import JsonCollection, JsonStore
-from koti.utils.colors import *
 
 
 class GroupAssignmentState(ConfigItemState):
