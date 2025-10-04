@@ -110,7 +110,7 @@ class Koti:
       print()
 
     return ExecutionPlan(
-      actions = actions,
+      expected_actions = actions,
       model = model,
     )
 

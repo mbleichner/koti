@@ -184,16 +184,21 @@ class Action:
 
 
 class ExecutionPlan:
+  """The result of the koti planning phase. It contains the ConfigModel representing the system target
+  state and all actions that are expected to be run during the apply() phase. Note: additional actions
+  might show up during apply() - in this case koti will ask interactively before running them."""
   model: ConfigModel
   expected_actions: Sequence[Action]
 
-  def __init__(self, model: ConfigModel, actions: Sequence[Action]):
+  def __init__(self, model: ConfigModel, expected_actions: Sequence[Action]):
     self.model = model
-    self.expected_actions = actions
+    self.expected_actions = expected_actions
 
 
 class ConfigModel:
-  """Models the target system state and all phases for installation and cleanup during the koti run."""
+  """Models the target system state and all phases for installation/cleanup during the koti run. Also
+  provides a set of convenience functions to access ConfigItems (useful for dynamic configuration items
+  such as files that have their content written by inspecting other items)."""
   managers: Sequence[ConfigManager]
   phases: Sequence[InstallPhase]
 
