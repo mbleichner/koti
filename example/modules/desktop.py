@@ -11,7 +11,7 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGr
     requires = [File("/etc/pacman.conf")],  # Damit NoExtract bei der ersten Ausführung angewendet wird
     provides = [
       Option("/etc/pacman.conf/NoExtract", "etc/xdg/autostart/org.kde.discover.notifier.desktop"),
-      Directory("/opt/gamma-icc-profiles", source = "files/gamma-icc-profiles", mask = "r--"),
+      Directory("/opt/gamma-icc-profiles", source = "files/gamma-icc-profiles.zip", mask = "r--"),
 
       # Dependencies that have multiple alternatives (pacman will ask during installation)
       Package("qt6-multimedia-ffmpeg"),  # ... qt6-multimedia-backend

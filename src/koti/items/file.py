@@ -20,7 +20,7 @@ class File(ManagedConfigItem):
   def __init__(
     self,
     filename: str,
-    content: str | Callable[[ConfigModel], str] | None = None,
+    content: str | bytes | Callable[[ConfigModel], str | bytes] | None = None,
     source: str | None = None,
     permissions: int | str | None = None,
     owner: str = "root",
@@ -29,12 +29,12 @@ class File(ManagedConfigItem):
 
     self.filename = filename
     if callable(content):
-      self.content = lambda model: content(model).encode("utf-8")
+      self.content = lambda model: self.bytes(content(model))
     elif isinstance(content, str):
-      self.content = lambda model: content.encode("utf-8")
+      self.content = lambda model: self.bytes(content)
     elif source is not None:
       if source.startswith("http://") or source.startswith("https://"):
-        self.content = lambda model: self.download(source).encode()
+        self.content = lambda model: self.bytes(self.download(source))
       else:
         self.content = lambda model: Path(source).read_bytes()
         self.permissions = os.stat(source).st_mode & 0o777
@@ -97,3 +97,10 @@ class File(ManagedConfigItem):
     response = request("GET", url)
     assert response.status == 200
     return response.data.decode("utf-8")
+
+  @classmethod
+  def bytes(cls, content: str | bytes) -> bytes:
+    if isinstance(content, str):
+      return content.encode("utf-8")
+    else:
+      return content
