@@ -107,7 +107,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     if additional_items_from_urls:
       yield Action(
         installs = additional_items_from_urls,
-        description = f"install package(s) from URL(s): {", ".join([item.url for item in additional_items_from_urls if item.url])}",
+        description = f"install package(s) from URL(s): {", ".join([item.name for item in additional_items_from_urls if item.url])}",
         execute = lambda: self.install_from_url(additional_items_from_urls)
       )
 
