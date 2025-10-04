@@ -83,7 +83,7 @@ def base() -> Generator[ConfigGroup]:
       User(username = "manuel", home = "/home/manuel", shell = "/usr/bin/fish"),
       GroupAssignment("manuel", "wheel"),
       Package("sudo"),
-      File("/etc/sudoers", content = cleandoc('''
+      File("/etc/sudoers", permissions = 0o440, content = cleandoc('''
         Defaults!/usr/bin/visudo env_keep += "SUDO_EDITOR EDITOR VISUAL"
         Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"
         Defaults passwd_tries=3, passwd_timeout=180

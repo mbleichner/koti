@@ -78,16 +78,14 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
       if current is None:
         yield Action(
           installs = [item],
-          description = f"create swapfile {item.filename}",
-          additional_info = f"size = {target.size_bytes}",
+          description = f"create swapfile {item.filename} with size = {target.size_bytes}",
           execute = lambda: self.create_swapfile(item),
         )
 
       if current is not None and current.size_bytes != target.size_bytes:
         yield Action(
           updates = [item],
-          description = f"resize swapfile {item.filename}",
-          additional_info = f"{current.size_bytes} => {target.size_bytes}",
+          description = f"resize swapfile {item.filename} from {current.size_bytes} to {target.size_bytes}",
           execute = lambda: self.recreate_swapfile(item),
         )
 
