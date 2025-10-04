@@ -79,7 +79,6 @@ def base() -> Generator[ConfigGroup]:
     description = "bootstrap (user, sudo, pacman, paru)",
     tags = ["bootstrap"],
     before = lambda item: isinstance(item, Package) and not "bootstrap" in item.tags,
-    requires = [User("manuel")],
     provides = [
       User(username = "manuel", home = "/home/manuel", shell = "/usr/bin/fish"),
       GroupAssignment("manuel", "wheel"),
