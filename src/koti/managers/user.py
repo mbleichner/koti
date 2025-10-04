@@ -91,7 +91,7 @@ class UserManager(ConfigManager[User, UserState]):
           description = f"create new user {user.username}",
           execute = lambda: self.create_user(user, target),
         )
-        return
+        continue
 
       updates = [line for line in [
         f"shell: {current.shell} => {target.shell}" if current.shell != target.shell else None,

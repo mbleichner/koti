@@ -102,7 +102,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
           description = f"create new file: {item.filename}",
           execute = lambda: self.create_or_update_file(item, current, target, register_file),
         )
-        return
+        continue
 
       updates = [line for line in [
         self.preview_command(item, target) if current.content_hash != target.content_hash else None,
