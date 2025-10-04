@@ -10,6 +10,7 @@ from koti.utils.shell import shell, shell_output
 from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.user import User
 from koti.utils.json_store import JsonCollection, JsonStore
+from koti.utils.logging import logger
 
 
 class UserState(ConfigItemState):
@@ -117,7 +118,7 @@ class UserManager(ConfigManager[User, UserState]):
         removes = [user],
         description = f"delete user {user.username}",
         additional_info = "to prevent accidental data loss, koti will not delete the user homedir",
-        execute = lambda: self.delete_user(user),
+        execute = lambda: self.delete_user(user, dryrun),
       )
 
   def create_user(self, user: User, target: UserState):
@@ -140,9 +141,11 @@ class UserManager(ConfigManager[User, UserState]):
       os.chown(target.home_dir, uid, gid)
     self.managed_users_store.add(user.username)
 
-  def delete_user(self, user: User):
+  def delete_user(self, user: User, dryrun: bool):
     shell(f"userdel {user.username}")
     self.managed_users_store.remove(user.username)
+    if not dryrun:
+      logger.warn(f"the homedir of user {user.username} has not been deleted to prevent accidental data loss - please do it manually")
 
   def finalize(self, model: ConfigModel, dryrun: bool):
     if not dryrun:
