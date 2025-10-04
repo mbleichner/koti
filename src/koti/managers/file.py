@@ -100,46 +100,34 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         yield Action(
           installs = [item],
           description = f"create new file: {item.filename}",
-          additional_info = f"owner = {target.owner}, mode = {oct(target.mode)}",
-          execute = lambda: self.create_or_update_file(item, target, register_file),
+          execute = lambda: self.create_or_update_file(item, current, target, register_file),
         )
+        return
 
-      if current is not None and current.content_hash != target.content_hash:
-        tmpfile = f"/tmp/koti.{target.sha256()[:8]}"
-        if os.path.exists(tmpfile):
-          os.unlink(tmpfile)
-        with open(tmpfile, "wb+") as fh:
-          fh.write(target.content)
-          pwnam = getpwnam(target.owner)
-          os.chown(fh.name, uid = pwnam.pw_uid, gid = pwnam.pw_gid)
-          os.chmod(fh.name, mode = target.mode)
+      updates = [line for line in [
+        self.preview_command(item, target) if current.content_hash != target.content_hash else None,
+        f"owner {current.owner} => {target.owner}" if current.owner != target.owner else None,
+        f"mode {oct(current.mode)} => {oct(target.mode)}" if current.mode != target.mode else None,
+      ] if line is not None]
+
+      if updates:
         yield Action(
           updates = [item],
           description = f"update file content: {item.filename}",
-          additional_info = [
-            f"filesize {len(current.content)} => {len(target.content)} bytes",
-            f"preview changes: diff '{item.filename}' '{tmpfile}'",
-          ],
-          execute = lambda: self.create_or_update_file(item, target, register_file),
+          additional_info = updates,
+          execute = lambda: self.create_or_update_file(item, current, target, register_file),
         )
 
-      # FIXME: zusammenlegen
-      if current is not None and current.owner != target.owner:
-        yield Action(
-          updates = [item],
-          description = f"update file ownership: {item.filename}",
-          additional_info = f"owner {current.owner} => {target.owner}",
-          execute = lambda: self.fix_file_owner(item, target, register_file),
-        )
-
-      # FIXME: zusammenlegen
-      if current is not None and current.mode != target.mode:
-        yield Action(
-          updates = [item],
-          description = f"update file permissions: {item.filename}",
-          additional_info = f"mode {oct(current.mode)} => {oct(target.mode)}",
-          execute = lambda: self.fix_file_mode(item, target, register_file),
-        )
+  def preview_command(self, item: File, target: FileState) -> str:
+    tmpfile = f"/tmp/koti.{target.sha256()[:8]}"
+    if os.path.exists(tmpfile):
+      os.unlink(tmpfile)
+    with open(tmpfile, "wb+") as fh:
+      fh.write(target.content)
+      pwnam = getpwnam(target.owner)
+      os.chown(fh.name, uid = pwnam.pw_uid, gid = pwnam.pw_gid)
+      os.chmod(fh.name, mode = target.mode)
+    return f"preview content changes: diff '{item.filename}' '{tmpfile}'"
 
   def plan_dir_install(self, items_to_check: Sequence[Directory], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     for item in items_to_check:
@@ -214,7 +202,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     self.managed_dirs_store.remove(item.dirname),
     print(f"directory {item.dirname} deleted")
 
-  def create_or_update_file(self, item: File, target: FileState, register_file: bool):
+  def create_or_update_file(self, item: File, current: FileState | None, target: FileState, register_file: bool):
     assert item.content is not None
     pwnam = getpwnam(target.owner)
     mode = target.mode
@@ -227,7 +215,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     assert mode == (os.stat(item.filename).st_mode & 0o777), "cannot apply file permissions (incompatible file system?)"
     if register_file:
       self.managed_files_store.add(item.filename)
-    print(f"file {item.filename} successfully created/updated")
+    print(f"file {item.filename} successfully {"updated" if current is not None else "created"}")
 
   def fix_file_owner(self, item: File, target: FileState, register_file: bool):
     pwnam = getpwnam(target.owner)

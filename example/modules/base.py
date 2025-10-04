@@ -81,6 +81,7 @@ def base() -> Generator[ConfigGroup]:
     before = lambda item: isinstance(item, Package) and not "bootstrap" in item.tags,
     provides = [
       User(username = "manuel", home = "/home/manuel", shell = "/usr/bin/fish"),
+      User(username = "test", home = "/home/test", shell = "/usr/bin/bash", password = False),
       GroupAssignment("manuel", "wheel"),
       Package("sudo"),
       File("/etc/sudoers", permissions = "r--", content = cleandoc('''
