@@ -76,20 +76,49 @@ def base() -> Generator[ConfigGroup]:
   )
 
   yield ConfigGroup(
+    description = "sudo + /etc/sudoers",
+    tags = ["bootstrap"],
+    provides = [
+
+      User(username = "manuel", home = "/home/manuel", shell = "/usr/bin/fish"),
+      GroupAssignment("manuel", "wheel"),
+
+      Package("sudo"),
+      File("/etc/sudoers", permissions = "r--", content = cleandoc('''
+        Defaults!/usr/bin/visudo env_keep += "SUDO_EDITOR EDITOR VISUAL"
+        Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"
+        Defaults passwd_tries=3, passwd_timeout=180
+
+        # Notwendig für paru SudoLoop ohne initiale Passworteingabe  
+        Defaults verifypw = any
+
+        root ALL=(ALL:ALL) ALL
+        %wheel ALL=(ALL:ALL) ALL
+        @includedir /etc/sudoers.d
+
+        # Für die Systray Tools
+        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/cpupower
+        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/tee /sys/devices/system/cpu/*
+        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/nvidia-smi *
+
+        # Erlaubt von arch-update aufgerufene Kommandos ohne Passwort
+        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/pacman *
+        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/paccache *
+        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/checkservices *
+      ''')),
+    ],
+  )
+
+  yield ConfigGroup(
     description = "bootstrap keyrings, pacman, paru",
     tags = ["bootstrap"],
     before = lambda item: isinstance(item, Package) and not "bootstrap" in item.tags,
+    requires = [User("manuel")],
     provides = [
       PacmanKey("F3B607488DB35A47"),  # CachyOS
       Package("cachyos-keyring", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst"),
       Package("cachyos-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst"),
       Package("cachyos-v3-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst"),
-
-      User(
-        username = "manuel",
-        home = "/home/manuel",
-        shell = "/usr/bin/fish",
-      ),
 
       Package("paru", script = lambda: shell("""
         builddir=$(mktemp -d -t paru.XXXXXX)
@@ -215,47 +244,6 @@ def base() -> Generator[ConfigGroup]:
       Package("containerd"),
       SystemdUnit("docker.socket"),
     ]
-  )
-
-  yield ConfigGroup(
-    description = "sudo + /etc/sudoers",
-    provides = [
-      Package("sudo"),
-      GroupAssignment("manuel", "wheel"),
-      File("/etc/sudoers", permissions = "r--", content = cleandoc('''
-        ## Defaults specification
-        ##
-        ## Preserve editor environment variables for visudo.
-        ## To preserve these for all commands, remove the "!visudo" qualifier.
-        Defaults!/usr/bin/visudo env_keep += "SUDO_EDITOR EDITOR VISUAL"
-        ##
-        ## Use a hard-coded PATH instead of the user's to find commands.
-        ## This also helps prevent poorly written scripts from running
-        ## artbitrary commands under sudo.
-        Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"
-        
-        # https://www.reddit.com/r/archlinux/comments/dnxjbx/annoyance_with_sudo_password_expired/
-        Defaults passwd_tries=3, passwd_timeout=180
-        
-        # Notwendig für paru SudoLoop ohne initiale Passworteingabe  
-        Defaults verifypw = any
-        
-        root ALL=(ALL:ALL) ALL
-        %wheel ALL=(ALL:ALL) ALL
-        
-        @includedir /etc/sudoers.d
-        
-        # Für die Systray Tools
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/cpupower
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/tee /sys/devices/system/cpu/*
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/nvidia-smi *
-        
-        # Erlaubt von arch-update aufgerufene Kommandos ohne Passwort
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/pacman *
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/paccache *
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/checkservices *
-      ''')),
-    ],
   )
 
   yield ConfigGroup(

@@ -7,6 +7,7 @@ class User(ManagedConfigItem):
   username: str
   shell: str | None
   home: str | None
+  # FIXME: password prompt
 
   def __init__(
     self,
