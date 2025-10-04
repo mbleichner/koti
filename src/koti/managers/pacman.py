@@ -72,10 +72,11 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     installed_packages = self.pacman_list_installed_packages()
     explicit_packages = self.pacman_list_explicit_packages()
 
-    additional_items_from_urls: list[Package] = []
-    additional_items_from_script: list[Package] = []
-    additional_items_from_repo: list[Package] = []
     additional_explicit_items: list[Package] = []
+    additional_items_from_script: list[Package] = []
+    additional_items_from_urls: list[Package] = []
+    additional_items_from_repo: list[Package] = []
+
     for item in items_to_check:
       current, target = self.states(item, model, dryrun)
       if current == target:
@@ -89,6 +90,11 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
           additional_items_from_repo.append(item)
       elif item.name not in explicit_packages:
         additional_explicit_items.append(item)
+
+    additional_explicit_items.sort(key = lambda x: x.name)
+    additional_items_from_script.sort(key = lambda x: x.name)
+    additional_items_from_urls.sort(key = lambda x: x.name)
+    additional_items_from_repo.sort(key = lambda x: x.name)
 
     if additional_explicit_items:
       yield Action(
