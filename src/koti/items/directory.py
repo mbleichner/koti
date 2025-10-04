@@ -51,5 +51,4 @@ class Directory(ManagedConfigItem):
     return f"Directory('{self.dirname}')"
 
   def merge(self, other: ConfigItem):
-    assert isinstance(other, Directory)
     raise AssertionError(f"Directory('{self.dirname}') may not be declared twice")

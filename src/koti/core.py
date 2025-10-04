@@ -154,7 +154,7 @@ class Koti:
       printc(f"executing: {action.description}")
       for info in action.additional_info:
         printc(f"{info}")
-      if action.hash() not in plan.action_hashes:
+      if action.hash() not in plan.expected_actions_hashes:
         confirm("This action was not predicted during planning phase - please confirm to continue")
       action.execute()
     finally:
@@ -189,10 +189,8 @@ class Koti:
     for group in configs:
       for item in (x for x in group.provides if x is not None and isinstance(x, ManagedConfigItem)):
         matching_managers = [manager for manager in managers if item.__class__ in manager.managed_classes]
-        if len(matching_managers) == 0:
-          raise AssertionError(f"no manager found for class {item.__class__.__name__}")
-        if len(matching_managers) > 1:
-          raise AssertionError(f"multiple managers found for class {item.__class__.__name__}")
+        assert len(matching_managers) > 0, f"no manager found for class {item.__class__.__name__}"
+        assert len(matching_managers) < 2, f"multiple managers found for class {item.__class__.__name__}"
 
   @classmethod
   def merge_configs(cls, configs: list[ConfigGroup]) -> list[ConfigGroup]:
@@ -248,8 +246,7 @@ class Koti:
       if violation is None: break
       idx_phase, group = violation
       result[idx_phase].remove(group)
-      if len(result[idx_phase]) == 0:
-        raise AssertionError(f"could not order dependencies (check for circular dependencies))")
+      assert len(result[idx_phase]) > 0, "could not order dependencies (check for circular dependencies)"
       if idx_phase > 0:
         result[idx_phase - 1].append(group)
       else:
@@ -283,8 +280,7 @@ class Koti:
         # check "requires" dependencies
         for required_item in group.requires:
           required_phase_and_group = cls.find_required_group(required_item, phases)
-          if required_phase_and_group is None:
-            raise AssertionError(f"required item not found: {required_item.identifier()}")
+          assert required_phase_and_group is not None, f"required item not found: {required_item.identifier()}"
           required_phase_idx, required_group = required_phase_and_group
           if required_phase_idx >= phase_idx:
             assert required_group is not group, f"group with requires-dependency to itself: {group.description}"

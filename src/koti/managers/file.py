@@ -254,8 +254,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     )
 
   def file_state_target(self, item: File, model: ConfigModel) -> FileState:
-    if item.content is None:
-      raise AssertionError(f"{item.description()}: content missing")
+    assert item.content is not None, f"{item.description()}: content missing"
     getpwnam = pwd.getpwnam(item.owner)
     return FileState(
       content = item.content(model),

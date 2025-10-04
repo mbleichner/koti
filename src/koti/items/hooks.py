@@ -31,8 +31,6 @@ class PostHook(ManagedConfigItem):
     return f"PostHook('{self.name}')"
 
   def merge(self, other: ConfigItem) -> PostHook:
-    assert isinstance(other, PostHook)
-    assert other.identifier() == self.identifier()
     raise AssertionError(f"PostHook('{self.name}') cannot be declared twice")
 
 

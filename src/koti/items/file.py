@@ -52,7 +52,6 @@ class File(ManagedConfigItem):
     return f"File('{self.filename}')"
 
   def merge(self, other: ConfigItem):
-    assert isinstance(other, File)
     raise AssertionError(f"File('{self.filename}') may not be declared twice")
 
   @staticmethod

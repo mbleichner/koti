@@ -16,8 +16,8 @@ def shell(command: str, check: bool = True, executable: str = "/bin/sh", user: s
     user = user,
     env = env_for_user(user) if user else None,
   ) as process:
-    if process.wait() != 0 and check:
-      raise AssertionError(f"command failed: {command}")
+    exitcode = process.wait()
+    assert exitcode == 0 or not check, f"command failed: {command}"
 
 
 def shell_output(command: str, check: bool = True, executable: str = "/bin/sh", user: str | None = None) -> str:

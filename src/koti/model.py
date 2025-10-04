@@ -189,12 +189,13 @@ class Action:
 
 class ExecutionPlan:
   model: ConfigModel
-  actions: Sequence[Action]
+  expected_actions: Sequence[Action]
+  expected_actions_hashes: set[str]
 
   def __init__(self, model: ConfigModel, actions: Sequence[Action]):
     self.model = model
-    self.actions = actions
-    self.action_hashes = [action.hash() for action in actions]
+    self.expected_actions = actions
+    self.expected_actions_hashes = {action.hash() for action in actions}
 
 
 class ConfigModel:
