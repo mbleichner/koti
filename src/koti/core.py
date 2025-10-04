@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import copy
 from os import get_terminal_size, getuid
+from time import sleep
 from typing import Iterator
 
 import koti.utils.shell as shell_module
@@ -157,6 +158,7 @@ class Koti:
       if action not in plan.expected_actions:
         confirm("This action was not predicted during planning phase - please confirm to continue")
       action.execute()
+      sleep(0.1)  # add a small delay so it's easier to follow when a lot of actions happen
     finally:
       shell_module.verbose_mode = False
 

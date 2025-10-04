@@ -36,7 +36,7 @@ So I thought I'll give it a shot myself and the result is koti.
 
 ## Limitations
 
-- Currently, only Arch/pacman is supported. In the future, I plan to add support for apt, yum, flatpak, etc.
+- Currently, only Arch (pacman) and Flatpak is supported. In the future, I plan to add support for apt, yum, etc.
 
 ## Installation (Arch)
 
