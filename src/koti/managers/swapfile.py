@@ -78,7 +78,7 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
       if current is None:
         yield Action(
           installs = [item],
-          description = f"create swapfile",
+          description = f"create swapfile {item.filename}",
           additional_info = f"size = {target.size_bytes}",
           execute = lambda: self.create_swapfile(item),
         )
@@ -86,7 +86,7 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
       if current is not None and current.size_bytes != target.size_bytes:
         yield Action(
           updates = [item],
-          description = f"resize swapfile",
+          description = f"resize swapfile {item.filename}",
           additional_info = f"{current.size_bytes} => {target.size_bytes}",
           execute = lambda: self.recreate_swapfile(item),
         )
@@ -98,7 +98,7 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
         continue
       yield Action(
         removes = [item],
-        description = f"delete swapfile",
+        description = f"delete swapfile {item.filename}",
         additional_info = "please make sure the swapfile isn't referenced in fstab any more",
         execute = lambda: self.delete_swapfile(item),
       )
