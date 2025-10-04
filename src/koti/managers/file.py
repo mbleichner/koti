@@ -57,7 +57,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     if isinstance(item, File):
       assert item.content is not None, "missing either content or content_from_file"
     if isinstance(item, Directory):
-      assert len(item.files) > 0, "directory contains no files"
+      assert len(item.files()) > 0, "directory contains no files"
 
   def installed_files(self) -> list[File]:
     filenames = self.managed_files_store.elements()
@@ -139,11 +139,12 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       assert target is not None and isinstance(target, DirectoryState)
 
       # install all files belonging to the directory
-      yield from self.plan_file_install(item.files, model, dryrun, register_file = False)
+      directory_files = item.files()
+      yield from self.plan_file_install(directory_files, model, dryrun, register_file = False)
 
       # remove files that should no longer be present
       files_current = [f"{base}/{subfile}" for base, subdirs, subfiles in os.walk(item.dirname) for subfile in subfiles]
-      files_target = [file.filename for file in item.files]
+      files_target = [file.filename for file in directory_files]
       files_to_remove = [f for f in files_current if f not in files_target]
       for filename in files_to_remove:
         orphan_file = File(filename)
@@ -262,7 +263,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     return DirectoryState(file_states)
 
   def dir_state_target(self, item: Directory, model: ConfigModel) -> DirectoryState:
-    file_states = dict((file.filename, self.file_state_target(file, model)) for file in item.files)
+    file_states = dict((file.filename, self.file_state_target(file, model)) for file in item.files())
     return DirectoryState(file_states)
 
   def mkdirs(self, dirname: str, owner: str):
