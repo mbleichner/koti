@@ -14,6 +14,7 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
       Package("phonon-qt6-vlc"),  # phonon-qt6-backend
       Package("pipewire-jack"),  # jack
       Package("jdk17-openjdk"),  # java-runtime=17
+      Package("noto-fonts"),
     ]
   )
 
@@ -54,7 +55,6 @@ def desktop(nvidia: bool, autologin: bool) -> Generator[ConfigGroup]:
       Package("chromium"),
       Package("google-chrome"),
       Package("ttf-ms-win10-auto"),  # Das win11 Package war zuletzt broken
-      Package("noto-fonts"),
       Package("noto-fonts-emoji"),
       Package("pycharm-community-edition"),
       Package("libva-utils"),
