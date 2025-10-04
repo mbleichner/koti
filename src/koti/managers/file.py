@@ -106,6 +106,8 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
 
       if current is not None and current.content_hash != target.content_hash:
         tmpfile = f"/tmp/koti.{target.sha256()[:8]}"
+        if os.path.exists(tmpfile):
+          os.unlink(tmpfile)
         with open(tmpfile, "wb+") as fh:
           fh.write(target.content)
           pwnam = getpwnam(target.owner)
