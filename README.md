@@ -58,9 +58,9 @@ See the `examples` folder, specifically `koti-apply` and all the stuff in the `m
 - Config groups also allow declaring dependencies between each other in order to influence the order of execution
 - Absent any dependencies, koti will throw all config groups onto one big heap and apply all of their config items in the following order (a bit simplified, though):
     - Install pacman packages
-    - Install files
+    - Install config files
     - Enable systemd units
-    - Run post-hooks
+    - Run post-hooks (= execute commands in response to changed files)
 - If there are dependencies present, this will happen in multiple rounds (so-called phases) where koti will bundle mutually compatible config groups together and run an installation phase on each
   bundle.
 - When all config items have been installed, koti performs a system cleanup - looking for old items that have been removed from the koti config and uninstalls them from the system (in reverse

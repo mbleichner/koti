@@ -35,5 +35,7 @@ def quickemu() -> Generator[ConfigGroup | None]:
       Package("linux-firmware-intel"),
       Package("linux-firmware-nvidia"),
       Package("grub"),
+      Package("linux"),
+      Package("qemu-guest-agent"),
     ]
   )

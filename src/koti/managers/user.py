@@ -48,14 +48,11 @@ class UserManager(ConfigManager[User, UserState]):
     pass
 
   def state_target(self, item: User, model: ConfigModel, dryrun: bool) -> UserState:
-    home = item.home or f"/home/{item.username}"
-    shell = item.shell or "/usr/bin/nologin"
-
     return UserState(
-      shell = shell,
-      home_dir = home,
-      home_exists = True,
+      shell = item.shell or "/usr/bin/nologin",
+      home_dir = item.home or f"/home/{item.username}",
       has_password = item.password or True,
+      home_exists = True,
     )
 
   def state_current(self, item: User) -> UserState | None:
