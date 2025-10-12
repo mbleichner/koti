@@ -87,11 +87,10 @@ def base() -> Generator[ConfigGroup]:
       CacheServer = http://pacoloco.fritz.box/repo/cachyos/$arch/$repo
       Include = /etc/pacman.d/cachyos-mirrorlist
     ''')),
-
     PostHook(
       name = "update pacman databases after config change",
+      trigger = File("/etc/pacman.conf"),
       execute = lambda: shell("pacman -Syyu"),
-      trigger = File("/etc/pacman.conf")
     ),
 
     # install and configure paru

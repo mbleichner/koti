@@ -94,6 +94,7 @@ def dan() -> Generator[ConfigGroup | None]:
   yield ConfigGroup(
     description = "homeoffice stuff",
     provides = [
+      Package("xwaylandvideobridge"),
       Package("linphone-desktop-appimage"),
       Package("microsoft-edge-stable-bin"),
       # FlatpakPackage("us.zoom.Zoom"),

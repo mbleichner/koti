@@ -51,7 +51,6 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGr
       Package("libva-utils"),
       Package("vdpauinfo") if nvidia else None,
       Package("libva-nvidia-driver") if nvidia else None,
-      Package("xwaylandvideobridge"),
       Directory("/opt/gamma-icc-profiles", source = "files/gamma-icc-profiles.zip", mask = "r--"),
       SystemdUnit("coolercontrold.service"),
       SystemdUnit("bluetooth.service"),
