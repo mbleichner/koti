@@ -10,22 +10,17 @@ from koti.utils.json_store import *
 
 
 class Optimizer:
+  """Runs an algorithm to build a (near) optimal ConfigModel that minimizes ConfigManager invocations."""
   managers: Sequence[ConfigManager]
   merged_configs: Sequence[ConfigGroup]
-  same_value_groups: list[list[ManagedConfigItem]]
-  different_value_pairs: list[tuple[ManagedConfigItem, ManagedConfigItem]]
   items: list[ManagedConfigItem]
   item_to_index: dict[ManagedConfigItem, int]
+  same_value_groups: list[list[ManagedConfigItem]]
+  different_value_pairs: list[tuple[ManagedConfigItem, ManagedConfigItem]]
 
-  def __init__(
-    self,
-    merged_configs: Sequence[ConfigGroup],
-    managers: Sequence[ConfigManager],
-  ):
+  def __init__(self, merged_configs: Sequence[ConfigGroup], managers: Sequence[ConfigManager]):
     self.managers = managers
     self.merged_configs = merged_configs
-    self.same_value_groups = []
-    self.different_value_pairs = []
     self.items = []
     self.item_to_index: dict[ManagedConfigItem, int] = {}
     for group in self.merged_configs:
@@ -34,8 +29,15 @@ class Optimizer:
           idx = len(self.items)
           self.item_to_index[other] = idx
           self.items.append(other)
+    self.same_value_groups = []
+    self.different_value_pairs = []
 
   def run(self) -> ConfigModel:
+    """Runs the solver repeatedly an a partially specified problem, adding additional constraints
+    to avoid undesired results whenever necessary.
+    (This is a lot faster than specifying the full-scale problem, because the number of constraints grows
+    quadratically and involves integer variables. We sacrifice a bit of optimality, but in practice, this
+    seems to be barely ever noticeable.)"""
     sys.stdout.write("calculating execution order...")
     sys.stdout.flush()
     solution = self.optimize()
@@ -68,6 +70,10 @@ class Optimizer:
     )
 
   def optimize(self) -> dict[ManagedConfigItem, int]:
+    """Builds and solves a MIP to assign group numbers to all items. The linear program tries to group
+    items of the same type together (i.e. assign the same number to them), while respecting constraints
+    regarding their ordering (coming from the ConfigGroups themselves, as well as requires/before/after
+    attributes)."""
     model = Model("koti")
     objective = model.addVar("objective")
 
@@ -129,7 +135,8 @@ class Optimizer:
     return dict((item, round(sol[item_to_pos_var[item]])) for item in self.items)
 
   def adjust_constraints(self, solution: dict[ManagedConfigItem, int]) -> bool:
-
+    """Checks the solution for inconsistencies and adjusts future constraints accordingly.
+    Returns true if an adjustment has been made and false otherwise (which means we are done)."""
     items_by_pos: dict[int, list[ManagedConfigItem]] = defaultdict(list)
     for item, idx in solution.items():
       items_by_pos[idx].append(item)
@@ -146,7 +153,6 @@ class Optimizer:
       for subgroup1, subgroup2 in zip(subgroups[:-1], subgroups[1:]):
         self.different_value_pairs.append((subgroup1[0], subgroup2[0]))
         result = True
-
     self.same_value_groups = same_value_groups_new
     return result
 
