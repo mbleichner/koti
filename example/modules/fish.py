@@ -9,7 +9,7 @@ def fish() -> Generator[ConfigGroup]:
   yield ConfigGroup(
     description = "fish (+fastfetch)",
     provides = [
-      Package("fish"),
+      Package("fish", tags = "bootstrap"),
       Package("pyenv"),
       Package("fastfetch"),
       Package("imagemagick"),  # notwendig für png-Anzeige in fastfetch
