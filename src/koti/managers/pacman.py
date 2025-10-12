@@ -105,7 +105,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
 
     for item in additional_items_from_script:
       yield Action(
-        installs = additional_items_from_urls,
+        installs = additional_items_from_script,
         description = f"install package from script: {item.name}",
         execute = lambda: self.install_from_script(item)
       )

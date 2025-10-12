@@ -13,7 +13,7 @@ create file: archlinux.conf:
 quickemu --vm archlinux.conf
 ssh arch@localhost -p 22220
   (can take a while until the ssh server is up; password is "arch")
-sudo pacman -Syu git base-devel python python-urllib3
+sudo pacman -Syu git base-devel python python-urllib3 python-pyscipopt python-numpy
 git clone https://github.com/mbleichner/koti.git && cd koti/example
 git pull --rebase; sudo PYTHONPATH=/home/arch/koti/src ./koti-apply
 """
