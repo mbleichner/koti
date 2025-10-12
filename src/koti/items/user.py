@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from koti.model import ConfigItem, ManagedConfigItem
+from typing import Unpack
+
+from koti.model import ConfigItem, ManagedConfigItem, ManagedConfigItemBaseArgs
 
 
 class User(ManagedConfigItem):
@@ -15,7 +17,9 @@ class User(ManagedConfigItem):
     shell: str | None = None,
     home: str | None = None,  # FIXME: make optional
     password: bool | None = None,
+    **kwargs: Unpack[ManagedConfigItemBaseArgs],
   ):
+    super().__init__(**kwargs)
     self.username = username
     self.shell = shell
     self.home = home
@@ -37,4 +41,5 @@ class User(ManagedConfigItem):
       shell = self.shell or other.shell or None,
       home = self.home or other.home or None,
       password = self.password or other.password or None,
+      **self.merge_base_attrs(self, other),
     )

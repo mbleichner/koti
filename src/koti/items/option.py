@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Sequence
+from typing import Any, Iterable, Sequence
 
 from koti.model import ConfigItem, UnmanagedConfigItem
 
@@ -13,7 +13,13 @@ class Option[T](UnmanagedConfigItem):
   name: str
   _values: list[T]
 
-  def __init__(self, name: str, value: Sequence[T] | T | None = None):
+  def __init__(
+    self,
+    name: str,
+    value: Sequence[T] | T | None = None,
+    tags: Iterable[str] | str | None = None
+  ):
+    super().__init__(tags)
     self.name = name
     if isinstance(value, list):
       self._values = [*value]
@@ -61,4 +67,5 @@ class Option[T](UnmanagedConfigItem):
     return Option(
       name = self.name,
       value = list([*self._values, *other._values]),
+      tags = self.tags.union(other.tags)
     )

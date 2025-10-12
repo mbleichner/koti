@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Generator, Iterable, Literal, Sequence, Type, cast, overload
+from typing import Any, Callable, Generator, Iterable, Literal, Sequence, Type, TypedDict, cast, overload
 
 
 class ConfigGroup:
@@ -10,45 +10,30 @@ class ConfigGroup:
   within the same phase. Also, ConfigGroups allow to define dependencies on other ConfigGroups
   so they are split into separate phases to control the order of installation."""
   description: str
-  requires: Sequence[ConfigItem]
+  # requires: Sequence[ConfigItem]
   provides: Sequence[ConfigItem]
-  before: Callable[[ConfigItem], bool]
-  after: Callable[[ConfigItem], bool]
+
+  # before: Callable[[ConfigItem], bool]
+  # after: Callable[[ConfigItem], bool]
 
   def __init__(
     self,
     description: str,
-    provides: Sequence[ConfigItem | None],
-    requires: Sequence[ConfigItem | None] | None = None,
-    before: Callable[[ConfigItem], bool] | Sequence[ConfigItem | None] | None = None,
-    after: Callable[[ConfigItem], bool] | Sequence[ConfigItem | None] | None = None,
-    tags: Iterable[str] | None = None,
+    provides: Sequence[ConfigItem | None] | None = None,
   ):
     self.description = description
-    self.requires = [item for item in (requires or []) if item is not None]
     self.provides = [item for item in (provides or []) if item is not None]
 
-    if callable(before):
-      self.before = before
-    elif isinstance(before, Sequence):
-      self.before = lambda item: item in before
-    else:
-      self.before = lambda item: False
-
-    if callable(after):
-      self.after = after
-    elif isinstance(after, Sequence):
-      self.after = lambda item: item in after
-    else:
-      self.after = lambda item: False
-
-    for item in self.provides:
-      for tag in tags or set():
-        item.tags.add(tag)
+  def items(self, *provides: ConfigItem | None) -> ConfigGroup:
+    self.provides = [*self.provides, *(i for i in provides if i is not None)]
+    return self
 
 
 class ConfigItem(metaclass = ABCMeta):
   tags: set[str] = set()
+
+  def __init__(self, tags: Iterable[str] | str | None = None):
+    self.tags = {tags} if isinstance(tags, str) else {*(tags or [])}
 
   @abstractmethod
   def __str__(self):
@@ -73,10 +58,51 @@ class ConfigItem(metaclass = ABCMeta):
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.merge()")
 
 
+class ManagedConfigItemBaseArgs(TypedDict, total = False):
+  """Convenience type to avoid repetition in implemenations."""
+  tags: Iterable[str] | str | None
+  requires: Iterable[ManagedConfigItem] | ManagedConfigItem | None
+  before: Callable[[ManagedConfigItem], bool] | None
+  after: Callable[[ManagedConfigItem], bool] | None
+
+
 class ManagedConfigItem(ConfigItem, metaclass = ABCMeta):
   """ConfigItems that can be installed to the system. ManagedConfigItem require a corresponding
   ConfigManager being registered in koti."""
-  pass
+  after: Callable[[ManagedConfigItem], bool] | None
+  before: Callable[[ManagedConfigItem], bool] | None
+  requires: set[ManagedConfigItem]
+
+  def __init__(
+    self,
+    tags: Iterable[str] | str | None = None,
+    requires: Iterable[ManagedConfigItem] | ManagedConfigItem | None = None,
+    before: Callable[[ManagedConfigItem], bool] | None = None,
+    after: Callable[[ManagedConfigItem], bool] | None = None,
+  ):
+    super().__init__(tags)
+    self.requires = {requires} if isinstance(requires, ManagedConfigItem) else {*(requires or [])}
+    self.before = before
+    self.after = after
+
+  @staticmethod
+  def merge_base_attrs(item1: ManagedConfigItem, item2: ManagedConfigItem) -> dict[str, Any]:
+    return {
+      "tags":     item1.tags.union(item2.tags),
+      "requires": item1.requires.union(item2.requires),
+      "before":   ManagedConfigItem.merge_functions(item1.before, item2.before),
+      "after":    ManagedConfigItem.merge_functions(item1.after, item2.after),
+    }
+
+  @staticmethod
+  def merge_functions(
+    function1: Callable[[ManagedConfigItem], bool] | None,
+    function2: Callable[[ManagedConfigItem], bool] | None,
+  ) -> Callable[[ManagedConfigItem], bool] | None:
+    if function1 is not None and function2 is not None:
+      return lambda item: function1(item) or function2(item)
+    else:
+      return function1 or function2
 
 
 class UnmanagedConfigItem(ConfigItem, metaclass = ABCMeta):
@@ -200,11 +226,18 @@ class ConfigModel:
   provides a set of convenience functions to access ConfigItems (useful for dynamic configuration items
   such as files that have their content written by inspecting other items)."""
   managers: Sequence[ConfigManager]
-  phases: Sequence[InstallPhase]
+  groups: Sequence[ConfigGroup]
+  steps: Sequence[InstallStep]
 
-  def __init__(self, managers: Sequence[ConfigManager], phases: Sequence[InstallPhase]):
+  def __init__(
+    self,
+    managers: Sequence[ConfigManager],
+    groups: Sequence[ConfigGroup],
+    steps: Sequence[InstallStep],
+  ):
     self.managers = managers
-    self.phases = phases
+    self.groups = groups
+    self.steps = steps
 
   @overload
   def item[T: ConfigItem](self, reference: T) -> T:
@@ -219,7 +252,7 @@ class ConfigModel:
     pass
 
   def item[T: ConfigItem](self, reference: T, optional: bool = False) -> T | None:
-    result = next((cast(T, item) for phase in self.phases for item in phase.items if item == reference), None)
+    result = next((cast(T, item) for group in self.groups for item in group.provides if item == reference), None)
     assert result is not None or optional, f"Item not found: {reference}"
     return result
 
@@ -232,8 +265,8 @@ class ConfigModel:
     pass
 
   def contains(self, needle: ConfigItem | Callable[[ConfigItem], bool]) -> bool:
-    for phase in self.phases:
-      for item in phase.items:
+    for group in self.groups:
+      for item in group.provides:
         if isinstance(needle, ConfigItem) and needle == item:
           return True
         if callable(needle) and needle(item):
@@ -245,17 +278,6 @@ class ConfigModel:
       if reference.__class__ in manager.managed_classes:
         return manager
     raise AssertionError(f"manager not found for {reference}")
-
-
-class InstallPhase:
-  groups: Sequence[ConfigGroup]
-  items: Sequence[ConfigItem]
-  steps: Sequence[InstallStep]
-
-  def __init__(self, groups: Sequence[ConfigGroup], order: Sequence[InstallStep], items: Sequence[ConfigItem]):
-    self.items = items
-    self.groups = groups
-    self.steps = order
 
 
 class InstallStep:

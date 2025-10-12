@@ -29,8 +29,8 @@ def quickemu() -> Generator[ConfigGroup | None]:
 
   yield ConfigGroup(
     description = "firmware, drivers and filesystems for lenovo",
-    requires = [Swapfile("/swapfile")],
     provides = [
+      Swapfile("/swapfile"),
       Package("linux-firmware-other"),
       Package("linux-firmware-intel"),
       Package("linux-firmware-nvidia"),

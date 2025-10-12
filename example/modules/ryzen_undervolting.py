@@ -9,7 +9,6 @@ def ryzen_undervolting() -> Generator[ConfigGroup]:
     description = "Ryzen 5800X3D undervolting",
     provides = [
       Package("ryzen_smu-dkms-git"),
-      SystemdUnit("ryzen-undervolting.service"),
 
       File(
         "/opt/undervolting/ryzen-undervolting.py",
@@ -29,5 +28,7 @@ def ryzen_undervolting() -> Generator[ConfigGroup]:
         [Install]
         WantedBy=multi-user.target
       ''')),
+
+      SystemdUnit("ryzen-undervolting.service"),
     ]
   )

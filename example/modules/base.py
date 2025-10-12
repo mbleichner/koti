@@ -5,108 +5,100 @@ from koti.utils.shell import shell
 
 
 def base() -> Generator[ConfigGroup]:
-  yield ConfigGroup(
-    description = "bootstrap user and permissions",
-    tags = ["bootstrap"],
-    before = lambda item: isinstance(item, Package) and not "bootstrap" in item.tags,
-    provides = [
-      User(username = "manuel", home = "/home/manuel", shell = "/usr/bin/fish"),
-      GroupAssignment("manuel", "wheel"),
-      Package("sudo"),
-      File("/etc/sudoers", permissions = 0o440, content = cleandoc('''
-        Defaults!/usr/bin/visudo env_keep += "SUDO_EDITOR EDITOR VISUAL"
-        Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"
-        Defaults passwd_tries=3, passwd_timeout=180
+  yield ConfigGroup("bootstrap user and permissions").items(
+    User(username = "manuel", home = "/home/manuel", shell = "/usr/bin/fish"),
+    Package("sudo", tags = "bootstrap"),
 
-        # Notwendig für paru SudoLoop ohne initiale Passworteingabe  
-        Defaults verifypw = any
+    GroupAssignment("manuel", "wheel"),
+    File("/etc/sudoers", permissions = 0o440, content = cleandoc('''
+      Defaults!/usr/bin/visudo env_keep += "SUDO_EDITOR EDITOR VISUAL"
+      Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"
+      Defaults passwd_tries=3, passwd_timeout=180
 
-        root ALL=(ALL:ALL) ALL
-        %wheel ALL=(ALL:ALL) ALL
-        @includedir /etc/sudoers.d
+      # Notwendig für paru SudoLoop ohne initiale Passworteingabe  
+      Defaults verifypw = any
 
-        # Für die Systray Tools
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/cpupower
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/tee /sys/devices/system/cpu/*
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/nvidia-smi *
+      root ALL=(ALL:ALL) ALL
+      %wheel ALL=(ALL:ALL) ALL
+      @includedir /etc/sudoers.d
 
-        # Erlaubt von arch-update aufgerufene Kommandos ohne Passwort
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/pacman *
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/paccache *
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/checkservices *
-      ''')),
-    ]
-  )
+      # Für die Systray Tools
+      manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/cpupower
+      manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/tee /sys/devices/system/cpu/*
+      manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/nvidia-smi *
 
-  yield ConfigGroup(
-    description = "bootstrap pacman and paru",
-    tags = ["bootstrap"],
-    before = lambda item: isinstance(item, Package) and not "bootstrap" in item.tags,
-    requires = [User("manuel")],
-    provides = [
-      PacmanKey("F3B607488DB35A47"),  # CachyOS
-      Package("cachyos-keyring", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst"),
-      Package("cachyos-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst"),
-      Package("cachyos-v3-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst"),
+      # Erlaubt von arch-update aufgerufene Kommandos ohne Passwort
+      manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/pacman *
+      manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/paccache *
+      manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/checkservices *
+    ''')),
 
-      Package("paru", script = lambda: shell("""
-        builddir=$(mktemp -d -t paru.XXXXXX)
-        git clone https://aur.archlinux.org/paru.git $builddir
-        makepkg -si -D $builddir
-      """, user = "manuel")),
+    PacmanKey("F3B607488DB35A47"),  # CachyOS
+    Package("cachyos-keyring", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst", tags = "bootstrap"),
+    Package("cachyos-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst", tags = "bootstrap"),
+    Package("cachyos-v3-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst", tags = "bootstrap"),
 
-      # Declare options for pacman.conf (so I don't have to null-check later)
-      Option[str]("/etc/pacman.conf/NoExtract"),
-      Option[str]("/etc/pacman.conf/NoUpgrade"),
+    Package("paru", script = lambda: shell("""
+      builddir=$(mktemp -d -t paru.XXXXXX)
+      git clone https://aur.archlinux.org/paru.git $builddir
+      makepkg -si -D $builddir
+    """, user = "manuel"), tags = "bootstrap"),
 
-      File("/etc/pacman.conf", content = lambda model: cleandoc(f'''
-        [options]
-        HoldPkg = pacman glibc
-        Architecture = auto x86_64_v3
-        NoExtract = {" ".join(model.item(Option[str]("/etc/pacman.conf/NoExtract")).distinct())}
-        NoUpgrade = {" ".join(model.item(Option[str]("/etc/pacman.conf/NoUpgrade")).distinct())}
-        Color
-        CheckSpace
-        VerbosePkgLists
-        ParallelDownloads = 8
-        DownloadUser = alpm
-        SigLevel = Required DatabaseOptional
-        LocalFileSigLevel = Optional
-    
-        [core]
-        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
-        Include = /etc/pacman.d/mirrorlist
-    
-        [extra]
-        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
-        Include = /etc/pacman.d/mirrorlist
-    
-        [multilib]
-        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
-        Include = /etc/pacman.d/mirrorlist
-    
-        [core-testing]
-        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
-        Include = /etc/pacman.d/mirrorlist
-    
-        [extra-testing]
-        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
-        Include = /etc/pacman.d/mirrorlist
-    
-        [multilib-testing]
-        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
-        Include = /etc/pacman.d/mirrorlist
-    
-        [cachyos-v3]
-        CacheServer = http://pacoloco.fritz.box/repo/cachyos-v3/$arch_v3/$repo
-        Include = /etc/pacman.d/cachyos-v3-mirrorlist
-    
-        [cachyos]
-        CacheServer = http://pacoloco.fritz.box/repo/cachyos/$arch/$repo
-        Include = /etc/pacman.d/cachyos-mirrorlist
-      ''')),
+    # Declare options for pacman.conf (so I don't have to null-check later)
+    Option[str]("/etc/pacman.conf/NoExtract"),
+    Option[str]("/etc/pacman.conf/NoUpgrade"),
 
-      File("/etc/paru.conf", content = cleandoc('''
+    File("/etc/pacman.conf", content = lambda model: cleandoc(f'''
+      [options]
+      HoldPkg = pacman glibc
+      Architecture = auto x86_64_v3
+      NoExtract = {" ".join(model.item(Option[str]("/etc/pacman.conf/NoExtract")).distinct())}
+      NoUpgrade = {" ".join(model.item(Option[str]("/etc/pacman.conf/NoUpgrade")).distinct())}
+      Color
+      CheckSpace
+      VerbosePkgLists
+      ParallelDownloads = 8
+      DownloadUser = alpm
+      SigLevel = Required DatabaseOptional
+      LocalFileSigLevel = Optional
+  
+      [core]
+      CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+      Include = /etc/pacman.d/mirrorlist
+  
+      [extra]
+      CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+      Include = /etc/pacman.d/mirrorlist
+  
+      [multilib]
+      CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+      Include = /etc/pacman.d/mirrorlist
+  
+      [core-testing]
+      CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+      Include = /etc/pacman.d/mirrorlist
+  
+      [extra-testing]
+      CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+      Include = /etc/pacman.d/mirrorlist
+  
+      [multilib-testing]
+      CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+      Include = /etc/pacman.d/mirrorlist
+  
+      [cachyos-v3]
+      CacheServer = http://pacoloco.fritz.box/repo/cachyos-v3/$arch_v3/$repo
+      Include = /etc/pacman.d/cachyos-v3-mirrorlist
+  
+      [cachyos]
+      CacheServer = http://pacoloco.fritz.box/repo/cachyos/$arch/$repo
+      Include = /etc/pacman.d/cachyos-mirrorlist
+    ''')),
+
+    File(
+      filename = "/etc/paru.conf",
+      before = lambda item: isinstance(item, Package) and "bootstrap" not in item.tags,
+      content = cleandoc('''
         [options]
         PgpFetch
         Devel
@@ -116,24 +108,8 @@ def base() -> Generator[ConfigGroup]:
         SudoLoop
         CombinedUpgrade
         CleanAfter
-      ''')),
-
-      File("/etc/pacman.d/hooks/nvidia.hook", content = cleandoc('''
-        [Trigger]
-        Operation=Install
-        Operation=Upgrade
-        Operation=Remove
-        Type=Package
-        Target=nvidia-open
-    
-        [Action]
-        Description=Updating NVIDIA module in initcpio
-        Depends=mkinitcpio
-        When=PostTransaction
-        NeedsTargets
-        Exec=/usr/bin/mkinitcpio -P
-      ''')),
-    ]
+      '''),
+    ),
   )
 
   yield ConfigGroup(
@@ -165,7 +141,6 @@ def base() -> Generator[ConfigGroup]:
       # Arch + Pacman Utilities
       Package("pacman-contrib"),
       Package("pacutils"),
-      Package("reflector"),
       Package("lostfiles"),
 
       # Monitoring + Analyse
@@ -184,10 +159,10 @@ def base() -> Generator[ConfigGroup]:
       Package("pyenv"),
       Package("mypy"),
       Package("python-urllib3"),
+      Package("python-pyscipopt"),
       Package("docker"),
       Package("docker-compose"),
       Package("containerd"),
-      GroupAssignment("manuel", "docker"),
 
       # Networking
       Package("bind"),
@@ -212,11 +187,7 @@ def base() -> Generator[ConfigGroup]:
       Package("zlib-ng"),
       Package("zlib-ng-compat"),
 
-      SystemdUnit("systemd-timesyncd.service"),
-      SystemdUnit("systemd-boot-update.service"),
-      SystemdUnit("fstrim.timer"),
-      SystemdUnit("fwupd.service"),
-      SystemdUnit("docker.socket"),
+      GroupAssignment("manuel", "docker"),
 
       File("/etc/environment.d/editor.conf", content = cleandoc(f'''
         EDITOR=nano
@@ -249,6 +220,17 @@ def base() -> Generator[ConfigGroup]:
         auto_update = true
       ''')),
 
+      SystemdUnit("systemd-timesyncd.service"),
+      SystemdUnit("systemd-boot-update.service"),
+      SystemdUnit("fstrim.timer"),
+      SystemdUnit("fwupd.service"),
+      SystemdUnit("docker.socket"),
+    ]
+  )
+
+  yield ConfigGroup(
+    description = "locales",
+    provides = [
       File("/etc/locale.conf", content = cleandoc('''
         LANG=en_US.UTF-8
         LC_ADDRESS=de_DE.UTF-8
@@ -271,12 +253,13 @@ def base() -> Generator[ConfigGroup]:
       PostHook("regenerate-locales", execute = lambda: shell("locale-gen"), trigger = [
         File("/etc/locale.gen"),
       ]),
-    ]
+    ],
   )
 
   yield ConfigGroup(
     description = "reflector",
     provides = [
+      Package("reflector"),
       *PostHookScope(
         File("/etc/xdg/reflector/reflector.conf", content = cleandoc('''
           --save /etc/pacman.d/mirrorlist
@@ -318,13 +301,13 @@ def base() -> Generator[ConfigGroup]:
     description = "ssh daemon + config",
     provides = [
       Package("openssh"),
-      SystemdUnit("sshd.service"),
       File("/etc/ssh/sshd_config", owner = "root", content = cleandoc('''
         Include /etc/ssh/sshd_config.d/*.conf
         PermitRootLogin yes
         AuthorizedKeysFile .ssh/authorized_keys
         Subsystem sftp /usr/lib/ssh/sftp-server
       ''')),
+      SystemdUnit("sshd.service"),
     ],
   )
 

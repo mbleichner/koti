@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import os
-from typing import Iterable
+from typing import Unpack
 from zipfile import ZipFile
 
 from koti.items.file import File
-from koti.model import ConfigItem, ManagedConfigItem
+from koti.model import ConfigItem, ManagedConfigItem, ManagedConfigItemBaseArgs
 
 
 class Directory(ManagedConfigItem):
@@ -20,13 +20,13 @@ class Directory(ManagedConfigItem):
     source: str | None = None,
     mask: int | str = 0o755,
     owner: str = "root",
-    tags: Iterable[str] | None = None,
+    **kwargs: Unpack[ManagedConfigItemBaseArgs],
   ):
+    super().__init__(**kwargs)
     self.dirname = dirname.removesuffix("/")
     self.source = source.removesuffix("/") if source is not None else None
     self.owner = owner
     self.mask = mask
-    self.tags = set(tags or [])
 
   def files(self) -> list[File]:
     assert self.source is not None
@@ -81,5 +81,5 @@ class Directory(ManagedConfigItem):
       source = self.source or other.source,
       owner = self.owner,
       mask = self.mask,
-      tags = self.tags.union(other.tags),
+      **self.merge_base_attrs(self, other),
     )

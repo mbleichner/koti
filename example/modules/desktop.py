@@ -8,10 +8,8 @@ from koti.utils.shell import shell
 def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGroup]:
   yield ConfigGroup(
     description = "desktop packages",
-    requires = [File("/etc/pacman.conf")],  # Damit NoExtract bei der ersten Ausführung angewendet wird
     provides = [
       Option("/etc/pacman.conf/NoExtract", "etc/xdg/autostart/org.kde.discover.notifier.desktop"),
-      Directory("/opt/gamma-icc-profiles", source = "files/gamma-icc-profiles.zip", mask = "r--"),
 
       # Dependencies that have multiple alternatives (pacman will ask during installation)
       Package("qt6-multimedia-ffmpeg"),  # ... qt6-multimedia-backend
@@ -54,6 +52,7 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGr
       Package("vdpauinfo") if nvidia else None,
       Package("libva-nvidia-driver") if nvidia else None,
       Package("xwaylandvideobridge"),
+      Directory("/opt/gamma-icc-profiles", source = "files/gamma-icc-profiles.zip", mask = "r--"),
       SystemdUnit("coolercontrold.service"),
       SystemdUnit("bluetooth.service"),
     ]
@@ -62,9 +61,7 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGr
   yield ConfigGroup(
     description = "display manager and auto-login",
     provides = [
-      Checkpoint("display-manager"),
       Package("greetd-tuigreet"),
-      SystemdUnit("greetd.service"),
       File("/etc/greetd/config.toml", content = cleandoc(f'''
         [terminal]
         vt = 2
@@ -73,12 +70,14 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGr
         user = "{tuigreet_session(autologin)["user"]}"
         command = "{tuigreet_session(autologin)["command"]}"
       ''')),
+      SystemdUnit("greetd.service"),
     ]
   )
 
   yield ConfigGroup(
     description = "wireplumber priorities",
     provides = [
+      Package("wireplumber"),
       File("/home/manuel/.config/wireplumber/wireplumber.conf.d/priorities.conf", owner = "manuel", content = cleandoc('''
         monitor.alsa.rules = [
         
@@ -113,7 +112,6 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGr
     description = "ananicy-cpp and configuration",
     provides = [
       Package("ananicy-cpp"),
-      SystemdUnit("ananicy-cpp.service"),
 
       *PostHookScope(
         File("/etc/ananicy.d/ananicy.conf", content = cleandoc('''
@@ -162,8 +160,10 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGr
           {"name": "nextcloud", "nice": 10}
         ''')),
 
+        SystemdUnit("ananicy-cpp.service"),
+
         PostHook("restart-ananicy-cpp", execute = lambda: shell("systemctl restart ananicy-cpp.service"))
-      )
+      ),
     ]
   )
 

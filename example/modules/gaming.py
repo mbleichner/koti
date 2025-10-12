@@ -1,5 +1,4 @@
 from inspect import cleandoc
-from typing import Generator
 
 from koti import *
 from koti.items import *
@@ -20,13 +19,16 @@ def gaming() -> Generator[ConfigGroup]:
       Package("mangohud"),
       GroupAssignment("manuel", "games"),
 
-      *PostHookScope(
-        # https://wiki.cachyos.org/configuration/general_system_tweaks
-        File("/etc/sysctl.d/99-splitlock.conf", content = cleandoc('''
-          kernel.split_lock_mitigate=0
-        ''')),
-        PostHook("apply-splitlock-sysctl", execute = lambda: shell("sysctl --system")),
-      )
+      # https://wiki.cachyos.org/configuration/general_system_tweaks
+      File("/etc/sysctl.d/99-splitlock.conf", content = cleandoc('''
+        kernel.split_lock_mitigate=0
+      ''')),
+
+      PostHook(
+        "apply-splitlock-sysctl",
+        execute = lambda: shell("sysctl --system"),
+        trigger = File("/etc/sysctl.d/99-splitlock.conf")
+      ),
     ]
   )
 

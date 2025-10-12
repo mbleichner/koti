@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import re
-from typing import Iterable
+from typing import Iterable, Unpack
 
 from urllib3 import request
 
-from koti.model import ConfigItem, ManagedConfigItem
+from koti.model import ConfigItem, ManagedConfigItem, ManagedConfigItemBaseArgs
 
 
 class FlatpakRepo(ManagedConfigItem):
@@ -18,8 +18,9 @@ class FlatpakRepo(ManagedConfigItem):
     name: str,
     spec_url: str | None = None,
     repo_url: str | None = None,
-    tags: Iterable[str] | None = None,
+    **kwargs: Unpack[ManagedConfigItemBaseArgs],
   ):
+    super().__init__(**kwargs)
     self.name = name
     self.spec_url = spec_url
     if repo_url is not None:
@@ -28,7 +29,6 @@ class FlatpakRepo(ManagedConfigItem):
       self.repo_url = FlatpakRepo.get_repo_url_from_spec(spec_url)
     else:
       self.repo_url = None
-    self.tags = set(tags or [])
 
   def __str__(self) -> str:
     return f"FlatpakRepo('{self.name}')"
@@ -41,7 +41,7 @@ class FlatpakRepo(ManagedConfigItem):
       name = self.name,
       spec_url = self.spec_url,
       repo_url = self.repo_url,
-      tags = self.tags.union(other.tags),
+      **self.merge_base_attrs(self, other),
     )
 
   @staticmethod

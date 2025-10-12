@@ -9,7 +9,6 @@ def nvidia_undervolting() -> Generator[ConfigGroup]:
     description = "NVIDIA 3080 undervolting + clock tuning",
     provides = [
       Package("python-pynvml"),
-      SystemdUnit("nvidia-undervolting.service"),
 
       File("/opt/undervolting/nvidia-undervolting.py", content = cleandoc('''
         from pynvml import *
@@ -41,5 +40,7 @@ def nvidia_undervolting() -> Generator[ConfigGroup]:
         [Install]
         WantedBy=multi-user.target
      ''')),
+
+      SystemdUnit("nvidia-undervolting.service"),
     ]
   )

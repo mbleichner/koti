@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Callable, Iterable, Sequence
+from typing import Callable, Iterable, Sequence, Unpack
 
-from koti.model import ConfigItem, ManagedConfigItem
+from koti.model import ConfigItem, ManagedConfigItem, ManagedConfigItemBaseArgs
 
 
 class PostHook(ManagedConfigItem):
@@ -17,15 +17,15 @@ class PostHook(ManagedConfigItem):
     name: str,
     execute: Callable | None = None,
     trigger: Sequence[ManagedConfigItem] | ManagedConfigItem | None = None,
-    tags: Iterable[str] | None = None,
+    **kwargs: Unpack[ManagedConfigItemBaseArgs],
   ):
+    super().__init__(**kwargs)
     self.name = name
     self.execute = execute
     if isinstance(trigger, ManagedConfigItem):
       self.trigger = [trigger]
     else:
       self.trigger = [item for item in (trigger or []) if item is not None]
-    self.tags = set(tags or [])
 
   def __str__(self) -> str:
     return f"PostHook('{self.name}')"

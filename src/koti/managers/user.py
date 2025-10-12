@@ -146,4 +146,4 @@ class UserManager(ConfigManager[User, UserState]):
 
   def finalize(self, model: ConfigModel, dryrun: bool):
     if not dryrun:
-      self.managed_users_store.replace_all([item.username for phase in model.phases for item in phase.items if isinstance(item, User)])
+      self.managed_users_store.replace_all([item.username for group in model.groups for item in group.provides if isinstance(item, User)])

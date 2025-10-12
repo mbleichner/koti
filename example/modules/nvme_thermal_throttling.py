@@ -9,8 +9,6 @@ def nvme_thermal_throttling() -> Generator[ConfigGroup]:
     description = "NVMe thermal throttling (Kingston KC3000)",
     provides = [
       Package("nvme-cli"),
-      SystemdUnit("nvme-thermal-throttling.service"),
-
       File("/etc/systemd/system/nvme-thermal-throttling.service", content = cleandoc('''
         [Unit]
         Description=NVMe Thermal Throttling
@@ -23,5 +21,6 @@ def nvme_thermal_throttling() -> Generator[ConfigGroup]:
         [Install]
         WantedBy=multi-user.target
      ''')),
+      SystemdUnit("nvme-thermal-throttling.service"),
     ]
   )

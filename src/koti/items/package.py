@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Unpack
 
-from koti.model import ConfigItem, ManagedConfigItem
+from koti.model import ConfigItem, ManagedConfigItem, ManagedConfigItemBaseArgs
 
 
 class Package(ManagedConfigItem):
@@ -14,12 +14,12 @@ class Package(ManagedConfigItem):
     name: str,
     url: str | None = None,
     script: Callable[[], Any] | None = None,
-    tags: Iterable[str] | None = None
+    **kwargs: Unpack[ManagedConfigItemBaseArgs],
   ):
+    super().__init__(**kwargs)
     self.name = name
     self.url = url
     self.script = script
-    self.tags = set(tags or [])
 
   def __eq__(self, other: Any) -> bool:
     return isinstance(other, Package) and self.name == other.name
@@ -45,7 +45,7 @@ class Package(ManagedConfigItem):
       name = self.name,
       url = self.url,
       script = self.script,
-      tags = self.tags.union(other.tags),
+      **self.merge_base_attrs(self, other),
     )
 
 

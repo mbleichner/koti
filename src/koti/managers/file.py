@@ -55,9 +55,9 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
 
   def assert_installable(self, item: File | Directory, model: ConfigModel):
     if isinstance(item, File):
-      assert item.content is not None, "missing either content or content_from_file"
+      assert item.content is not None, f"{item}: missing either content or content_from_file"
     if isinstance(item, Directory):
-      assert len(item.files()) > 0, "directory contains no files"
+      assert len(item.files()) > 0, f"{item}: directory contains no files"
 
   def installed_files(self) -> list[File]:
     filenames = self.managed_files_store.elements()
@@ -276,5 +276,5 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
 
   def finalize(self, model: ConfigModel, dryrun: bool):
     if not dryrun:
-      self.managed_files_store.replace_all([item.filename for phase in model.phases for item in phase.items if isinstance(item, File)])
-      self.managed_dirs_store.replace_all([item.dirname for phase in model.phases for item in phase.items if isinstance(item, Directory)])
+      self.managed_files_store.replace_all([item.filename for group in model.groups for item in group.provides if isinstance(item, File)])
+      self.managed_dirs_store.replace_all([item.dirname for group in model.groups for item in group.provides if isinstance(item, Directory)])

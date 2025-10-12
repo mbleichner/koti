@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Iterable
+from typing import Unpack
 
-from koti.model import ConfigItem, ManagedConfigItem
+from koti.model import ConfigItem, ManagedConfigItem, ManagedConfigItemBaseArgs
 
 
 class SystemdUnit(ManagedConfigItem):
@@ -13,9 +13,9 @@ class SystemdUnit(ManagedConfigItem):
     self,
     name: str,
     user: str | None = None,
-    tags: Iterable[str] | None = None,
+    **kwargs: Unpack[ManagedConfigItemBaseArgs],
   ):
-    self.tags = set(tags or [])
+    super().__init__(**kwargs)
     self.name = name
     self.user = user
 
@@ -30,7 +30,7 @@ class SystemdUnit(ManagedConfigItem):
     return SystemdUnit(
       name = self.name,
       user = self.user,
-      tags = self.tags.union(other.tags),
+      **self.merge_base_attrs(self, other),
     )
 
 

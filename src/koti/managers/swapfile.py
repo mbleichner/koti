@@ -103,4 +103,4 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
 
   def finalize(self, model: ConfigModel, dryrun: bool):
     if not dryrun:
-      self.managed_files_store.replace_all([item.filename for phase in model.phases for item in phase.items if isinstance(item, Swapfile)])
+      self.managed_files_store.replace_all([item.filename for group in model.groups for item in group.provides if isinstance(item, Swapfile)])

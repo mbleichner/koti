@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Iterable
+from typing import Iterable, Unpack
 
-from koti.model import ConfigItem, ManagedConfigItem
+from koti.model import ConfigItem, ManagedConfigItem, ManagedConfigItemBaseArgs
 
 
 class Swapfile(ManagedConfigItem):
@@ -13,9 +13,9 @@ class Swapfile(ManagedConfigItem):
     self,
     filename: str,
     size_bytes: int | None = None,
-    tags: Iterable[str] | None = None,
+    **kwargs: Unpack[ManagedConfigItemBaseArgs],
   ):
-    self.tags = set(tags or [])
+    super().__init__(**kwargs)
     self.filename = filename
     self.size_bytes = size_bytes
 
@@ -24,7 +24,8 @@ class Swapfile(ManagedConfigItem):
 
   def merge(self, other: ConfigItem) -> Swapfile:
     assert isinstance(other, Swapfile) and self == other
-    assert other.size_bytes == self.size_bytes, f"Conflicting size_bytes in {self}"
+    if self.size_bytes is not None and other.size_bytes is not None:
+      assert other.size_bytes == self.size_bytes, f"Conflicting size_bytes in {self}"
     return Swapfile(
       filename = self.filename,
       size_bytes = self.size_bytes,

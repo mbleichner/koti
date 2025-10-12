@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Unpack
 from re import match
 
 from urllib3 import request
 
-from koti.model import ConfigItem, ConfigModel, ManagedConfigItem
+from koti.model import ConfigItem, ConfigModel, ManagedConfigItem, ManagedConfigItemBaseArgs
 
 
 class File(ManagedConfigItem):
@@ -24,9 +24,9 @@ class File(ManagedConfigItem):
     source: str | None = None,
     permissions: int | str | None = None,
     owner: str = "root",
-    tags: Iterable[str] | None = None,
+    **kwargs: Unpack[ManagedConfigItemBaseArgs],
   ):
-
+    super().__init__(**kwargs)
     self.filename = filename
     if callable(content):
       self.content = lambda model: self.bytes(content(model))
@@ -47,7 +47,6 @@ class File(ManagedConfigItem):
     elif permissions is None:
       self.permissions = 0o644  # rw-r--r--
     self.owner = owner
-    self.tags = set(tags or [])
 
   def __eq__(self, other: Any) -> bool:
     return isinstance(other, File) and self.filename == other.filename
@@ -58,8 +57,18 @@ class File(ManagedConfigItem):
   def __str__(self):
     return f"File('{self.filename}')"
 
-  def merge(self, other: ConfigItem):
-    raise AssertionError(f"{self} may not be declared twice")
+  def merge(self, other: ConfigItem) -> File:
+    assert isinstance(other, File) and self == other
+    if self.content is not None and other.content is not None:
+      raise AssertionError(f"{self} may not be declared twice")
+    # FIXME: restliche Attribute prüfen
+    return File(
+      filename = self.filename,
+      content = self.content or other.content,
+      permissions = self.permissions or other.permissions,
+      owner = self.owner or other.owner,
+      **self.merge_base_attrs(self, other),
+    )
 
   @staticmethod
   def parse_permissions(permissions: str) -> int:

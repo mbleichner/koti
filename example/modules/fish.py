@@ -13,9 +13,6 @@ def fish() -> Generator[ConfigGroup]:
       Package("pyenv"),
       Package("fastfetch"),
       Package("imagemagick"),  # notwendig für png-Anzeige in fastfetch
-      PostHook("set-fish-as-default-shell", execute = lambda: shell("chsh -s /usr/bin/fish manuel"), trigger = [
-        Package("fish"),
-      ]),
 
       File("/etc/fish/config.fish", content = cleandoc(r'''
         set fish_greeting ""
@@ -94,5 +91,9 @@ def fish() -> Generator[ConfigGroup]:
       ''')),
 
       File("/home/manuel/.config/fastfetch/fastfetch-logo.png", owner = "manuel", source = "files/fastfetch-logo.png"),
+
+      PostHook("set-fish-as-default-shell", execute = lambda: shell("chsh -s /usr/bin/fish manuel"), trigger = [
+        Package("fish"),
+      ]),
     ]
   )

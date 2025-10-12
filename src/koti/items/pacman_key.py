@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Iterable
+from typing import Iterable, Unpack
 
-from koti.model import ConfigItem, ManagedConfigItem
+from koti.model import ConfigItem, ManagedConfigItem, ManagedConfigItemBaseArgs
 
 
 class PacmanKey(ManagedConfigItem):
@@ -12,11 +12,11 @@ class PacmanKey(ManagedConfigItem):
     self,
     key_id: str,
     key_server = "keyserver.ubuntu.com",
-    tags: Iterable[str] | None = None,
+    **kwargs: Unpack[ManagedConfigItemBaseArgs],
   ):
+    super().__init__(**kwargs)
     self.key_id = key_id
     self.key_server = key_server
-    self.tags = set(tags or [])
 
   def __str__(self):
     return f"PacmanKey('{self.key_id}')"
@@ -27,5 +27,5 @@ class PacmanKey(ManagedConfigItem):
     return PacmanKey(
       key_id = self.key_id,
       key_server = self.key_server,
-      tags = self.tags.union(other.tags),
+      **self.merge_base_attrs(self, other),
     )

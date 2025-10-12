@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from koti.model import ConfigItem, ManagedConfigItem
+from typing import Unpack
+
+from koti.model import ConfigItem, ManagedConfigItem, ManagedConfigItemBaseArgs
 
 
 class GroupAssignment(ManagedConfigItem):
@@ -11,7 +13,9 @@ class GroupAssignment(ManagedConfigItem):
     self,
     username: str,
     group: str,
+    **kwargs: Unpack[ManagedConfigItemBaseArgs],
   ):
+    super().__init__(**kwargs)
     self.username = username
     self.group = group
 
@@ -20,4 +24,8 @@ class GroupAssignment(ManagedConfigItem):
 
   def merge(self, other: ConfigItem):
     assert isinstance(other, GroupAssignment) and self == other
-    return self
+    return GroupAssignment(
+      username = self.username,
+      group = self.group,
+      **self.merge_base_attrs(self, other),
+    )

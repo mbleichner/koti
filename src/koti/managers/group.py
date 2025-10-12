@@ -59,7 +59,7 @@ class GroupManager(ConfigManager[GroupAssignment, GroupAssignmentState]):
 
   def get_current_assignments(self, model: ConfigModel) -> list[GroupAssignment]:
     result: list[GroupAssignment] = []
-    currently_managed_users = set([item.username for phase in model.phases for item in phase.items if isinstance(item, GroupAssignment)])
+    currently_managed_users = set([item.username for group in model.groups for item in group.provides if isinstance(item, GroupAssignment)])
     previously_managed_users = self.managed_users_store.elements()
     for username in {*previously_managed_users, *currently_managed_users}:
       for line in shell_output("getent group | cut -d: -f1,4").splitlines():
@@ -78,5 +78,5 @@ class GroupManager(ConfigManager[GroupAssignment, GroupAssignmentState]):
 
   def finalize(self, model: ConfigModel, dryrun: bool):
     if not dryrun:
-      usernames = set([item.username for phase in model.phases for item in phase.items if isinstance(item, GroupAssignment)])
+      usernames = set([item.username for group in model.groups for item in group.provides if isinstance(item, GroupAssignment)])
       self.managed_users_store.replace_all(list(usernames))

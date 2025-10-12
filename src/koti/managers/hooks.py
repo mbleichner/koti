@@ -44,12 +44,11 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
   @staticmethod
   def index_in_execution_order(model: ConfigModel, needle: ConfigItem) -> int | None:
     result = 0
-    for phase in model.phases:
-      for step in phase.steps:
-        for item in step.items_to_install:
-          if item == needle:
-            return result
-          result += 1
+    for step in model.steps:
+      for item in step.items_to_install:
+        if item == needle:
+          return result
+        result += 1
     return None
 
   def state_current(self, hook: PostHook) -> PostHookState | None:
@@ -119,7 +118,7 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
 
   def finalize(self, model: ConfigModel, dryrun: bool):
     if not dryrun:
-      currently_installed = [item.name for phase in model.phases for item in phase.items if isinstance(item, PostHook)]
+      currently_installed = [item.name for group in model.groups for item in group.provides if isinstance(item, PostHook)]
       previously_installed = self.trigger_hash_store.keys()
       for name in previously_installed:
         if name not in currently_installed:

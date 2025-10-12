@@ -101,10 +101,10 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
   def finalize(self, model: ConfigModel, dryrun: bool):
     if not dryrun:
       previously_managed_users = [(username if username != "$system" else None) for username in self.store.keys()]
-      currently_managed_users = set([item.user for phase in model.phases for item in phase.items if isinstance(item, SystemdUnit)])
+      currently_managed_users = set([item.user for group in model.groups for item in group.provides if isinstance(item, SystemdUnit)])
       for username in previously_managed_users:
         if username in currently_managed_users:
-          units_for_user = [item.name for phase in model.phases for item in phase.items if isinstance(item, SystemdUnit) and item.user == username]
+          units_for_user = [item.name for group in model.groups for item in group.provides if isinstance(item, SystemdUnit) and item.user == username]
           units_store: JsonCollection[str] = self.store.collection(username or "$system")
           units_store.replace_all(units_for_user)
         else:

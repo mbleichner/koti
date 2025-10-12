@@ -30,8 +30,8 @@ def mserver() -> Generator[ConfigGroup | None]:
 
   yield ConfigGroup(
     description = "firmware, drivers and filesystems for lenovo",
-    requires = [Swapfile("/swapfile")],
     provides = [
+      Swapfile("/swapfile"),
       Package("linux-firmware-other"),
       Package("linux-firmware-intel"),
       Package("linux-firmware-realtek"),
@@ -72,10 +72,10 @@ def mserver() -> Generator[ConfigGroup | None]:
 
   yield ConfigGroup(
     description = "docker and services",
-    requires = [User("manuel")],
     provides = [
+      User("manuel"),
+
       SystemdUnit("docker.service"),
-      GroupAssignment("manuel", "docker"),
 
       File("/usr/local/bin/docker-update", permissions = "rwxr-xr-x", content = cleandoc('''
         #!/bin/bash -e
