@@ -36,7 +36,7 @@ class Optimizer:
           self.items.append(other)
 
   def run(self) -> ConfigModel:
-    sys.stdout.write("determining execution order...")
+    sys.stdout.write("calculating execution order...")
     sys.stdout.flush()
     solution = self.optimize()
     while self.adjust_constraints(solution):

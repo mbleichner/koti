@@ -58,7 +58,7 @@ class Koti:
       manager.initialize(model, dryrun)
 
     # collect actions during installation phases
-    sys.stdout.write("planning actions to execute...")
+    sys.stdout.write("calculating actions to perform...")
     sys.stdout.flush()
     actions: list[Action] = []
     items_total = [item for step in model.steps for item in step.items_to_install]
@@ -75,22 +75,27 @@ class Koti:
       sys.stdout.flush()
       for action in cleanup_step.manager.plan_cleanup(cleanup_step.items_to_keep, model, dryrun):
         actions.append(action)
+
+    print()
     print()
 
     for manager in self.managers:
       manager.finalize(model, dryrun)
 
     # list all groups + items
-    if groups or items:
-      if groups:
-        for group in model.groups:
-          prefix = self.prefix_for_item(actions, *(item for item in group.provides if isinstance(item, ManagedConfigItem)))
-          printc(f"{prefix} {group.description}")
-      if items:
-        for install_step in model.steps:
-          for item in install_step.items_to_install:
-            prefix = self.prefix_for_item(actions, item)
-            printc(f"{prefix} {item}")
+    if groups:
+      printc(f"{BOLD}Config Group Summary:")
+      for group in model.groups:
+        prefix = self.prefix_for_item(actions, *(item for item in group.provides if isinstance(item, ManagedConfigItem)))
+        printc(f"{prefix} {group.description}")
+      print()
+
+    if items:
+      printc(f"{BOLD}Config Item Summary:")
+      for install_step in model.steps:
+        for idx, item in enumerate(install_step.items_to_install):
+          prefix = self.prefix_for_item(actions, item)
+          printc(f"{prefix} {item}")
       print()
 
     printc(f"{len(items_total)} items total")
