@@ -90,6 +90,7 @@ def base() -> Generator[ConfigGroup]:
 
     # install and configure paru
     Package("paru", script = lambda: shell("""
+      pacman -Syu
       builddir=$(mktemp -d -t paru.XXXXXX)
       git clone https://aur.archlinux.org/paru.git $builddir
       makepkg -si -D $builddir
