@@ -60,8 +60,11 @@ class File(ManagedConfigItem):
   def merge(self, other: ConfigItem) -> File:
     assert isinstance(other, File) and self == other
     if self.content is not None and other.content is not None:
-      raise AssertionError(f"{self} may not be declared twice")
-    # FIXME: restliche Attribute prüfen
+      assert False, f"{self} may not be declared twice"
+    if self.permissions is not None and other.permissions is not None:
+      assert self.permissions == other.permissions, f"{self} has conflicting permissions parameter"
+    if self.owner is not None and other.owner is not None:
+      assert self.owner == other.owner, f"{self} has conflicting owner parameter"
     return File(
       filename = self.filename,
       content = self.content or other.content,

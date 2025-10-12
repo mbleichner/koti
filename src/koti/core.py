@@ -38,7 +38,6 @@ class Koti:
     self.assert_config_items_installable(model)
     return model
 
-  # FIXME: ins Model selbst integrieren?
   def create_cleanup_phase(self, model: ConfigModel) -> CleanupPhase:
     items_to_install = [item for step in model.steps for item in step.items_to_install]
     steps: list[CleanupStep] = []

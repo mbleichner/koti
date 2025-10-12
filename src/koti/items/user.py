@@ -14,7 +14,7 @@ class User(ManagedConfigItem):
   def __init__(
     self,
     username: str,
-    shell: str | None = None,
+    shell: str | None = None,  # FIXME: make into a separate item UserShell()
     home: str | None = None,  # FIXME: make optional
     password: bool | None = None,
     **kwargs: Unpack[ManagedConfigItemBaseArgs],

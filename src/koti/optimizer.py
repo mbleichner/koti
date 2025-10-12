@@ -48,11 +48,18 @@ class Optimizer:
     execution_group_count = max(solution.values()) + 1
     execution_groups: list[list[ManagedConfigItem]] = [[] for i in range(execution_group_count)]
     for item in self.items:
-      idx = solution[item]
-      execution_groups[idx].append(item)
+      execution_groups[solution[item]].append(item)
 
-    # FIXME: einzelne ExecutionGroups nochmal nachsortieren, sodass die Ordnung jeder ConfigGroup eingehalten wird?
-    # print(f"GROUP COUNT = {execution_group_count}")
+    # Der Optimierungs-Algorithmus arbeitet unter der Annahme, dass Items innerhalb einer Gruppe beliebig
+    # umsortiert werden dürfen. Das kann im Endergebnis u.U. problematisch sein, z.B. wenn man zwei PostHooks
+    # hat, die aufeinander aufsetzen. Deshalb müsste man eigentlich nochmal alle von der Optimierung ermittelten
+    # Gruppen per linearer Optimierung nachsortieren, sodass die Ordnung jeder einzelnen ConfigGroup eingehalten
+    # wird.
+    # Bei dieser Nachsortierung könnte es allerdings passieren, dass verschiedene ConfigGroups wild vermischt
+    # werden, was im Listing dann wiederum sehr chaotisch aussieht. Da die Result-Liste aus den ConfigGroups
+    # erzeugt wird, sollte die Sortierung weitestgehend damit übereinstimmen, weshalb die fehlende Nachsortierung
+    # möglicherweise nie zu einem echten Problem wird. Falls doch, ließe sich als Workaround auch eine explizite
+    # Ordnung per requires/after/before definieren.
 
     return ConfigModel(
       managers = self.managers,
