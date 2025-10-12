@@ -70,57 +70,63 @@ def mserver() -> Generator[ConfigGroup | None]:
     ]
   )
 
-  yield ConfigGroup(
-    description = "docker and services",
-    provides = [
-      User("manuel"),
+  yield ConfigGroup("docker").items(
+    User("manuel"),
+    SystemdUnit("docker.service"),
+    File("/usr/local/bin/docker-update", permissions = "rwxr-xr-x", content = cleandoc('''
+      #!/bin/bash -e
+      for DIR in homeassistant nextcloud pihole pyanodon-mapshot pacoloco traefik; do
+        cd /opt/$DIR && docker compose pull && docker compose up -d
+      done
+    '''))
+  )
 
-      SystemdUnit("docker.service"),
+  yield ConfigGroup("traefik").items(
+    *DockerComposeService(
+      File("/opt/traefik/docker-compose.yml", source = "files/traefik/docker-compose.yml"),
+    )
+  )
 
-      File("/usr/local/bin/docker-update", permissions = "rwxr-xr-x", content = cleandoc('''
-        #!/bin/bash -e
-        for DIR in homeassistant nextcloud pihole pyanodon-mapshot pacoloco traefik; do
-          cd /opt/$DIR && docker compose pull && docker compose up -d
-        done
-      ''')),
+  yield ConfigGroup("nextcloud").items(
+    *DockerComposeService(
+      File("/opt/nextcloud/docker-compose.yml", source = "files/nextcloud/docker-compose.yml"),
+    )
+  )
 
-      *DockerComposeService(
-        File("/opt/traefik/docker-compose.yml", source = "files/traefik/docker-compose.yml"),
-      ),
+  yield ConfigGroup("homeassistant").items(
+    *DockerComposeService(
+      File("/opt/homeassistant/docker-compose.yml", source = "files/homeassistant/docker-compose.yml"),
+    )
+  )
 
-      *DockerComposeService(
-        File("/opt/nextcloud/docker-compose.yml", source = "files/nextcloud/docker-compose.yml"),
-      ),
+  yield ConfigGroup("pihole").items(
+    *DockerComposeService(
+      File("/opt/pihole/docker-compose.yml", source = "files/pihole/docker-compose.yml"),
+    )
+  )
 
-      *DockerComposeService(
-        File("/opt/homeassistant/docker-compose.yml", source = "files/homeassistant/docker-compose.yml"),
-      ),
+  yield ConfigGroup("pyanodon-mapshot").items(
+    *DockerComposeService(
+      File("/opt/pyanodon-mapshot/docker-compose.yml", source = "files/pyanodon-mapshot/docker-compose.yml"),
+    )
+  )
 
-      *DockerComposeService(
-        File("/opt/pihole/docker-compose.yml", source = "files/pihole/docker-compose.yml"),
-      ),
-
-      *DockerComposeService(
-        File("/opt/pyanodon-mapshot/docker-compose.yml", source = "files/pyanodon-mapshot/docker-compose.yml"),
-      ),
-
-      *DockerComposeService(
-        File("/opt/pacoloco/docker-compose.yml", source = "files/pacoloco/docker-compose.yml"),
-        File("/opt/pacoloco/pacoloco.yaml", source = "files/pacoloco/pacoloco.yaml"),
-      ),
-
-      PostHook(
-        'download pacoloco .db files',
-        # Pacoloco prefetch only works if .db files have been added to the cache, which will not happen if we use
-        # the CacheServer setting. As a workaround, we trigger a download of the .db files manually.
-        trigger = PostHook(f"docker compose /opt/pacoloco/docker-compose.yml"),
-        execute = lambda: shell('''
-          curl http://pacoloco.fritz.box/repo/archlinux/core/os/x86_64/core.db > /dev/null
-          curl http://pacoloco.fritz.box/repo/archlinux/extra/os/x86_64/extra.db > /dev/null
-          curl http://pacoloco.fritz.box/repo/archlinux/multilib/os/x86_64/multilib.db > /dev/null
-          curl http://pacoloco.fritz.box/repo/cachyos-v3/x86_64_v3/cachyos-v3/cachyos-v3.db > /dev/null
-          curl http://pacoloco.fritz.box/repo/cachyos/x86_64/cachyos/cachyos.db > /dev/null
-        '''),
-      )
-    ]
+  yield ConfigGroup("pacoloco").items(
+    *DockerComposeService(
+      File("/opt/pacoloco/docker-compose.yml", source = "files/pacoloco/docker-compose.yml"),
+      File("/opt/pacoloco/pacoloco.yaml", source = "files/pacoloco/pacoloco.yaml"),
+    ),
+    PostHook(
+      'download pacoloco .db files',
+      # Pacoloco prefetch only works if .db files have been added to the cache, which will not happen if we use
+      # the CacheServer setting. As a workaround, we trigger a download of the .db files manually.
+      trigger = PostHook(f"docker compose /opt/pacoloco/docker-compose.yml"),
+      execute = lambda: shell('''
+        curl http://pacoloco.fritz.box/repo/archlinux/core/os/x86_64/core.db > /dev/null
+        curl http://pacoloco.fritz.box/repo/archlinux/extra/os/x86_64/extra.db > /dev/null
+        curl http://pacoloco.fritz.box/repo/archlinux/multilib/os/x86_64/multilib.db > /dev/null
+        curl http://pacoloco.fritz.box/repo/cachyos-v3/x86_64_v3/cachyos-v3/cachyos-v3.db > /dev/null
+        curl http://pacoloco.fritz.box/repo/cachyos/x86_64/cachyos/cachyos.db > /dev/null
+      '''),
+    )
   )
