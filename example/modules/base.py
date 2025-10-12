@@ -157,6 +157,7 @@ def base() -> Generator[ConfigGroup]:
     Package("mypy"),
     Package("python-urllib3"),
     Package("python-pyscipopt"),
+    Package("python-numpy"),
     Package("docker"),
     Package("docker-compose"),
     Package("containerd"),
