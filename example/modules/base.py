@@ -88,9 +88,14 @@ def base() -> Generator[ConfigGroup]:
       Include = /etc/pacman.d/cachyos-mirrorlist
     ''')),
 
+    PostHook(
+      name = "update pacman databases after config change",
+      execute = lambda: shell("pacman -Syyu"),
+      trigger = File("/etc/pacman.conf")
+    ),
+
     # install and configure paru
     Package("paru", script = lambda: shell("""
-      pacman -Syu
       builddir=$(mktemp -d -t paru.XXXXXX)
       git clone https://aur.archlinux.org/paru.git $builddir
       makepkg -si -D $builddir
