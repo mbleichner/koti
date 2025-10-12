@@ -158,7 +158,7 @@ class Koti:
       if action not in plan.expected_actions:
         confirm("this action was not predicted during planning phase - please confirm to continue")
       action.execute()
-      sleep(0.1)  # add a small delay so it's easier to follow when a lot of actions happen
+      sleep(0.05)  # add a small delay so it's easier to follow when a lot of actions happen
     finally:
       shell_module.verbose_mode = False
 
