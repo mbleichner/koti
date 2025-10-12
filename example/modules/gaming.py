@@ -14,7 +14,6 @@ def gaming() -> Generator[ConfigGroup]:
       Package("gpu-screen-recorder-ui"),
       Package("ryujinx"),
       Package("steam"),
-      Package("nexusmods-app-bin"),
       Package("r2modman-bin"),
       Package("mangohud"),
       GroupAssignment("manuel", "games"),
