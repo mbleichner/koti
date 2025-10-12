@@ -10,11 +10,7 @@ class ConfigGroup:
   within the same phase. Also, ConfigGroups allow to define dependencies on other ConfigGroups
   so they are split into separate phases to control the order of installation."""
   description: str
-  # requires: Sequence[ConfigItem]
   provides: Sequence[ConfigItem]
-
-  # before: Callable[[ConfigItem], bool]
-  # after: Callable[[ConfigItem], bool]
 
   def __init__(
     self,
