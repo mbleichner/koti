@@ -54,33 +54,28 @@ class Koti:
     dryrun = True
     model = self.create_model()
 
-    for manager in self.managers:
-      manager.initialize(model, dryrun)
-
-    # collect actions during installation phases
+    actions: list[Action] = []
     sys.stdout.write("calculating actions to perform...")
     sys.stdout.flush()
-    actions: list[Action] = []
-    items_total = [item for step in model.steps for item in step.items_to_install]
+
+    for manager in self.managers:
+      manager.initialize(model, dryrun)
     for install_step in model.steps:
       sys.stdout.write(".")
       sys.stdout.flush()
       for action in install_step.manager.plan_install(install_step.items_to_install, model, dryrun):
         actions.append(action)
-
-    # collect actions during  cleanup phase
     cleanup_phase = self.create_cleanup_phase(model)
     for cleanup_step in cleanup_phase.steps:
       sys.stdout.write(".")
       sys.stdout.flush()
       for action in cleanup_step.manager.plan_cleanup(cleanup_step.items_to_keep, model, dryrun):
         actions.append(action)
-
-    print()
-    print()
-
     for manager in self.managers:
       manager.finalize(model, dryrun)
+
+    print()
+    print()
 
     # list all groups + items
     if groups:
@@ -98,7 +93,7 @@ class Koti:
           printc(f"{prefix} {item}")
       print()
 
-    printc(f"{len(items_total)} items total")
+    printc(f"{len([item for step in model.steps for item in step.items_to_install])} items total")
     print()
 
     # print warnings generated during evaluation
