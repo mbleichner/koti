@@ -12,13 +12,13 @@ from koti.utils.json_store import *
 class Optimizer:
   """Runs an algorithm to build a (near) optimal ConfigModel that minimizes ConfigManager invocations."""
   managers: Sequence[ConfigManager]
-  merged_configs: Sequence[ConfigGroup]
+  merged_configs: Sequence[MergedSection]
   items: list[ManagedConfigItem]
   item_to_index: dict[ManagedConfigItem, int]
   same_value_groups: list[list[ManagedConfigItem]]
   different_value_pairs: list[tuple[ManagedConfigItem, ManagedConfigItem]]
 
-  def __init__(self, merged_configs: Sequence[ConfigGroup], managers: Sequence[ConfigManager]):
+  def __init__(self, merged_configs: Sequence[MergedSection], managers: Sequence[ConfigManager]):
     self.managers = managers
     self.merged_configs = merged_configs
     self.items = []
@@ -65,7 +65,7 @@ class Optimizer:
 
     return ConfigModel(
       managers = self.managers,
-      groups = self.merged_configs,
+      configs = self.merged_configs,
       steps = [InstallStep(manager = self.manager_for(group[0]), items_to_install = group) for group in execution_groups],
     )
 

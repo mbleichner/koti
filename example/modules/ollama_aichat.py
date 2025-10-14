@@ -1,13 +1,11 @@
 from inspect import cleandoc
-from typing import Generator
 
 from koti import *
 
 
-def ollama_aichat(cuda: bool) -> Generator[ConfigGroup]:
-  yield ConfigGroup(
-    description = "ollama + aichat",
-    provides = [
+def ollama_aichat(cuda: bool) -> ConfigDict:
+  return {
+    Section("ollama + aichat"): (
       Package("aichat"),
       Package("ollama-cuda" if cuda else "ollama"),
       File("/home/manuel/.config/aichat/config.yaml", owner = "manuel", content = cleandoc('''
@@ -20,5 +18,5 @@ def ollama_aichat(cuda: bool) -> Generator[ConfigGroup]:
           api_key: null
       ''')),
       SystemdUnit("ollama.service")
-    ]
-  )
+    )
+  }

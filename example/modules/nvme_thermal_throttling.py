@@ -1,13 +1,11 @@
 from inspect import cleandoc
-from typing import Generator
 
 from koti import *
 
 
-def nvme_thermal_throttling() -> Generator[ConfigGroup]:
-  yield ConfigGroup(
-    description = "NVMe thermal throttling (Kingston KC3000)",
-    provides = [
+def nvme_thermal_throttling() -> ConfigDict:
+  return {
+    Section("NVMe thermal throttling (Kingston KC3000)"): (
       Package("nvme-cli"),
       File("/etc/systemd/system/nvme-thermal-throttling.service", content = cleandoc('''
         [Unit]
@@ -22,5 +20,5 @@ def nvme_thermal_throttling() -> Generator[ConfigGroup]:
         WantedBy=multi-user.target
      ''')),
       SystemdUnit("nvme-thermal-throttling.service"),
-    ]
-  )
+    )
+  }

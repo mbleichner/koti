@@ -47,7 +47,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
 
   def finalize(self, model: ConfigModel, dryrun: bool):
     if not dryrun:
-      packages = [item.name for group in model.groups for item in group.provides if isinstance(item, Package)]
+      packages = [item.name for group in model.configs for item in group.provides if isinstance(item, Package)]
       self.managed_packages_store.replace_all(packages)
 
   def assert_installable(self, item: Package, model: ConfigModel):

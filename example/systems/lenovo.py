@@ -1,5 +1,4 @@
 from inspect import cleandoc
-from typing import Generator
 
 from koti import *
 from modules.base import base, swapfile
@@ -13,43 +12,43 @@ from modules.systray import systray
 
 
 # Configuration for my Lenovo X13 laptop
-def lenovo() -> Generator[ConfigGroup | None]:
-  yield from base()
-  yield from cpufreq(min_freq = 1000, max_freq = 4500, governor = "powersave")
-  yield from throttle_after_boot(1500)
-  yield from swapfile(size_gb = 4)
-  yield from kernel_cachyos(sortkey = 1)
-  yield from kernel_stock(sortkey = 2)
-  yield from fish()
-  yield from desktop(nvidia = False, autologin = True, ms_fonts = True)
-  yield from systray(ryzen = True, nvidia = False)
-  yield from gaming()
-  # yield from ollama_aichat(cuda = False)
-  yield from network_manager()
+def lenovo() -> ConfigDict:
+  return {
+    **base(),
+    **cpufreq(min_freq = 1000, max_freq = 4500, governor = "powersave"),
+    **throttle_after_boot(1500),
+    **swapfile(size_gb = 4),
+    **kernel_cachyos(sortkey = 1),
+    **kernel_stock(sortkey = 2),
+    **fish(),
+    **desktop(nvidia = False, autologin = True, ms_fonts = True),
+    **systray(ryzen = True, nvidia = False),
+    **gaming(),
+    **network_manager(),
 
-  yield ConfigGroup(
-    description = "firmware, drivers and filesystems for lenovo",
-    provides = [
-      Swapfile("/swapfile"),
+    Section("firmware for lenovo"): (
       Package("linux-firmware-other"),
       Package("linux-firmware-amdgpu"),
       Package("linux-firmware-realtek"),
-      Package('vulkan-radeon'),
-      Package('lib32-vulkan-radeon'),
-      File("/etc/fstab", content = cleandoc('''
+    ),
+
+    Section("filesystems for lenovo"): (
+      File("/etc/fstab", requires = Swapfile("/swapfile"), content = cleandoc('''
         UUID=79969cb9-9b6e-48e2-a672-4aee50f04c56  /      ext4  rw,noatime 0 1
         UUID=1CA6-490D                             /boot  vfat  rw,defaults 0 2
         /swapfile                                  swap   swap  defaults 0 0
       '''))
-    ]
-  )
+    ),
 
-  yield ConfigGroup(
-    description = "disable wakeup from touchpad",
-    provides = [
+    Section("graphics drivers for lenovo"): (
+      Package('vulkan-radeon'),
+      Package('lib32-vulkan-radeon'),
+    ),
+
+    Section("disable wakeup from touchpad"): (
       File("/etc/udev/rules.d/50-disable-touchpad-wakeup.rules", content = cleandoc('''
         ACTION=="add|change", SUBSYSTEM=="i2c", DRIVER=="i2c_hid_acpi", ATTR{name}=="ELAN0678:00", ATTR{power/wakeup}="disabled"
         # Einstellung testen per udevadm info -q all -a /sys/devices/platform/AMDI0010:02/i2c-2/i2c-ELAN0678:00
       '''))
-    ]
-  )
+    )
+  }

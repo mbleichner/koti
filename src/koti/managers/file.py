@@ -276,5 +276,5 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
 
   def finalize(self, model: ConfigModel, dryrun: bool):
     if not dryrun:
-      self.managed_files_store.replace_all([item.filename for group in model.groups for item in group.provides if isinstance(item, File)])
-      self.managed_dirs_store.replace_all([item.dirname for group in model.groups for item in group.provides if isinstance(item, Directory)])
+      self.managed_files_store.replace_all([item.filename for group in model.configs for item in group.provides if isinstance(item, File)])
+      self.managed_dirs_store.replace_all([item.dirname for group in model.configs for item in group.provides if isinstance(item, Directory)])

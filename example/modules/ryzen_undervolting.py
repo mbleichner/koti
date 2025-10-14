@@ -1,13 +1,11 @@
 from inspect import cleandoc
-from typing import Generator
 
 from koti import *
 
 
-def ryzen_undervolting() -> Generator[ConfigGroup]:
-  yield ConfigGroup(
-    description = "Ryzen 5800X3D undervolting",
-    provides = [
+def ryzen_undervolting() -> ConfigDict:
+  return {
+    Section("Ryzen 5800X3D undervolting"): (
       Package("ryzen_smu-dkms-git"),
 
       File(
@@ -30,5 +28,5 @@ def ryzen_undervolting() -> Generator[ConfigGroup]:
       ''')),
 
       SystemdUnit("ryzen-undervolting.service"),
-    ]
-  )
+    )
+  }

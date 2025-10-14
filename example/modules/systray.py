@@ -1,13 +1,11 @@
 from inspect import cleandoc
-from typing import Generator
 
 from koti import *
 
 
-def systray(ryzen: bool, nvidia: bool) -> Generator[ConfigGroup | None]:
-  yield ConfigGroup(
-    description = "systray: CPU items",
-    provides = [
+def systray(ryzen: bool, nvidia: bool) -> ConfigDict:
+  return {
+    Section("systray: CPU items", enabled = ryzen): (
       Package("kdialog"),
       File("/opt/systray/cpu/summary", permissions = "rwxr-xr-x", content = cleandoc(r'''
         #!/bin/bash
@@ -33,12 +31,9 @@ def systray(ryzen: bool, nvidia: bool) -> Generator[ConfigGroup | None]:
       systray_cpu_freq("/opt/systray/cpu/actions/max-freq-4500mhz", "4500MHz"),
       systray_hyperthreading("/opt/systray/cpu/actions/hyperthreading-on", "on"),
       systray_hyperthreading("/opt/systray/cpu/actions/hyperthreading-off", "off"),
-    ],
-  ) if ryzen else None
+    ),
 
-  yield ConfigGroup(
-    description = "systray: GPU items",
-    provides = [
+    Section("systray: GPU items", enabled = nvidia): (
       Package("kdialog"),
       Package("python-pynvml"),
       File("/opt/systray/gpu/summary", permissions = "rwxr-xr-x", content = cleandoc(r'''
@@ -54,8 +49,8 @@ def systray(ryzen: bool, nvidia: bool) -> Generator[ConfigGroup | None]:
       systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-180w", 180),
       systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-200w", 200),
       systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-220w", 220),
-    ]
-  ) if nvidia else None
+    ),
+  }
 
 
 # ACHTUNG: Beim Aufruf des Skripts per Command Output Widget muss man aufgrund eines

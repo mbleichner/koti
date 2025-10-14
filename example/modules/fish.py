@@ -1,14 +1,11 @@
 from inspect import cleandoc
-from typing import Generator
 
 from koti import *
-from koti.utils.shell import shell
 
 
-def fish() -> Generator[ConfigGroup]:
-  yield ConfigGroup(
-    description = "fish (+fastfetch)",
-    provides = [
+def fish() -> ConfigDict:
+  return {
+    Section("fish (+fastfetch)"): (
       Package("fish", tags = "bootstrap"),
       Package("pyenv"),
       Package("fastfetch"),
@@ -81,6 +78,12 @@ def fish() -> Generator[ConfigGroup]:
         end
       ''')),
 
+      File(
+        filename = "/home/manuel/.config/fastfetch/fastfetch-logo.png",
+        owner = "manuel",
+        source = "files/fastfetch-logo.png"
+      ),
+
       File("/home/manuel/.config/fastfetch/config.jsonc", owner = "manuel", content = cleandoc(r'''
         {
           "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
@@ -89,11 +92,5 @@ def fish() -> Generator[ConfigGroup]:
           "modules": [ "os", "host", "kernel", "uptime", "cpu", "gpu", "display", "memory", "disk", "swap", "localip", "packages", "de", "wm" ]
         }
       ''')),
-
-      File("/home/manuel/.config/fastfetch/fastfetch-logo.png", owner = "manuel", source = "files/fastfetch-logo.png"),
-
-      PostHook("set-fish-as-default-shell", execute = lambda: shell("chsh -s /usr/bin/fish manuel"), trigger = [
-        Package("fish"),
-      ]),
-    ]
-  )
+    )
+  }

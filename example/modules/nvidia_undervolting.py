@@ -1,13 +1,11 @@
 from inspect import cleandoc
-from typing import Generator
 
 from koti import *
 
 
-def nvidia_undervolting() -> Generator[ConfigGroup]:
-  yield ConfigGroup(
-    description = "NVIDIA 3080 undervolting + clock tuning",
-    provides = [
+def nvidia_undervolting() -> ConfigDict:
+  return {
+    Section("NVIDIA 3080 undervolting + clock tuning"): (
       Package("python-pynvml"),
 
       File("/opt/undervolting/nvidia-undervolting.py", content = cleandoc('''
@@ -42,5 +40,5 @@ def nvidia_undervolting() -> Generator[ConfigGroup]:
      ''')),
 
       SystemdUnit("nvidia-undervolting.service"),
-    ]
-  )
+    )
+  }

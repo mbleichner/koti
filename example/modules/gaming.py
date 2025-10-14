@@ -5,10 +5,9 @@ from koti.items import *
 from koti.utils.shell import shell
 
 
-def gaming() -> Generator[ConfigGroup]:
-  yield ConfigGroup(
-    description = "game launchers and utilities",
-    provides = [
+def gaming() -> ConfigDict:
+  return {
+    Section("game launchers and utilities"): (
       Package("discord"),
       Package("gamescope"),
       Package("gpu-screen-recorder-ui"),
@@ -28,12 +27,9 @@ def gaming() -> Generator[ConfigGroup]:
         execute = lambda: shell("sysctl --system"),
         trigger = File("/etc/sysctl.d/99-splitlock.conf")
       ),
-    ]
-  )
+    ),
 
-  yield ConfigGroup(
-    description = "proton/wine + configs",
-    provides = [
+    Section("proton/wine + configs"): (
       Package("proton-ge-custom-bin"),
       Package("protontricks"),
       Package("protonplus"),
@@ -62,14 +58,10 @@ def gaming() -> Generator[ConfigGroup]:
       ''')),
 
       Option("/etc/pacman.conf/NoUpgrade", "usr/bin/steam"),
-    ]
-  )
+    ),
 
-  yield ConfigGroup(
-    description = "lossless scaling + frame generation",
-    provides = [
-      # Package("lsfg-vk"),
-
+    Section("lossless scaling + frame generation", disabled = True): (
+      Package("lsfg-vk"),
       File("/home/manuel/.config/lsfg-vk/conf.toml", permissions = "rw-", owner = "manuel", content = cleandoc(f'''
         version = 1
 
@@ -91,5 +83,5 @@ def gaming() -> Generator[ConfigGroup]:
         multiplier = 2
         performance_mode = true
       ''')),
-    ]
-  )
+    )
+  }

@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import sys
-from copy import copy
 from os import get_terminal_size, getuid
 from time import sleep
-from typing import Iterator
 
 import koti.utils.shell as shell_module
 from koti.model import *
@@ -17,18 +15,18 @@ from koti.utils.logging import logger
 
 class Koti:
   store: JsonStore
-  managers: list[ConfigManager]
-  configs: list[ConfigGroup]
+  managers: Sequence[ConfigManager]
+  configs: ConfigDict
 
   def __init__(
     self,
-    managers: Iterator[ConfigManager | None] | Iterable[ConfigManager | None],
-    configs: Iterator[ConfigGroup | None] | Iterable[ConfigGroup | None],
+    managers: Sequence[ConfigManager],
+    configs: ConfigDict,
   ):
     assert getuid() == 0, "this program must be run as root (or through sudo)"
     self.store = JsonStore("/var/cache/koti/Koti.json")
-    self.configs = [c for c in configs if c is not None]
-    self.managers = [m for m in managers if m is not None]
+    self.configs = configs
+    self.managers = managers
     self.assert_manager_consistency(self.managers, self.configs)
 
   def create_model(self) -> ConfigModel:
@@ -79,7 +77,7 @@ class Koti:
     # list all groups + items
     if groups:
       printc(f"{BOLD}Config Group Summary:")
-      for group in model.groups:
+      for group in model.configs:
         prefix = self.prefix_for_item(actions, *(item for item in group.provides if isinstance(item, ManagedConfigItem)))
         printc(f"{prefix} {group.description}")
       print()
@@ -185,52 +183,54 @@ class Koti:
           raise AssertionError(f"{install_step.manager.__class__.__name__}: {e}")
 
   @classmethod
-  def assert_manager_consistency(cls, managers: Sequence[ConfigManager], configs: Sequence[ConfigGroup]):
+  def assert_manager_consistency(cls, managers: Sequence[ConfigManager], configs: ConfigDict):
     """Checks that every item has a manager and only one manager"""
-    for group in configs:
-      for item in (x for x in group.provides if x is not None and isinstance(x, ManagedConfigItem)):
+    for section, items in cls.iterate_configs(configs):
+      for item in items:
+        if not isinstance(item, ManagedConfigItem): continue
         matching_managers = [manager for manager in managers if item.__class__ in manager.managed_classes]
         assert len(matching_managers) > 0, f"no manager found for class {item.__class__.__name__}"
         assert len(matching_managers) < 2, f"multiple managers found for class {item.__class__.__name__}"
 
   @classmethod
-  def merge_configs(cls, configs: list[ConfigGroup]) -> list[ConfigGroup]:
+  def iterate_configs(cls, configs: ConfigDict) -> Generator[tuple[Section, Sequence[ConfigItem]]]:
+    sections_in_deterministic_order = list(configs.keys())
+    sections_in_deterministic_order.sort(key = lambda x: x.name)
+    for section in sections_in_deterministic_order:
+      items = configs[section]
+      if not section.enabled or items is None:
+        continue  # skip empty or disabled sections
+      elif isinstance(items, ConfigItem):
+        yield section, [items]
+      else:
+        yield section, [item for item in items if isinstance(item, ConfigItem)]
+
+  @classmethod
+  def merge_configs(cls, configs: ConfigDict) -> list[MergedSection]:
+    sections_in_deterministic_order = list(configs.keys())
+    sections_in_deterministic_order.sort(key = lambda x: x.name)
+
     # merge all items with the same identifier
     merged_items: dict[ConfigItem, ConfigItem] = {}
-    for group in configs:
-      for idx, item in enumerate(group.provides):
+    for section, items in cls.iterate_configs(configs):
+      for item in items:
         item_prev = merged_items.get(item, None)
         item_merged = item_prev.merge(item) if item_prev is not None else item
         merged_items[item] = item_merged
 
     # create new groups with the items replaced by their merged versions
-    result: list[ConfigGroup] = []
-    for group in configs:
-      provides_updated = list(group.provides)
-      for idx, item in enumerate(provides_updated):
-        provides_updated[idx] = merged_items[item]
-      new_group = copy(group)
-      new_group.provides = provides_updated
-      result.append(new_group)
+    result: list[MergedSection] = []
+    for section, items_original in cls.iterate_configs(configs):
+      items_replaced = list(items_original)
+      for idx, item in enumerate(items_replaced):
+        items_replaced[idx] = merged_items[item]
+      merged_section = MergedSection(
+        description = section.name,
+        provides = items_replaced,
+      )
+      merged_section.provides = items_replaced
+      result.append(merged_section)
     return result
-
-  @classmethod
-  def remove_duplicates(cls, phases: list[list[ConfigGroup]]) -> list[list[ConfigGroup]]:
-    seen_items: set[ConfigItem] = set()
-    phases_filtered: list[list[ConfigGroup]] = []
-    for phase in phases:
-      phase_filtered: list[ConfigGroup] = []
-      for group in phase:
-        filtered_provides: list[ConfigItem] = []
-        for item in group.provides:
-          if item not in seen_items:
-            filtered_provides.append(item)
-            seen_items.add(item)
-        group_filtered = copy(group)
-        group_filtered.provides = filtered_provides
-        phase_filtered.append(group_filtered)
-      phases_filtered.append(phase_filtered)
-    return phases_filtered
 
   @classmethod
   def reduce_items(cls, items: list[ConfigItem]) -> ConfigItem:

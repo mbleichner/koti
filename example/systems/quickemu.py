@@ -19,23 +19,20 @@ git pull --rebase; sudo PYTHONPATH=/home/arch/koti/src ./koti-apply
 """
 
 
-def quickemu() -> Generator[ConfigGroup | None]:
-  yield from base()
-  yield from swapfile(size_gb = 1)
-  yield from fish()
-  yield from desktop(nvidia = False, autologin = True, ms_fonts = False)
-  yield from systray(ryzen = True, nvidia = False)
-  yield from gaming()
-
-  yield ConfigGroup(
-    description = "firmware, drivers and filesystems for lenovo",
-    provides = [
-      Swapfile("/swapfile"),
+def quickemu() -> ConfigDict:
+  return {
+    **base(),
+    **swapfile(size_gb = 1),
+    **fish(),
+    **desktop(nvidia = False, autologin = True, ms_fonts = False),
+    **systray(ryzen = True, nvidia = False),
+    **gaming(),
+    Section("firmware, drivers and filesystems for quickemu"): (
       Package("linux-firmware-other"),
       Package("linux-firmware-intel"),
       Package("linux-firmware-nvidia"),
       Package("grub"),
       Package("linux"),
       Package("qemu-guest-agent"),
-    ]
-  )
+    )
+  }

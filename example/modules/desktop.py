@@ -1,14 +1,12 @@
 from inspect import cleandoc
-from typing import TypedDict
 
 from koti import *
 from koti.utils.shell import shell
 
 
-def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGroup]:
-  yield ConfigGroup(
-    description = "desktop packages",
-    provides = [
+def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
+  return {
+    Section("desktop packages"): (
       Option("/etc/pacman.conf/NoExtract", "etc/xdg/autostart/org.kde.discover.notifier.desktop"),
 
       # Dependencies that have multiple alternatives (pacman will ask during installation)
@@ -54,12 +52,9 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGr
       Directory("/opt/gamma-icc-profiles", source = "files/gamma-icc-profiles.zip", mask = "r--"),
       SystemdUnit("coolercontrold.service"),
       SystemdUnit("bluetooth.service"),
-    ]
-  )
+    ),
 
-  yield ConfigGroup(
-    description = "display manager and auto-login",
-    provides = [
+    Section("display manager and auto-login"): (
       Package("greetd-tuigreet"),
       File("/etc/greetd/config.toml", content = cleandoc(f'''
         [terminal]
@@ -70,12 +65,9 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGr
         command = "{tuigreet_session(autologin)["command"]}"
       ''')),
       SystemdUnit("greetd.service"),
-    ]
-  )
+    ),
 
-  yield ConfigGroup(
-    description = "wireplumber priorities",
-    provides = [
+    Section("wireplumber priorities"): (
       Package("wireplumber"),
       File("/home/manuel/.config/wireplumber/wireplumber.conf.d/priorities.conf", owner = "manuel", content = cleandoc('''
         monitor.alsa.rules = [
@@ -104,12 +96,10 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGr
           }
         ]
       ''')),
-    ]
-  )
 
-  yield ConfigGroup(
-    description = "ananicy-cpp and configuration",
-    provides = [
+    ),
+
+    Section("ananicy-cpp and configuration"): (
       Package("ananicy-cpp"),
 
       *PostHookScope(
@@ -163,8 +153,17 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> Generator[ConfigGr
 
         PostHook("restart-ananicy-cpp", execute = lambda: shell("systemctl restart ananicy-cpp.service"))
       ),
-    ]
-  )
+    ),
+  }
+
+
+def flatpak() -> ConfigDict:
+  return {
+    Section("flatpak and flathub"): (
+      Package("flatpak", before = lambda item: isinstance(item, FlatpakRepo) or isinstance(item, FlatpakPackage)),
+      FlatpakRepo("flathub", spec_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"),
+    ),
+  }
 
 
 class TuiGreetSession(TypedDict):

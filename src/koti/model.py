@@ -3,26 +3,50 @@ from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from typing import Any, Callable, Generator, Iterable, Literal, Sequence, Type, TypedDict, cast, overload
 
+# class ConfigGroup:
+#   """The purpose of ConfigGroups is to provide ConfigItems that should be installed on the system.
+#   It's good practice to create a ConfigGroup for related ConfigItems that should be installed
+#   within the same phase. Also, ConfigGroups allow to define dependencies on other ConfigGroups
+#   so they are split into separate phases to control the order of installation."""
+#   description: str
+#   provides: Sequence[ConfigItem]
+#
+#   def __init__(
+#     self,
+#     description: str,
+#     *provides: ConfigItem | None,
+#   ):
+#     self.description = description
+#     self.provides = [item for item in (provides or []) if item is not None]
+#
+#   def items(self, *provides: ConfigItem | None) -> ConfigGroup:
+#     self.provides = [*self.provides, *(i for i in provides if i is not None)]
+#     return self
 
-class ConfigGroup:
-  """The purpose of ConfigGroups is to provide ConfigItems that should be installed on the system.
-  It's good practice to create a ConfigGroup for related ConfigItems that should be installed
-  within the same phase. Also, ConfigGroups allow to define dependencies on other ConfigGroups
-  so they are split into separate phases to control the order of installation."""
-  description: str
-  provides: Sequence[ConfigItem]
+type ConfigItems = Sequence[ConfigItem | None] | Iterable[ConfigItem | None] | ConfigItem | None
+type ConfigDict = dict[Section, ConfigItems]
 
-  def __init__(
-    self,
-    description: str,
-    provides: Sequence[ConfigItem | None] | None = None,
-  ):
-    self.description = description
-    self.provides = [item for item in (provides or []) if item is not None]
 
-  def items(self, *provides: ConfigItem | None) -> ConfigGroup:
-    self.provides = [*self.provides, *(i for i in provides if i is not None)]
-    return self
+class Section:
+  name: str
+  enabled: bool
+
+  def __init__(self, name: str, enabled: bool | None = None, disabled: bool | None = None):
+    self.name = name
+    if enabled is not None and disabled is not None:
+      raise AssertionError("only one of enabled/disabled may be specified")
+    elif enabled is not None:
+      self.enabled = enabled
+    elif disabled is not None:
+      self.enabled = not disabled
+    else:
+      self.enabled = True
+
+  def __eq__(self, other: Any):
+    return self is other
+
+  def __hash__(self):
+    return super().__hash__()
 
 
 class ConfigItem(metaclass = ABCMeta):
@@ -84,10 +108,10 @@ class ManagedConfigItem(ConfigItem, metaclass = ABCMeta):
   @staticmethod
   def merge_base_attrs(item1: ManagedConfigItem, item2: ManagedConfigItem) -> dict[str, Any]:
     return {
-      "tags":     item1.tags.union(item2.tags),
+      "tags": item1.tags.union(item2.tags),
       "requires": item1.requires.union(item2.requires),
-      "before":   ManagedConfigItem.merge_functions(item1.before, item2.before),
-      "after":    ManagedConfigItem.merge_functions(item1.after, item2.after),
+      "before": ManagedConfigItem.merge_functions(item1.before, item2.before),
+      "after": ManagedConfigItem.merge_functions(item1.after, item2.after),
     }
 
   @staticmethod
@@ -221,18 +245,18 @@ class ConfigModel:
   """Models the target system state and all phases for installation/cleanup during the koti run. Also
   provides a set of convenience functions to access ConfigItems (useful for dynamic configuration items
   such as files that have their content written by inspecting other items)."""
+  configs: Sequence[MergedSection]
   managers: Sequence[ConfigManager]
-  groups: Sequence[ConfigGroup]
   steps: Sequence[InstallStep]
 
   def __init__(
     self,
+    configs: Sequence[MergedSection],
     managers: Sequence[ConfigManager],
-    groups: Sequence[ConfigGroup],
     steps: Sequence[InstallStep],
   ):
+    self.configs = configs
     self.managers = managers
-    self.groups = groups
     self.steps = steps
 
   @overload
@@ -248,7 +272,7 @@ class ConfigModel:
     pass
 
   def item[T: ConfigItem](self, reference: T, optional: bool = False) -> T | None:
-    result = next((cast(T, item) for group in self.groups for item in group.provides if item == reference), None)
+    result = next((cast(T, item) for group in self.configs for item in group.provides if item == reference), None)
     assert result is not None or optional, f"Item not found: {reference}"
     return result
 
@@ -261,7 +285,7 @@ class ConfigModel:
     pass
 
   def contains(self, needle: ConfigItem | Callable[[ConfigItem], bool]) -> bool:
-    for group in self.groups:
+    for group in self.configs:
       for item in group.provides:
         if isinstance(needle, ConfigItem) and needle == item:
           return True
@@ -301,3 +325,12 @@ class CleanupStep:
   def __init__(self, manager: ConfigManager, items_to_keep: list[ManagedConfigItem]):
     self.items_to_keep = items_to_keep
     self.manager = manager
+
+
+class MergedSection:
+  description: str
+  provides: Sequence[ConfigItem]
+
+  def __init__(self, description: str, provides: Sequence[ConfigItem]):
+    self.description = description
+    self.provides = provides
