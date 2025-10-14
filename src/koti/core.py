@@ -46,7 +46,7 @@ class Koti:
       ))
     return CleanupPhase(steps)
 
-  def plan(self, groups: bool = True, items: bool = False) -> ExecutionPlan:
+  def plan(self, sections: bool = True, items: bool = False) -> ExecutionPlan:
     logger.clear()
     dryrun = True
     model = self.create_model()
@@ -75,8 +75,8 @@ class Koti:
     print()
 
     # list all groups + items
-    if groups:
-      printc(f"{BOLD}Config Group Summary:")
+    if sections:
+      printc(f"{BOLD}Config Section Summary:")
       for group in model.configs:
         prefix = self.prefix_for_item(actions, *(item for item in group.provides if isinstance(item, ManagedConfigItem)))
         printc(f"{prefix} {group.description}")
