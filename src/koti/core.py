@@ -46,7 +46,7 @@ class Koti:
       ))
     return CleanupPhase(steps)
 
-  def plan(self, sections: bool = True, items: bool = False) -> ExecutionPlan:
+  def plan(self, section_summary: bool = False, item_summary: bool = False) -> ExecutionPlan:
     logger.clear()
     dryrun = True
     model = self.create_model()
@@ -75,23 +75,21 @@ class Koti:
     print()
 
     # list all groups + items
-    if sections:
+    if section_summary:
       printc(f"{BOLD}Config Section Summary:")
       for group in model.configs:
         prefix = self.prefix_for_item(actions, *(item for item in group.provides if isinstance(item, ManagedConfigItem)))
         printc(f"{prefix} {group.description}")
       print()
 
-    if items:
+    if item_summary:
       printc(f"{BOLD}Config Item Summary:")
       for install_step in model.steps:
         for idx, item in enumerate(install_step.items_to_install):
           prefix = self.prefix_for_item(actions, item)
           printc(f"{prefix} {item}")
+      printc(f"{len([item for step in model.steps for item in step.items_to_install])} items total")
       print()
-
-    printc(f"{len([item for step in model.steps for item in step.items_to_install])} items total")
-    print()
 
     # print warnings generated during evaluation
     if logger.messages:

@@ -27,6 +27,6 @@ koti = Koti(
   ),
 )
 
-plan = koti.plan(items = True, sections = True)
+plan = koti.plan(item_summary = False, section_summary = True)
 confirm("confirm execution")
 koti.apply(plan)
