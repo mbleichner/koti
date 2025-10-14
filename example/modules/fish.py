@@ -6,7 +6,7 @@ from koti import *
 def fish() -> ConfigDict:
   return {
     Section("fish (+fastfetch)"): (
-      Package("fish", tags = "bootstrap"),
+      Package("fish"),
       Package("pyenv"),
       Package("fastfetch"),
       Package("imagemagick"),  # notwendig für png-Anzeige in fastfetch

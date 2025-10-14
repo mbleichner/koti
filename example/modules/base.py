@@ -10,7 +10,7 @@ def base() -> ConfigDict:
 
       # setup sudo and sudo user
       Package("sudo", tags = "bootstrap"),
-      User("manuel", home = "/home/manuel", shell = "/usr/bin/fish", requires = Package("fish")),
+      User("manuel", home = "/home/manuel", shell = "/usr/bin/fish"),
       GroupAssignment("manuel", "wheel"),
       File("/etc/sudoers", permissions = 0o440, content = cleandoc('''
         Defaults!/usr/bin/visudo env_keep += "SUDO_EDITOR EDITOR VISUAL"
