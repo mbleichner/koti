@@ -91,10 +91,10 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
       elif item.name not in explicit_packages:
         additional_explicit_items.append(item)
 
-    additional_explicit_items.sort(key = lambda x: x.name)
-    additional_items_from_script.sort(key = lambda x: x.name)
-    additional_items_from_urls.sort(key = lambda x: x.name)
-    additional_items_from_repo.sort(key = lambda x: x.name)
+    additional_explicit_items.sort(key = lambda x: x.description)
+    additional_items_from_script.sort(key = lambda x: x.description)
+    additional_items_from_urls.sort(key = lambda x: x.description)
+    additional_items_from_repo.sort(key = lambda x: x.description)
 
     if additional_explicit_items:
       yield Action(

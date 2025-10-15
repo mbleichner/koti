@@ -5,6 +5,7 @@ from collections import defaultdict
 
 from pyscipopt import Constraint as Cons, Expr, Model, Model, SCIP_PARAMEMPHASIS, Variable  # type: ignore
 
+from koti.utils.text import printc, RED
 from koti.model import *
 from koti.utils.json_store import *
 
@@ -86,7 +87,7 @@ class KotiOptimizer:
     objective = model.addVar("objective")
 
     # create a variable for each item
-    items: list[ManagedConfigItem] = [item for config in configs for item in config]
+    items: list[ManagedConfigItem] = list(dict.fromkeys([item for config in configs for item in config]))
     item_to_pos_var: dict[ConfigItem, Variable] = {}
     for other in items:
       item_to_pos_var[other] = model.addVar(vtype = "I")
@@ -201,7 +202,7 @@ class KotiOptimizer:
         sys.stdout.flush()
 
     print()
-    return [item for config in configs for item in config]
+    return list(dict.fromkeys([item for config in configs for item in config]))
 
   @classmethod
   def remove_item(cls, configs: Sequence[Sequence[ManagedConfigItem]], item: ManagedConfigItem) -> Sequence[Sequence[ManagedConfigItem]]:

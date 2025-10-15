@@ -44,7 +44,7 @@ class Koti:
       printc(f"{RED}Koti was not able to calculate a consistent execution order.")
       print("Please check the following items. Very likely you accidentally defined some sort of circular dependency between them.")
       print()
-      printc(f"{BOLD}Irreducible Inconsistent Subset:")
+      printc(f"{BOLD}Inconsistent Subset:")
       for item in iis:
         print(f"- {item}")
       raise SystemExit()
@@ -187,7 +187,7 @@ class Koti:
     printc(f"{"-" * (get_terminal_size().columns - 1)}")
 
   @classmethod
-  def get_managed_items_grouped(cls, merged_configs: Sequence[MergedSection]) -> Sequence[Sequence[ManagedConfigItem]]:
+  def get_managed_items_grouped(cls, merged_configs: Sequence[MergedConfig]) -> Sequence[Sequence[ManagedConfigItem]]:
     result: list[list[ManagedConfigItem]] = []
     for config in merged_configs:
       managed_items_in_config = [item for item in config.provides if isinstance(item, ManagedConfigItem)]
@@ -216,7 +216,7 @@ class Koti:
   @classmethod
   def assert_manager_consistency(cls, managers: Sequence[ConfigManager], configs: ConfigDict):
     """Checks that every item has a manager and only one manager"""
-    for section, items in cls.iterate_configs(configs):
+    for section, items in cls.iterate_effective_configs(configs):
       for item in items:
         if not isinstance(item, ManagedConfigItem): continue
         matching_managers = [manager for manager in managers if item.__class__ in manager.managed_classes]
@@ -224,11 +224,8 @@ class Koti:
         assert len(matching_managers) < 2, f"multiple managers found for class {item.__class__.__name__}"
 
   @classmethod
-  def iterate_configs(cls, configs: ConfigDict) -> Generator[tuple[Section, Sequence[ConfigItem]]]:
-    sections_in_deterministic_order = list(configs.keys())
-    sections_in_deterministic_order.sort(key = lambda x: x.name)
-    for section in sections_in_deterministic_order:
-      items = configs[section]
+  def iterate_effective_configs(cls, configs: ConfigDict) -> Generator[tuple[Section, Sequence[ConfigItem]]]:
+    for section, items in configs.items():
       if not section.enabled or items is None:
         continue  # skip empty or disabled sections
       elif isinstance(items, ConfigItem):
@@ -237,30 +234,27 @@ class Koti:
         yield section, [item for item in items if isinstance(item, ConfigItem)]
 
   @classmethod
-  def merge_configs(cls, configs: ConfigDict) -> list[MergedSection]:
-    sections_in_deterministic_order = list(configs.keys())
-    sections_in_deterministic_order.sort(key = lambda x: x.name)
-
+  def merge_configs(cls, configs: ConfigDict) -> list[MergedConfig]:
     # merge all items with the same identifier
     merged_items: dict[ConfigItem, ConfigItem] = {}
-    for section, items in cls.iterate_configs(configs):
+    for section, items in cls.iterate_effective_configs(configs):
       for item in items:
         item_prev = merged_items.get(item, None)
         item_merged = item_prev.merge(item) if item_prev is not None else item
         merged_items[item] = item_merged
 
     # create new groups with the items replaced by their merged versions
-    result: list[MergedSection] = []
-    for section, items_original in cls.iterate_configs(configs):
+    result: list[MergedConfig] = []
+    for section, items_original in cls.iterate_effective_configs(configs):
       items_replaced = list(items_original)
       for idx, item in enumerate(items_replaced):
         items_replaced[idx] = merged_items[item]
-      merged_section = MergedSection(
-        description = section.name,
+      merged_config = MergedConfig(
+        description = section.description,
         provides = items_replaced,
       )
-      merged_section.provides = items_replaced
-      result.append(merged_section)
+      merged_config.provides = items_replaced
+      result.append(merged_config)
     return result
 
   @classmethod

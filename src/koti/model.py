@@ -28,11 +28,11 @@ type ConfigDict = dict[Section, ConfigItems]
 
 
 class Section:
-  name: str
+  description: str
   enabled: bool
 
-  def __init__(self, name: str, enabled: bool | None = None, disabled: bool | None = None):
-    self.name = name
+  def __init__(self, description: str, enabled: bool | None = None, disabled: bool | None = None):
+    self.description = description
     if enabled is not None and disabled is not None:
       raise AssertionError("only one of enabled/disabled may be specified")
     elif enabled is not None:
@@ -245,13 +245,13 @@ class ConfigModel:
   """Models the target system state and all phases for installation/cleanup during the koti run. Also
   provides a set of convenience functions to access ConfigItems (useful for dynamic configuration items
   such as files that have their content written by inspecting other items)."""
-  configs: Sequence[MergedSection]
+  configs: Sequence[MergedConfig]
   managers: Sequence[ConfigManager]
   steps: Sequence[InstallStep]
 
   def __init__(
     self,
-    configs: Sequence[MergedSection],
+    configs: Sequence[MergedConfig],
     managers: Sequence[ConfigManager],
     steps: Sequence[InstallStep],
   ):
@@ -327,7 +327,7 @@ class CleanupStep:
     self.manager = manager
 
 
-class MergedSection:
+class MergedConfig:
   description: str
   provides: Sequence[ConfigItem]
 
