@@ -16,6 +16,7 @@ class FlatpakPackage(ManagedConfigItem):
     super().__init__(**kwargs)
     self.id = id
 
+
   def __str__(self) -> str:
     return f"FlatpakPackage('{self.id}')"
 

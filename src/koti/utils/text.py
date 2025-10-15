@@ -1,3 +1,6 @@
+import textwrap
+from os import get_terminal_size
+
 BLUE = '\033[0;33m'
 PURPLE = '\033[0;35m'
 GREEN = '\033[0;32m'
@@ -9,6 +12,20 @@ ENDC = '\033[0m'
 
 def printc(line: str):
   print(f"{ENDC}{line}{ENDC}")
+
+
+def print_listitem(text: str):
+  max_width = get_terminal_size().columns - 6
+  lines = textwrap.wrap(text, max_width)
+  for idx, line in enumerate(lines):
+    if idx == len(lines) - 1:
+      end = f"\n{ENDC}"
+    else:
+      end = "\n"
+    if idx == 0:
+      print(f"- {line}", end = end)
+    else:
+      print(f"  {line}", end = end)
 
 
 def strip_colors(line: str) -> str:

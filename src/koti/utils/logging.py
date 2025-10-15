@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from koti.utils.colors import RED, YELLOW
+from koti.utils.text import RED, YELLOW
 
 
 class Logger:

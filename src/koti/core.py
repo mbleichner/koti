@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import sys
-from os import get_terminal_size, getuid
+from os import getuid
 from time import sleep
 
 import koti.utils.shell as shell_module
 from koti.model import *
-from koti.optimizer import Optimizer
-from koti.utils.colors import *
+from koti.optimizer import InfeasibleError, KotiOptimizer
+from koti.utils.text import *
 from koti.utils.confirm import confirm
 from koti.utils.json_store import *
 from koti.utils.logging import logger
@@ -31,8 +31,30 @@ class Koti:
 
   def create_model(self) -> ConfigModel:
     merged_configs = self.merge_configs(self.configs)
-    optimizer = Optimizer(merged_configs, self.managers)
-    model = optimizer.run()
+    optimizer = KotiOptimizer(
+      configs = self.get_managed_items_grouped(merged_configs),
+      managers = self.managers,
+    )
+
+    try:
+      install_steps = optimizer.calc_install_steps()
+    except InfeasibleError as ex:
+      iis = optimizer.find_iis()
+      print()
+      printc(f"{RED}Koti was not able to calculate a consistent execution order.")
+      print("Please check the following items. Very likely you accidentally defined some sort of circular dependency between them.")
+      print()
+      printc(f"{BOLD}Irreducible Inconsistent Subset:")
+      for item in iis:
+        print(f"- {item}")
+      raise SystemExit()
+
+    model = ConfigModel(
+      configs = merged_configs,
+      managers = self.managers,
+      steps = install_steps,
+    )
+
     self.assert_config_items_installable(model)
     return model
 
@@ -48,6 +70,8 @@ class Koti:
 
   def plan(self, section_summary: bool = False, item_summary: bool = False) -> ExecutionPlan:
     logger.clear()
+    logger.info(f"Please note that koti cannot always predict every action accurately. In case some unexpected action needs to be performed during execution phase, you will be asked to review and confirm it.")
+
     dryrun = True
     model = self.create_model()
 
@@ -94,8 +118,8 @@ class Koti:
     # print warnings generated during evaluation
     if logger.messages:
       printc(f"{BOLD}Messages logged during planning:")
-      for message in set(logger.messages):
-        printc(f"- {message}")
+      for message in list(dict.fromkeys(logger.messages)):
+        print_listitem(f"{message}")
       print()
 
     # list all changed items
@@ -161,6 +185,15 @@ class Koti:
   @classmethod
   def print_divider_line(cls):
     printc(f"{"-" * (get_terminal_size().columns - 1)}")
+
+  @classmethod
+  def get_managed_items_grouped(cls, merged_configs: Sequence[MergedSection]) -> Sequence[Sequence[ManagedConfigItem]]:
+    result: list[list[ManagedConfigItem]] = []
+    for config in merged_configs:
+      managed_items_in_config = [item for item in config.provides if isinstance(item, ManagedConfigItem)]
+      if managed_items_in_config:
+        result.append(managed_items_in_config)
+    return result
 
   @classmethod
   def get_cleanup_phase_manager_order(cls, managers: Sequence[ConfigManager]) -> Sequence[ConfigManager]:

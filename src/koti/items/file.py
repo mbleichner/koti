@@ -7,6 +7,7 @@ from re import match
 
 from urllib3 import request
 
+from koti.items.user import User
 from koti.model import ConfigItem, ConfigModel, ManagedConfigItem, ManagedConfigItemBaseArgs
 
 
@@ -24,6 +25,7 @@ class File(ManagedConfigItem):
     source: str | None = None,
     permissions: int | str | None = None,
     owner: str = "root",
+    add_owner_as_dependency = True,
     **kwargs: Unpack[ManagedConfigItemBaseArgs],
   ):
     super().__init__(**kwargs)
@@ -47,6 +49,12 @@ class File(ManagedConfigItem):
     elif permissions is None:
       self.permissions = 0o644  # rw-r--r--
     self.owner = owner
+
+    if add_owner_as_dependency:
+      self.after = ManagedConfigItem.merge_functions(
+        self.after,
+        lambda item: isinstance(item, User) and item.username == owner,
+      )
 
   def __eq__(self, other: Any) -> bool:
     return isinstance(other, File) and self.filename == other.filename

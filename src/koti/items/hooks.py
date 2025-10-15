@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from typing import Callable, Iterable, Sequence, Unpack
+from typing import Callable, Sequence, Unpack
 
 from koti.model import ConfigItem, ManagedConfigItem, ManagedConfigItemBaseArgs
+
+type PostHookTriggerType = ManagedConfigItem | Callable[[ManagedConfigItem], bool]
 
 
 class PostHook(ManagedConfigItem):
@@ -10,22 +12,31 @@ class PostHook(ManagedConfigItem):
   For example, this can be used to call some rebuild script whenever a config file changes."""
   name: str
   execute: None | Callable
-  trigger: list[ManagedConfigItem]
+  trigger: Sequence[PostHookTriggerType]
 
   def __init__(
     self,
     name: str,
     execute: Callable | None = None,
-    trigger: Sequence[ManagedConfigItem] | ManagedConfigItem | None = None,
+    trigger: PostHookTriggerType | Sequence[PostHookTriggerType] | None = None,
+    add_trigger_as_dependency = True,
     **kwargs: Unpack[ManagedConfigItemBaseArgs],
   ):
     super().__init__(**kwargs)
     self.name = name
     self.execute = execute
-    if isinstance(trigger, ManagedConfigItem):
+
+    if isinstance(trigger, ManagedConfigItem) or callable(trigger):
       self.trigger = [trigger]
     else:
-      self.trigger = [item for item in (trigger or []) if item is not None]
+      self.trigger = (trigger or [])
+
+    if add_trigger_as_dependency:
+      for t in (self.trigger or []):
+        if callable(t):
+          self.after = ManagedConfigItem.merge_functions(self.after, t)
+        else:
+          self.requires.add(t)
 
   def __str__(self) -> str:
     return f"PostHook('{self.name}')"
@@ -40,5 +51,5 @@ def PostHookScope(*items: ConfigItem) -> list[ConfigItem]:
   hooks = [item for item in items if isinstance(item, PostHook)]
   non_hooks = [item for item in items if not isinstance(item, PostHook) and isinstance(item, ManagedConfigItem)]
   for hook in hooks:
-    hook.trigger += non_hooks
+    hook.trigger = [*hook.trigger, *non_hooks]
   return list(items)

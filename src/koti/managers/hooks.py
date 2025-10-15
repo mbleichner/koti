@@ -35,7 +35,7 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
 
   def assert_installable(self, hook: PostHook, model: ConfigModel):
     assert hook.execute is not None, "missing execute parameter"
-    for item in hook.trigger:
+    for item in self.get_trigger_items(hook, model):
       exec_order_item = PostHookManager.index_in_execution_order(model, item)  # can be None in case the item isn't set up by koti (i.e. files created by pacman hooks or such)
       exec_order_hook = PostHookManager.index_in_execution_order(model, hook)
       assert exec_order_hook is not None, f"{hook} not found in execution order"
@@ -60,11 +60,21 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
 
   def state_target(self, hook: PostHook, model: ConfigModel, dryrun: bool) -> PostHookState:
     trigger_hashes: dict[str, str] = {}
-    for trigger_ref in hook.trigger:
+    for trigger_ref in self.get_trigger_items(hook, model):
       trigger_state = self.state_for_trigger(trigger_ref, model, dryrun)
       if trigger_state is not None:
         trigger_hashes[str(trigger_ref)] = trigger_state.sha256()
     return PostHookState(trigger_hashes)
+
+  @classmethod
+  def get_trigger_items(cls, hook: PostHook, model: ConfigModel):
+    result: list[ManagedConfigItem] = []
+    for t in hook.trigger:
+      if callable(t):
+        result.extend([item for step in model.steps for item in step.items_to_install if t(item)])
+      else:
+        result.append(t)
+    return result
 
   def state_for_trigger(self, reference: ManagedConfigItem, model: ConfigModel, dryrun: bool) -> ConfigItemState | None:
     manager: ConfigManager = model.manager(reference)

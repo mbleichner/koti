@@ -4,6 +4,7 @@ import os
 from typing import Unpack
 from zipfile import ZipFile
 
+from koti.items.user import User
 from koti.items.file import File
 from koti.model import ConfigItem, ManagedConfigItem, ManagedConfigItemBaseArgs
 
@@ -20,6 +21,7 @@ class Directory(ManagedConfigItem):
     source: str | None = None,
     mask: int | str = 0o755,
     owner: str = "root",
+    add_owner_as_dependency = True,
     **kwargs: Unpack[ManagedConfigItemBaseArgs],
   ):
     super().__init__(**kwargs)
@@ -27,6 +29,12 @@ class Directory(ManagedConfigItem):
     self.source = source.removesuffix("/") if source is not None else None
     self.owner = owner
     self.mask = mask
+
+    if add_owner_as_dependency:
+      self.after = ManagedConfigItem.merge_functions(
+        self.after,
+        lambda item: isinstance(item, User) and item.username == owner,
+      )
 
   def files(self) -> list[File]:
     assert self.source is not None
