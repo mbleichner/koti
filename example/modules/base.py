@@ -10,8 +10,10 @@ def base() -> ConfigDict:
 
       # setup sudo and sudo user
       Package("sudo", tags = "bootstrap"),
-      User("manuel", home = "/home/manuel", shell = "/usr/bin/fish"),
-      GroupAssignment("manuel", "wheel"),
+      User("manuel"),
+      UserHome("manuel", homedir = "/home/manuel"),
+      UserGroupAssignment("manuel", "wheel"),
+
       File("/etc/sudoers", permissions = 0o440, content = cleandoc('''
         Defaults!/usr/bin/visudo env_keep += "SUDO_EDITOR EDITOR VISUAL"
         Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"
@@ -236,7 +238,7 @@ def base() -> ConfigDict:
       Package("docker"),
       Package("docker-compose"),
       Package("containerd"),
-      GroupAssignment("manuel", "docker", requires = User("manuel")),
+      UserGroupAssignment("manuel", "docker", requires = User("manuel")),
     ),
 
     Section("locales"): (

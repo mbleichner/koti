@@ -4,4 +4,7 @@ from koti.managers.pacman import PacmanKeyManager, PacmanPackageManager
 from koti.managers.swapfile import SwapfileManager
 from koti.managers.systemd import SystemdUnitManager
 from koti.managers.flatpak import FlatpakManager
-from koti.managers.group import GroupManager
+from koti.managers.user import UserManager
+from koti.managers.user_home import UserHomeManager
+from koti.managers.user_shell import UserShellManager
+from koti.managers.user_group import UserGroupManager

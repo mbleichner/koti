@@ -1,5 +1,4 @@
 from koti.managers.pacman import AurHelper
-from koti.managers.user import UserManager
 from koti.model import ConfigManager
 from koti.managers import *
 
@@ -13,12 +12,14 @@ class ConfigManagerPresets:
   ) -> list[ConfigManager]:
     return [
       UserManager(),
+      UserShellManager(),
+      UserHomeManager(),
+      UserGroupManager(),
       PacmanKeyManager(),
       PacmanPackageManager(
         aur_helper = aur_helper,
         keep_unmanaged_packages = keep_unmanaged_packages
       ),
-      GroupManager(),
       SwapfileManager(),
       FileManager(),
       FlatpakManager(),

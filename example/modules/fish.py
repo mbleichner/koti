@@ -11,6 +11,8 @@ def fish() -> ConfigDict:
       Package("fastfetch"),
       Package("imagemagick"),  # notwendig für png-Anzeige in fastfetch
 
+      UserShell("manuel", shell = "/usr/bin/fish"),
+
       File("/etc/fish/config.fish", content = cleandoc(r'''
         set fish_greeting ""
         pyenv init - fish | source

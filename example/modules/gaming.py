@@ -15,7 +15,7 @@ def gaming() -> ConfigDict:
       Package("steam"),
       Package("r2modman-bin"),
       Package("mangohud"),
-      GroupAssignment("manuel", "games"),
+      UserGroupAssignment("manuel", "games"),
 
       # https://wiki.cachyos.org/configuration/general_system_tweaks
       File("/etc/sysctl.d/99-splitlock.conf", content = cleandoc('''

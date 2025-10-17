@@ -77,7 +77,7 @@ class ConfigItem(metaclass = ABCMeta):
     attempt to merge those definitions together (or throw an error if they're incompatible)."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.merge()")
 
-
+# FIXME: before/after als Liste
 class ManagedConfigItemBaseArgs(TypedDict, total = False):
   """Convenience type to avoid repetition in implemenations."""
   tags: Iterable[str] | str | None
@@ -168,7 +168,7 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     have already been updated to their respective target states)."""
     pass
 
-  def states(self, item: T, model: ConfigModel, dryrun: bool) -> tuple[S | None, S | None]:
+  def states(self, item: T, model: ConfigModel, dryrun: bool) -> tuple[S | None, S]:
     """Convenience method to get both current and target state of an item."""
     return self.state_current(item), self.state_target(item, model, dryrun)
 
