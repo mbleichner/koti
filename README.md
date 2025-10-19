@@ -165,14 +165,14 @@ dependencies). In this case, koti will calculate and output the minimal set of i
 
 ### Recommendations
 
-- Try to use the same order withing each section if possible - e.g. `Package()`s first, then `File()`s, then
-  `SystemdUnit()`s. Because koti isn't allowed to change the item order within each section, it won't be able to group
-  them efficiently (i.e. minimizing pacman invocations).
+- Try to use the same order within each section if possible - e.g. `Package()`s first, then `File()`s, then
+  `SystemdUnit()`s. Because koti isn't allowed to change the item order within each section, inconsistent ordering will 
+  prevent koti from merging multiple sections in an efficient way (i.e. minimizing pacman invocations).
 - Split up your config in multiple sections to keep it flexible. Each section is meant to describe one singular coherent
   aspect of your system. By keeping them small and focused, it will be much easier to manage your configs - compared to
   having a giant blob of everything.
-- You have the full power of python at your fingertips. Use it to compose configs, create dynamic configs, whatever
-  necessary.
+- You have the full power of python at your fingertips. Use it to compose and parameterize your configs, create
+  dynamic configs, whatever you want.
 
 ## Limitations and known problems
 
