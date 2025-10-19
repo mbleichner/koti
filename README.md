@@ -45,10 +45,6 @@ So I thought I'll give it a shot myself - and the result is koti.
 - koti can make use of **AUR helpers** with pacman-compatible syntax (e.g. paru, yay).
 - koti is written with **extensibility** in mind - it's easy to extend or customize the behavior in (almost) any way.
 
-## Limitations
-
-- Currently, only Arch (pacman) and flatpak is supported. In the future, I might add support for apt, yum, etc.
-
 ## Installation (Arch)
 
 ```bash
@@ -176,3 +172,10 @@ dependencies). In this case, koti will calculate and output the minimal set of i
   having a giant blob of everything.
 - You have the full power of python at your fingertips. Use it to compose configs, create dynamic configs, whatever
   necessary.
+
+## Limitations and known problems
+
+- Currently, only Arch (pacman) and flatpak is supported. In the future, I might add support for apt, yum, etc.
+- Pacman pretty aggressively asks for possible package alternatives - even if they are explicitly given. I don't know if
+  bug or intended behavior, but it can be a bit annoying during system setup to be asked something that's literally in
+  your config.
