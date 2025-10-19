@@ -7,7 +7,7 @@ from typing import Generator, Sequence
 
 from koti.utils.logging import logger
 from koti.utils.shell import shell, shell_output
-from koti.model import ConfigItemState, ConfigManager, ConfigModel, Action
+from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel
 from koti.items.user_home import UserHome
 from koti.managers.user import UserManager
 from koti.utils.json_store import JsonCollection, JsonStore
@@ -27,7 +27,7 @@ class UserHomeState(ConfigItemState):
 
 class UserHomeManager(ConfigManager[UserHome, UserHomeState]):
   managed_classes = [UserHome]
-  cleanup_order:float = UserManager.cleanup_order  # these should usually stick together
+  cleanup_order: float = UserManager.cleanup_order  # these should usually stick together
   managed_users_store: JsonCollection[str]
   cleanup_order_before = [UserManager]
 
@@ -40,9 +40,8 @@ class UserHomeManager(ConfigManager[UserHome, UserHomeState]):
     assert item.homedir is not None, f"{item}: no homedir specified"
 
   def state_target(self, item: UserHome, model: ConfigModel, dryrun: bool) -> UserHomeState:
-    user_homes: dict[str, str] = self.get_all_user_homes()
-    home = user_homes[item.username]
-    return UserHomeState(home_dir = home, home_exists = os.path.isdir(home))
+    assert item.homedir is not None
+    return UserHomeState(home_dir = item.homedir, home_exists = True)
 
   def state_current(self, item: UserHome) -> UserHomeState | None:
     user_homes: dict[str, str] = self.get_all_user_homes()
