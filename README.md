@@ -10,15 +10,16 @@ This project is still very new and in an alpha state. Use at your own risk.
 
 ## Motivation
 
-Messing around with NixOS, I was charmed by how nicely it lets you describe your systems using just a few config files.
-The declarative nature of it made sure that your system always looks just like described by your config and prevents any
-drift due to changing package dependencies or leftovers from earlier experiments.
+Trying out NixOS, I was charmed by how nicely it lets you describe your system using just a few config files.
+The idea of having a single config describing your whole system and always being able to restore your system to a
+defined target state is simply amazing. And it gets even better if you have to manage multiple systems and want to sync
+configuration betwwen them.
 
-Unfortunately, using NixOS as a daily driver has been a bit of a disappointment, because customizing it is extremely
-time-consuming and sometimes downright frustrating. After a few days, I already missed the simplicity and
+In practice, using NixOS as a daily driver has been a bit of a disappointment though, mainly because customizing it is
+extremely time-consuming and often downright frustrating. After a few days, I already missed the simplicity and
 straightforwardness of Arch.
 
-So I went back to my beloved Arch and looked for similar solutions - that would allow me to describe my whole system in
+So I went back to my beloved Arch and looked for a compromise - a tool that would allow me to describe my whole system in
 a similar manner. There are a few, but none of them managed to get that declarative approach quite right. They all had
 their problems:
 
