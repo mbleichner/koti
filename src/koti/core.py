@@ -41,7 +41,7 @@ class Koti:
     except InfeasibleError:
       iis = optimizer.find_iis()
       print()
-      printc(f"{RED}Koti was not able to calculate a consistent execution order.")
+      printc(f"{RED}Unable to calculate a consistent execution order.")
       print("Please check the following items. Very likely you accidentally defined some sort of circular dependency between them.")
       print()
       printc(f"{BOLD}Inconsistent Subset:")
