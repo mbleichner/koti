@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Generator, Sequence
 
-from koti import Action
 from koti.utils.shell import shell, shell_output
-from koti.model import ConfigItemState, ConfigManager, ConfigModel
+from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel
 from koti.items.user_group import UserGroupAssignment
+from koti.managers.user import UserManager
 from koti.utils.json_store import JsonCollection, JsonStore
 
 
@@ -16,7 +16,9 @@ class UserGroupAssignmentState(ConfigItemState):
 
 class UserGroupManager(ConfigManager[UserGroupAssignment, UserGroupAssignmentState]):
   managed_classes = [UserGroupAssignment]
+  cleanup_order: float = UserManager.cleanup_order  # these should usually stick together
   managed_users_store: JsonCollection[str]
+  cleanup_order_before = [UserManager]
 
   def __init__(self):
     super().__init__()

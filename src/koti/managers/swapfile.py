@@ -21,6 +21,7 @@ class SwapfileState(ConfigItemState):
 
 class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
   managed_classes = [Swapfile]
+  cleanup_order = 80
   managed_files_store: JsonCollection[str]
 
   def __init__(self):

@@ -27,6 +27,7 @@ class FlatpakPackageState(ConfigItemState):
 
 class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoState | FlatpakPackageState]):
   managed_classes = [FlatpakRepo, FlatpakPackage]
+  cleanup_order = 20
 
   def __init__(self):
     super().__init__()

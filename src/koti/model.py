@@ -77,52 +77,67 @@ class ConfigItem(metaclass = ABCMeta):
     attempt to merge those definitions together (or throw an error if they're incompatible)."""
     raise NotImplementedError(f"method not implemented: {self.__class__.__name__}.merge()")
 
-# FIXME: before/after als Liste
+
 class ManagedConfigItemBaseArgs(TypedDict, total = False):
   """Convenience type to avoid repetition in implemenations."""
   tags: Iterable[str] | str | None
-  requires: Iterable[ManagedConfigItem] | ManagedConfigItem | None
-  before: Callable[[ManagedConfigItem], bool] | None
-  after: Callable[[ManagedConfigItem], bool] | None
+  requires: ManagedConfigItem | Iterable[ManagedConfigItem] | None
+  before: ManagedConfigItem | Iterable[ManagedConfigItem] | Callable[[ManagedConfigItem], bool] | None
+  after: ManagedConfigItem | Iterable[ManagedConfigItem] | Callable[[ManagedConfigItem], bool] | None
 
 
 class ManagedConfigItem(ConfigItem, metaclass = ABCMeta):
   """ConfigItems that can be installed to the system. ManagedConfigItem require a corresponding
   ConfigManager being registered in koti."""
-  after: Callable[[ManagedConfigItem], bool] | None
-  before: Callable[[ManagedConfigItem], bool] | None
-  requires: set[ManagedConfigItem]
+  requires: Sequence[ManagedConfigItem]
+  after: Sequence[ManagedConfigItem | Callable[[ManagedConfigItem], bool]]
+  before: Sequence[ManagedConfigItem | Callable[[ManagedConfigItem], bool]]
 
   def __init__(
     self,
     tags: Iterable[str] | str | None = None,
-    requires: Iterable[ManagedConfigItem] | ManagedConfigItem | None = None,
-    before: Callable[[ManagedConfigItem], bool] | None = None,
-    after: Callable[[ManagedConfigItem], bool] | None = None,
+    requires: ManagedConfigItem | Iterable[ManagedConfigItem] | None = None,
+    before: ManagedConfigItem | Iterable[ManagedConfigItem] | Callable[[ManagedConfigItem], bool] | None = None,
+    after: ManagedConfigItem | Iterable[ManagedConfigItem] | Callable[[ManagedConfigItem], bool] | None = None,
   ):
     super().__init__(tags)
-    self.requires = {requires} if isinstance(requires, ManagedConfigItem) else {*(requires or [])}
-    self.before = before
-    self.after = after
+    self.requires = self.init_requires(requires)
+    self.before = self.init_before_after(before)
+    self.after = self.init_before_after(after)
+
+  @classmethod
+  def init_before_after(cls, arg: ManagedConfigItem | Iterable[ManagedConfigItem] | Callable[[ManagedConfigItem], bool] | None) -> Sequence[ManagedConfigItem | Callable[[ManagedConfigItem], bool]]:
+    if arg is None:
+      return []
+    if isinstance(arg, ManagedConfigItem):
+      return [arg]
+    if callable(arg):
+      return [arg]
+    return list(arg)
+
+  @classmethod
+  def init_requires(cls, arg: ManagedConfigItem | Iterable[ManagedConfigItem] | None) -> Sequence[ManagedConfigItem]:
+    if arg is None:
+      return []
+    if isinstance(arg, ManagedConfigItem):
+      return [arg]
+    return list(arg)
 
   @staticmethod
   def merge_base_attrs(item1: ManagedConfigItem, item2: ManagedConfigItem) -> dict[str, Any]:
     return {
       "tags": item1.tags.union(item2.tags),
-      "requires": item1.requires.union(item2.requires),
-      "before": ManagedConfigItem.merge_functions(item1.before, item2.before),
-      "after": ManagedConfigItem.merge_functions(item1.after, item2.after),
+      "requires": [*item1.requires, *item2.requires],
+      "before": [*item1.before, *item2.before],
+      "after": [*item1.after, *item2.after],
     }
 
-  @staticmethod
-  def merge_functions(
-    function1: Callable[[ManagedConfigItem], bool] | None,
-    function2: Callable[[ManagedConfigItem], bool] | None,
-  ) -> Callable[[ManagedConfigItem], bool] | None:
-    if function1 is not None and function2 is not None:
-      return lambda item: function1(item) or function2(item)
-    else:
-      return function1 or function2
+  # @staticmethod
+  # def merge_before_after(
+  #   ba1: Sequence[ManagedConfigItem | Callable[[ManagedConfigItem], bool]],
+  #   ba2: Sequence[ManagedConfigItem | Callable[[ManagedConfigItem], bool]],
+  # ) -> Sequence[ManagedConfigItem | Callable[[ManagedConfigItem], bool]]:
+  #   return [*ba1, *ba2]
 
 
 class UnmanagedConfigItem(ConfigItem, metaclass = ABCMeta):
@@ -147,7 +162,9 @@ class ConfigItemState(metaclass = ABCMeta):
 
 class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMeta):
   managed_classes: list[Type] = []
-  order_in_cleanup_phase: Literal["reverse_install_order", "first", "last"] = "reverse_install_order"
+  cleanup_order: float = 0.0
+  cleanup_order_before: Sequence[type[ConfigManager]] = []  # Restrictions to override the numeric ordering
+  cleanup_order_after: Sequence[type[ConfigManager]] = []  # Restrictions to override the numeric ordering
 
   @abstractmethod
   def assert_installable(self, item: T, model: ConfigModel):

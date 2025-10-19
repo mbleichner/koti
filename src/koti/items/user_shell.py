@@ -22,10 +22,7 @@ class UserShell(ManagedConfigItem):
     self.shell = shell
 
     if add_user_as_dependency:
-      self.after = ManagedConfigItem.merge_functions(
-        self.after,
-        lambda item: isinstance(item, User) and item.username == username,
-      )
+      self.after = [*self.after, User(username)]
 
   def __str__(self) -> str:
     return f"UserShell('{self.username}')"

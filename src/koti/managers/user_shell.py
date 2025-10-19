@@ -3,11 +3,11 @@ from __future__ import annotations
 from hashlib import sha256
 from typing import Generator, Sequence
 
-from koti import Action
 from koti.utils.shell import shell, shell_output
-from koti.model import ConfigItemState, ConfigManager, ConfigModel
+from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel
 from koti.items.user_shell import UserShell
 from koti.utils.json_store import JsonCollection, JsonStore
+from koti.managers.user import UserManager
 
 
 class UserShellState(ConfigItemState):
@@ -22,7 +22,9 @@ class UserShellState(ConfigItemState):
 
 class UserShellManager(ConfigManager[UserShell, UserShellState]):
   managed_classes = [UserShell]
+  cleanup_order:float = UserManager.cleanup_order  # these should usually stick together
   managed_users_store: JsonCollection[str]
+  cleanup_order_before = [UserManager]
 
   def __init__(self):
     super().__init__()

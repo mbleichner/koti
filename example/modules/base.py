@@ -152,7 +152,7 @@ def base() -> ConfigDict:
 
       # Monitoring + Analyse
       Package("btop"),
-      # Package("htop", before = lambda item: isinstance(item, User)),
+      # Package("htop", before = User("manuel")),
       Package("htop"),
       Package("iotop"),
       Package("ncdu"),

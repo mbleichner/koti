@@ -5,10 +5,11 @@ import pwd
 from hashlib import sha256
 from typing import Generator, Sequence
 
-from koti import Action, logger
+from koti.utils.logging import logger
 from koti.utils.shell import shell, shell_output
-from koti.model import ConfigItemState, ConfigManager, ConfigModel
+from koti.model import ConfigItemState, ConfigManager, ConfigModel, Action
 from koti.items.user_home import UserHome
+from koti.managers.user import UserManager
 from koti.utils.json_store import JsonCollection, JsonStore
 
 
@@ -26,7 +27,9 @@ class UserHomeState(ConfigItemState):
 
 class UserHomeManager(ConfigManager[UserHome, UserHomeState]):
   managed_classes = [UserHome]
+  cleanup_order:float = UserManager.cleanup_order  # these should usually stick together
   managed_users_store: JsonCollection[str]
+  cleanup_order_before = [UserManager]
 
   def __init__(self):
     super().__init__()

@@ -51,10 +51,7 @@ class File(ManagedConfigItem):
     self.owner = owner
 
     if add_owner_as_dependency:
-      self.after = ManagedConfigItem.merge_functions(
-        self.after,
-        lambda item: isinstance(item, User) and item.username == owner,
-      )
+      self.after = [*self.after, User(owner)]
 
   def __eq__(self, other: Any) -> bool:
     return isinstance(other, File) and self.filename == other.filename

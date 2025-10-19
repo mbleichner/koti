@@ -15,6 +15,7 @@ class SystemdUnitState(ConfigItemState):
 
 class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
   managed_classes = [SystemdUnit]
+  cleanup_order = 30
   store: JsonStore
 
   def __init__(self):

@@ -46,6 +46,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
   managed_classes = [File, Directory]
   managed_files_store: JsonCollection[str]
   managed_dirs_store: JsonCollection[str]
+  cleanup_order = 10
 
   def __init__(self):
     super().__init__()

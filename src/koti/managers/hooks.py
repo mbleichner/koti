@@ -26,7 +26,7 @@ class PostHookState(ConfigItemState):
 class PostHookManager(ConfigManager[PostHook, PostHookState]):
   managed_classes = [PostHook]
   trigger_hash_store: JsonMapping[str, dict[str, str]]
-  order_in_cleanup_phase = "last"
+  cleanup_order = 100
 
   def __init__(self):
     super().__init__()

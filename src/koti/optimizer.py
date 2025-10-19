@@ -5,9 +5,12 @@ from collections import defaultdict
 
 from pyscipopt import Constraint as Cons, Expr, Model, Model, SCIP_PARAMEMPHASIS, Variable  # type: ignore
 
-from koti.utils.text import printc, RED
 from koti.model import *
 from koti.utils.json_store import *
+
+
+class InfeasibleError(AssertionError):
+  pass
 
 
 class ExtraConstraints:
@@ -22,7 +25,7 @@ class ExtraConstraints:
     self.different_value_pairs = different_value_pairs or []
 
 
-class KotiOptimizer:
+class InstallPhaseOptimizer:
   """Runs an algorithm to calculate a (near) optimal installation order that minimizes ConfigManager invocations."""
   managers: Sequence[ConfigManager]
   configs: Sequence[Sequence[ManagedConfigItem]]
@@ -109,22 +112,37 @@ class KotiOptimizer:
     # (if there is a dependency between two items, they should NEVER end up in the same group, or else their
     # manager would later be allowed to rearrange them - which in turn can break the dependency)
     for subject in items:
+      subject_var = item_to_pos_var[subject]
+
+      # add "requires" constraints
       for required_item in subject.requires:
-        pos1 = item_to_pos_var.get(required_item, None)
-        pos2 = item_to_pos_var[subject]
-        if pos1 is not None:
-          model.addCons(pos2 - pos1 >= 1)
+        other_var = item_to_pos_var.get(required_item, None)
+        if other_var is not None:
+          model.addCons(subject_var - other_var >= 1)
         elif not is_iis_search:
           raise AssertionError(f"{subject}: required item {required_item} not found")
-      for other in items:
-        if subject != other and subject.before is not None and subject.before(other):
-          pos1 = item_to_pos_var[subject]
-          pos2 = item_to_pos_var[other]
-          model.addCons(pos2 - pos1 >= 1)
-        if subject != other and subject.after is not None and subject.after(other):
-          pos1 = item_to_pos_var[other]
-          pos2 = item_to_pos_var[subject]
-          model.addCons(pos2 - pos1 >= 1)
+
+      # add "after" constraints
+      for after_element in subject.after:
+        if isinstance(after_element, ManagedConfigItem):
+          other_var = item_to_pos_var.get(after_element, None)
+          if other_var is not None:
+            model.addCons(subject_var - other_var >= 1)
+        else:
+          for other in [other for other in items if other != subject and after_element(other)]:
+            other_var = item_to_pos_var.get(other, None)
+            model.addCons(subject_var - other_var >= 1)
+
+      # add "before" constraints
+      for before_element in subject.before:
+        if isinstance(before_element, ManagedConfigItem):
+          other_var = item_to_pos_var.get(before_element, None)
+          if other_var is not None:
+            model.addCons(other_var - subject_var >= 1)
+        else:
+          for other in [other for other in items if other != subject and before_element(other)]:
+            other_var = item_to_pos_var[other]
+            model.addCons(other_var - subject_var >= 1)
 
     # apply constraints that are added during the optimization process
     for bound_group in extra_constraints.same_value_groups:
@@ -242,4 +260,55 @@ class KotiOptimizer:
     raise AssertionError(f"no manager found for {item}")
 
 
-class InfeasibleError(AssertionError): pass
+class CleanupPhaseOptimizer:
+  managers: Sequence[ConfigManager]
+
+  def __init__(self, managers: Sequence[ConfigManager]):
+    self.managers = managers
+
+  def calc_cleanup_order(self) -> Sequence[ConfigManager]:
+
+    manager_classes_ordered = [manager.__class__ for manager in self.managers]
+    manager_classes_ordered.sort(key = lambda x: x.cleanup_order)
+
+    model = Model("koti")
+    objective = Expr()
+
+    # create a variable for each item
+    manager_to_pos_var: list[tuple[type[ConfigManager], Variable]] = []
+    for idx, manager in enumerate(manager_classes_ordered):
+      pos_var = model.addVar(vtype = "I", lb = None)
+      distance = model.addVar(vtype = "C")
+      manager_to_pos_var.append((manager, pos_var))
+      model.addCons(idx - pos_var <= distance)
+      model.addCons(pos_var - idx <= distance)
+      objective += distance
+
+    for manager in manager_classes_ordered:
+      for other in manager.cleanup_order_before:
+        manager_pos = next((var for key, var in manager_to_pos_var if key == manager))
+        other_pos = next((var for key, var in manager_to_pos_var if key == other))
+        model.addCons(manager_pos + 1 <= other_pos)
+        print(f"{manager.__name__} < {other.__name__}")
+      for other in manager.cleanup_order_after:
+        manager_pos = next((var for key, var in manager_to_pos_var if key == manager))
+        other_pos = next((var for key, var in manager_to_pos_var if key == other))
+        model.addCons(other_pos + 1 <= manager_pos)
+        print(f"{other.__name__} < {manager.__name__}")
+
+    model.hideOutput(True)
+    model.setMinimize()
+    model.setObjective(objective)
+    model.writeProblem()
+    model.optimize()
+    sol = model.getBestSol()
+
+    if model.getStatus() == "infeasible":
+      raise InfeasibleError()
+
+    manager_classes_ordered.sort(key = lambda cls: round(sol[next((var for key, var in manager_to_pos_var if key == cls))]))
+    for manager in manager_classes_ordered:
+      #   manager_pos = next((var for man, var in manager_to_pos_var if man == manager))
+      print(f"{manager.__name__}")
+
+    return sorted(self.managers, key = lambda m: manager_classes_ordered.index(m.__class__))

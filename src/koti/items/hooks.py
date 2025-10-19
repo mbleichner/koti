@@ -32,11 +32,7 @@ class PostHook(ManagedConfigItem):
       self.trigger = (trigger or [])
 
     if add_trigger_as_dependency:
-      for t in (self.trigger or []):
-        if callable(t):
-          self.after = ManagedConfigItem.merge_functions(self.after, t)
-        else:
-          self.requires.add(t)
+      self.after = [*self.after, *self.trigger]
 
   def __str__(self) -> str:
     return f"PostHook('{self.name}')"

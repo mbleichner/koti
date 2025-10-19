@@ -22,6 +22,7 @@ class UserState(ConfigItemState):
 
 class UserManager(ConfigManager[User, UserState]):
   managed_classes = [User]
+  cleanup_order: float = 80
   managed_users_store: JsonCollection[str]
 
   def __init__(self):

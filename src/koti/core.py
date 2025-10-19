@@ -6,7 +6,7 @@ from time import sleep
 
 import koti.utils.shell as shell_module
 from koti.model import *
-from koti.optimizer import InfeasibleError, KotiOptimizer
+from koti.optimizer import CleanupPhaseOptimizer, InfeasibleError, InstallPhaseOptimizer
 from koti.utils.text import *
 from koti.utils.confirm import confirm
 from koti.utils.json_store import *
@@ -31,7 +31,7 @@ class Koti:
 
   def create_model(self) -> ConfigModel:
     merged_configs = self.merge_configs(self.configs)
-    optimizer = KotiOptimizer(
+    optimizer = InstallPhaseOptimizer(
       configs = self.get_managed_items_grouped(merged_configs),
       managers = self.managers,
     )
@@ -61,7 +61,9 @@ class Koti:
   def create_cleanup_phase(self, model: ConfigModel) -> CleanupPhase:
     items_to_install = [item for step in model.steps for item in step.items_to_install]
     steps: list[CleanupStep] = []
-    for manager in self.get_cleanup_phase_manager_order(self.managers):
+    optimizer = CleanupPhaseOptimizer(self.managers)
+    managers_in_order = optimizer.calc_cleanup_order()
+    for manager in managers_in_order:
       steps.append(CleanupStep(
         manager = manager,
         items_to_keep = [item for item in items_to_install if item.__class__ in manager.managed_classes],
@@ -194,14 +196,6 @@ class Koti:
       if managed_items_in_config:
         result.append(managed_items_in_config)
     return result
-
-  @classmethod
-  def get_cleanup_phase_manager_order(cls, managers: Sequence[ConfigManager]) -> Sequence[ConfigManager]:
-    return [
-      *[manager for manager in managers if manager.order_in_cleanup_phase == "first"],
-      *reversed([manager for manager in managers if manager.order_in_cleanup_phase == "reverse_install_order"]),
-      *[manager for manager in managers if manager.order_in_cleanup_phase == "last"],
-    ]
 
   @classmethod
   def assert_config_items_installable(cls, model: ConfigModel):

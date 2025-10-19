@@ -30,11 +30,8 @@ class Directory(ManagedConfigItem):
     self.owner = owner
     self.mask = mask
 
-    if add_owner_as_dependency:
-      self.after = ManagedConfigItem.merge_functions(
-        self.after,
-        lambda item: isinstance(item, User) and item.username == owner,
-      )
+    if owner is not None and add_owner_as_dependency:
+      self.after = [*self.after, User(owner)]
 
   def files(self) -> list[File]:
     assert self.source is not None

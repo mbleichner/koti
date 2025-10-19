@@ -21,11 +21,8 @@ class SystemdUnit(ManagedConfigItem):
     self.name = name
     self.user = user
 
-    if add_user_as_dependency:
-      self.after = ManagedConfigItem.merge_functions(
-        self.after,
-        lambda item: isinstance(item, User) and item.username == user,
-      )
+    if user is not None and add_user_as_dependency:
+      self.after = [*self.after, User(user)]
 
   def __str__(self) -> str:
     if self.user is not None:
