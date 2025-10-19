@@ -14,12 +14,13 @@ Messing around with NixOS, I was charmed by how nicely it lets you describe your
 The declarative nature of it made sure that your system always looks just like described by your config and prevents any
 drift due to changing package dependencies or leftovers from earlier experiments.
 
-Unfortunately, using NixOS as a daily driver has been kind of disappointing, because modifying it can be anything from
-trivial to downright impossible. After a few days, I already missed the simplicity and straightforwardness of Arch.
+Unfortunately, using NixOS as a daily driver has been a bit of a disappointment, because customizing it is extremely
+time-consuming and sometimes downright frustrating. After a few days, I already missed the simplicity and
+straightforwardness of Arch.
 
 So I went back to my beloved Arch and looked for similar solutions - that would allow me to describe my whole system in
-a similar manner. There are a few, but none of them managed to get that declarative approach quite right, in my opinion.
-They all had their problems:
+a similar manner. There are a few, but none of them managed to get that declarative approach quite right. They all had
+their problems:
 
 - Not being able to detect stuff that has been removed from your config and uninstalling it from the system
 - Not being able to control the order of execution in a fine-grained way (unlike NixOS, configuration in Arch is done in
@@ -59,8 +60,7 @@ See the `examples` folder, specifically `koti-apply` and all the stuff in the `m
 ## The building blocks of a koti config
 
 - The whole system config is basically a large collection of **config items**, divided into **sections**.
-- Config items declare individual things to install, such as `Package("htop")`, or
-  `File("/etc/fstab", content="...")`.
+- Config items declare individual things to install, such as `Package("htop")`, or `File("/etc/fstab", content="...")`.
 - Sections contain multiple config items that belong together - for example `Package("nginx")`,
   `File("/etc/nginx/nginx.conf")` and `SystemdUnit("nginx")`.
 - **Config managers** are responsible for applying config items to your system. They are largely part of koti itself and
@@ -68,6 +68,17 @@ See the `examples` folder, specifically `koti-apply` and all the stuff in the `m
 
 ```python
 config_example_snippet = {
+
+  Section("ssh daemon + config"): (
+    Package("openssh"),
+    File("/etc/ssh/sshd_config", owner = "root", content = cleandoc('''
+      Include /etc/ssh/sshd_config.d/*.conf
+      PermitRootLogin yes
+      AuthorizedKeysFile .ssh/authorized_keys
+      Subsystem sftp /usr/lib/ssh/sftp-server
+    ''')),
+    SystemdUnit("sshd.service"),
+  ),
 
   Section("arch-update"): (
     Package("arch-update"),
@@ -86,17 +97,6 @@ config_example_snippet = {
       trigger = File("/home/manuel/.config/arch-update/arch-update.conf"),
     )
   ),
-
-  Section("ssh daemon + config"): (
-    Package("openssh"),
-    File("/etc/ssh/sshd_config", owner = "root", content = cleandoc('''
-      Include /etc/ssh/sshd_config.d/*.conf
-      PermitRootLogin yes
-      AuthorizedKeysFile .ssh/authorized_keys
-      Subsystem sftp /usr/lib/ssh/sftp-server
-    ''')),
-    SystemdUnit("sshd.service"),
-  )
 }
 ```
 
@@ -118,6 +118,7 @@ config_example_snippet = {
 | `UserShell("manuel", shell)`                                    | Sets the default login shell of a user.                                                                                                                                        |
 | `PostHook("locale-gen", trigger, execute)`                      | Executes a python function (`execute`) whenever the state of the `trigger` item(s) change.                                                                                     |
 | `Checkpoint("moep")`                                            | Allows to break up the execution of a group of same-type items into separate manager invocations                                                                               |
+| `Option("/etc/pacman.conf/NoUpgrade", value)`                   | Helper item to collect Options that can e.g. be merged into a `File()`                                                                                                         |
 
 ## How koti works
 
@@ -134,14 +135,14 @@ config_example_snippet = {
     gets modified, it can happen that a previously predicted action is no longer correct and some unexpected actions
     have to be taken. In this case koti asks for explicit confirmation before continuing. (The most common example is
     koti predicting to create a new file during planning, but during execution that file has already been created by
-    some pacman package. So koti would have to modify an existing file instead of creating a new one - and this will
+    some pacman package. So koti would have to modify an existing file instead of creating a new one - which will
     trigger an additional confirmation.)
   - After everything has been installed, all managers will run their cleanup routine to remove items from the system
     that should no longer be present.
 
 ## Controlling the order of execution
 
-There are two mechanisms to control the **order of installation**:
+There are two mechanisms to control the order of installation:
 
 - **Within sections**: in each section, all items will be installed in the order they are listed (items of the same type
   are allowed to be installed in a single step for performance reasons).
