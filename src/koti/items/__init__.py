@@ -13,3 +13,4 @@ from koti.items.user import User
 from koti.items.user_group import UserGroupAssignment
 from koti.items.user_shell import UserShell
 from koti.items.user_home import UserHome
+from koti.items.checkpoint import Checkpoint

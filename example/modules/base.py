@@ -155,6 +155,7 @@ def base() -> ConfigDict:
       # Package("htop", before = User("manuel")),
       Package("htop"),
       Package("iotop"),
+      Checkpoint("moep"),
       Package("ncdu"),
       Package("bandwhich"),
       Package("nload"),
@@ -292,7 +293,7 @@ def base() -> ConfigDict:
       SystemdUnit("arch-update.timer", user = "manuel"),
       PostHook(
         "restart-arch-update-tray",
-        execute = lambda: "systemctl --user -M manuel@ restart arch-update-tray.service",
+        execute = lambda: shell("systemctl --user -M manuel@ restart arch-update-tray.service"),
         trigger = File("/home/manuel/.config/arch-update/arch-update.conf"),
       )
     ),

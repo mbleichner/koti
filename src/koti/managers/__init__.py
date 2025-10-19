@@ -9,3 +9,4 @@ from koti.managers.user import UserManager
 from koti.managers.user_home import UserHomeManager
 from koti.managers.user_shell import UserShellManager
 from koti.managers.user_group import UserGroupManager
+from koti.managers.checkpoint import CheckpointManager
