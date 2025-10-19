@@ -38,7 +38,7 @@ class Koti:
 
     try:
       install_steps = optimizer.calc_install_steps()
-    except InfeasibleError as ex:
+    except InfeasibleError:
       iis = optimizer.find_iis()
       print()
       printc(f"{RED}Koti was not able to calculate a consistent execution order.")
@@ -59,18 +59,21 @@ class Koti:
     return model
 
   def create_cleanup_phase(self, model: ConfigModel) -> CleanupPhase:
+    try:
+      optimizer = CleanupPhaseOptimizer(self.managers)
+      managers_in_order = optimizer.calc_cleanup_order()
+    except InfeasibleError:
+      raise AssertionError("cleanup order could not be determined because of infeasible constraints defined by cleanup_order_before / cleanup_order_after")
+
     items_to_install = [item for step in model.steps for item in step.items_to_install]
-    steps: list[CleanupStep] = []
-    optimizer = CleanupPhaseOptimizer(self.managers)
-    managers_in_order = optimizer.calc_cleanup_order()
-    for manager in managers_in_order:
-      steps.append(CleanupStep(
+    return CleanupPhase(steps = [
+      CleanupStep(
         manager = manager,
         items_to_keep = [item for item in items_to_install if item.__class__ in manager.managed_classes],
-      ))
-    return CleanupPhase(steps)
+      ) for manager in managers_in_order
+    ])
 
-  def plan(self, section_summary: bool = False, item_summary: bool = False) -> ExecutionPlan:
+  def plan(self, config_summary: bool = False, install_order_summary: bool = False, cleanup_order_summary: bool = False) -> ExecutionPlan:
     logger.clear()
     logger.info(f"Please note that koti cannot always predict every action accurately. In case some unexpected action needs to be performed during execution phase, you will be asked to review and confirm it.")
 
@@ -101,20 +104,26 @@ class Koti:
     print()
 
     # list all groups + items
-    if section_summary:
+    if config_summary:
       printc(f"{BOLD}Config Section Summary:")
       for group in model.configs:
         prefix = self.prefix_for_item(actions, *(item for item in group.provides if isinstance(item, ManagedConfigItem)))
         printc(f"{prefix} {group.description}")
       print()
 
-    if item_summary:
-      printc(f"{BOLD}Config Item Summary:")
+    if install_order_summary:
+      printc(f"{BOLD}Install Order Summary:")
       for install_step in model.steps:
         for idx, item in enumerate(install_step.items_to_install):
           prefix = self.prefix_for_item(actions, item)
           printc(f"{prefix} {item}")
       printc(f"{len([item for step in model.steps for item in step.items_to_install])} items total")
+      print()
+
+    if cleanup_order_summary:
+      printc(f"{BOLD}Cleanup Order Summary:")
+      for cleanup_step in cleanup_phase.steps:
+        printc(f"- {cleanup_step.manager.__class__.__name__}")
       print()
 
     # print warnings generated during evaluation

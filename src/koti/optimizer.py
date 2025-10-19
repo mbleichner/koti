@@ -110,39 +110,39 @@ class InstallPhaseOptimizer:
 
     # apply constraints that are defined by the items themselves
     # (if there is a dependency between two items, they should NEVER end up in the same group, or else their
-    # manager would later be allowed to rearrange them - which in turn can break the dependency)
+    # manager would later be allowed to rearrange them - which in rare cases could break the user intention)
     for subject in items:
-      subject_var = item_to_pos_var[subject]
+      subject_pos = item_to_pos_var[subject]
 
       # add "requires" constraints
       for required_item in subject.requires:
-        other_var = item_to_pos_var.get(required_item, None)
-        if other_var is not None:
-          model.addCons(subject_var - other_var >= 1)
+        other_pos = item_to_pos_var.get(required_item, None)
+        if other_pos is not None:
+          model.addCons(subject_pos - other_pos >= 1)
         elif not is_iis_search:
           raise AssertionError(f"{subject}: required item {required_item} not found")
 
       # add "after" constraints
       for after_element in subject.after:
         if isinstance(after_element, ManagedConfigItem):
-          other_var = item_to_pos_var.get(after_element, None)
-          if other_var is not None:
-            model.addCons(subject_var - other_var >= 1)
+          other_pos = item_to_pos_var.get(after_element, None)
+          if other_pos is not None:
+            model.addCons(subject_pos - other_pos >= 1)
         else:
           for other in [other for other in items if other != subject and after_element(other)]:
-            other_var = item_to_pos_var.get(other, None)
-            model.addCons(subject_var - other_var >= 1)
+            other_pos = item_to_pos_var.get(other, None)
+            model.addCons(subject_pos - other_pos >= 1)
 
       # add "before" constraints
       for before_element in subject.before:
         if isinstance(before_element, ManagedConfigItem):
-          other_var = item_to_pos_var.get(before_element, None)
-          if other_var is not None:
-            model.addCons(other_var - subject_var >= 1)
+          other_pos = item_to_pos_var.get(before_element, None)
+          if other_pos is not None:
+            model.addCons(other_pos - subject_pos >= 1)
         else:
           for other in [other for other in items if other != subject and before_element(other)]:
-            other_var = item_to_pos_var[other]
-            model.addCons(other_var - subject_var >= 1)
+            other_pos = item_to_pos_var[other]
+            model.addCons(other_pos - subject_pos >= 1)
 
     # apply constraints that are added during the optimization process
     for bound_group in extra_constraints.same_value_groups:
@@ -267,12 +267,11 @@ class CleanupPhaseOptimizer:
     self.managers = managers
 
   def calc_cleanup_order(self) -> Sequence[ConfigManager]:
+    model = Model("koti")
+    objective = Expr()
 
     manager_classes_ordered = [manager.__class__ for manager in self.managers]
     manager_classes_ordered.sort(key = lambda x: x.cleanup_order)
-
-    model = Model("koti")
-    objective = Expr()
 
     # create a variable for each item
     manager_to_pos_var: list[tuple[type[ConfigManager], Variable]] = []
@@ -289,26 +288,22 @@ class CleanupPhaseOptimizer:
         manager_pos = next((var for key, var in manager_to_pos_var if key == manager))
         other_pos = next((var for key, var in manager_to_pos_var if key == other))
         model.addCons(manager_pos + 1 <= other_pos)
-        print(f"{manager.__name__} < {other.__name__}")
       for other in manager.cleanup_order_after:
         manager_pos = next((var for key, var in manager_to_pos_var if key == manager))
         other_pos = next((var for key, var in manager_to_pos_var if key == other))
         model.addCons(other_pos + 1 <= manager_pos)
-        print(f"{other.__name__} < {manager.__name__}")
 
     model.hideOutput(True)
     model.setMinimize()
     model.setObjective(objective)
-    model.writeProblem()
     model.optimize()
     sol = model.getBestSol()
 
     if model.getStatus() == "infeasible":
       raise InfeasibleError()
 
+    # sort managers according to the optimization result
     manager_classes_ordered.sort(key = lambda cls: round(sol[next((var for key, var in manager_to_pos_var if key == cls))]))
-    for manager in manager_classes_ordered:
-      #   manager_pos = next((var for man, var in manager_to_pos_var if man == manager))
-      print(f"{manager.__name__}")
 
+    # sort final manager list in the same order as the manager classes
     return sorted(self.managers, key = lambda m: manager_classes_ordered.index(m.__class__))
