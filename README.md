@@ -106,7 +106,7 @@ config_example_snippet = {
 
 ### Predefined items:
 
-| Item                                                            | Description                                                                                                                                                                    |
+| Config Item                                                     | Description                                                                                                                                                                    |
 |-----------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `File("/etc/pacman.conf", owner, permissions, source, content)` | Creates a file by either copying an existing file (`source`) or specifying the content directly (`content`). This can also be a (lambda), that has access to all config items. |
 | `Directory("/etc/nginx/sites-available.d", owner, source)`      | Creates a directory that contains exactly the same files as the `source` directory. `source` may also refer to a zip file.                                                     |
@@ -138,8 +138,8 @@ config_example_snippet = {
     gets modified, it can happen that a previously predicted action is no longer correct and some unexpected actions
     have to be taken. In this case koti asks for explicit confirmation before continuing. (The most common example is
     koti predicting to create a new file during planning, but during execution that file has already been created by
-    some pacman package. So koti would have to modify an existing file instead of creating a new one, like predicted
-    during planning.)
+    some pacman package. So koti would have to modify an existing file instead of creating a new one - and this will
+    trigger an additional confirmation.)
   - After everything has been installed, all managers will run their cleanup routine to remove items from the system
     that should no longer be present.
 
@@ -163,8 +163,8 @@ There are two mechanisms to control the **order of installation**:
   - Please note that some items have inherent dependencies, such as `File("...", owner = "example")` will by default
     have a dependency `after = User("example")`.
 
-It's possible to define dependencies that are impossible to satisfy (i.e. circular dependencies). In this case, koti
-will give you the minimal list of items that have unsatisfiable dependencies.
+Sometimes it may happen that you accidentally define dependencies that are impossible to satisfy (i.e. circular
+dependencies). In this case, koti will calculate and output the minimal set of inconsistent items.
 
 ### Recommendations
 
