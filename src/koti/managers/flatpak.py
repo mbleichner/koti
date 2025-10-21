@@ -101,7 +101,7 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     if not flatpak_available:
       if model.contains(lambda item: isinstance(item, FlatpakPackage) or isinstance(item, FlatpakRepo)):
         logger.error("could not accurately plan installation/cleanup of flatpak repos + packages due to (currently) missing flatpak installation")
-      return None
+      return
 
     installed_packages = [FlatpakPackage(name) for name in shell_output("flatpak list --app --columns application").splitlines()]
     packages_to_remove = [item for item in installed_packages if item not in items_to_keep]
@@ -121,12 +121,11 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
         execute = lambda: shell(f"flatpak remote-delete --force '{item.name}'"),
       )
 
-    if flatpak_available:
-      yield Action(
-        description = f"prune unneeded flatpaks",
-        additional_info = "flatpak will ask before actually deleting any packages",
-        execute = lambda: shell(f"flatpak uninstall --unused"),
-      )
+    yield Action(
+      description = f"prune unneeded flatpak runtimes",
+      additional_info = "flatpak will ask before actually deleting any packages",
+      execute = lambda: shell(f"flatpak uninstall --unused"),
+    )
 
   def update_remote(self, item: FlatpakRepo, remove_existing: bool):
     if remove_existing:

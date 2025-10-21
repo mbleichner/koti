@@ -18,7 +18,7 @@ def mserver() -> ConfigDict:
     **kernel_stock(sortkey = 2),
     **fish(),
 
-    Section("firmware, drivers and filesystems for lenovo"): (
+    Section("firmware, drivers and filesystems for mserver"): (
       Package("linux-firmware-other"),
       Package("linux-firmware-intel"),
       Package("linux-firmware-realtek"),

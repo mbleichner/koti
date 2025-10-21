@@ -3,7 +3,7 @@ from inspect import cleandoc
 from koti import *
 from modules.base import base, swapfile
 from modules.cpufreq import cpufreq, throttle_after_boot
-from modules.desktop import desktop
+from modules.desktop import desktop, flatpak
 from modules.fish import fish
 from modules.gaming import gaming
 from modules.kernel import kernel_cachyos, kernel_stock
@@ -31,6 +31,7 @@ def dan() -> ConfigDict:
     **nvidia_undervolting(),
     **ryzen_undervolting(),
     **network_manager(),
+    **flatpak(),
 
     Section("filesystems for dan"): (
       File("/etc/fstab", requires = Swapfile("/swapfile"), content = cleandoc('''
@@ -84,7 +85,7 @@ def dan() -> ConfigDict:
       Package("xwaylandvideobridge"),
       Package("linphone-desktop-appimage"),
       Package("microsoft-edge-stable-bin"),
-      # FlatpakPackage("us.zoom.Zoom"),
-      # FlatpakPackage("com.discordapp.Discord"),
+      FlatpakPackage("us.zoom.Zoom"),
+      FlatpakPackage("com.discordapp.Discord"),
     ),
   }
