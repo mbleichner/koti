@@ -10,7 +10,6 @@
 from socket import gethostname
 
 from koti import *
-from koti.utils.shell import shell
 from systems import dan, lenovo, mserver, quickemu
 
 my_arch_systems = {
@@ -21,10 +20,12 @@ my_arch_systems = {
 }
 
 koti = Koti(
-  configs = my_arch_systems[gethostname()],  # ..... choose system config based on the current hostname
-  managers = ConfigManagerPresets.arch(  # ......... use preconfigured default managers for Arch Linux
-    aur_helper = AurHelper("paru", "manuel"),  # ... but use paru instead of pacman to install packages
-    keep_unmanaged_packages = False,  # ............ remove any packages that aren't mentioned in the koti config (this is the default)
+  configs = my_arch_systems[gethostname()],  # ....... choose system config based on the current hostname
+  managers = ConfigManagerPresets.arch(  # ........... use preconfigured default managers for Arch Linux
+    aur_helper = AurHelper("paru", "manuel"),  # ..... but use paru instead of pacman to install packages
+    keep_unmanaged_packages = False,  # .............. remove any packages that aren't mentioned in the koti config (this is the default)
+    update_system = True,  # ......................... always perform a full system update
+    paccache = PaccacheOptions(enabled = True),  # ... clear the package cache using paccache (with default settings)
   ),
 )
 

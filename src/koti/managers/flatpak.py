@@ -123,7 +123,6 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
 
     yield Action(
       description = f"prune unneeded flatpak runtimes",
-      additional_info = "flatpak will ask before actually deleting any packages",
       execute = lambda: shell(f"flatpak uninstall --unused"),
     )
 

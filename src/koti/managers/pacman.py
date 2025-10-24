@@ -4,7 +4,7 @@ from koti.model import *
 from koti.items.package import Package
 from koti.utils.json_store import JsonCollection, JsonStore
 from koti.utils.logging import logger
-from koti.utils.shell import shell, shell_output
+from koti.utils.shell import shell, shell_output, shell_success
 
 
 class PackageState(ConfigItemState):
@@ -21,6 +21,15 @@ class AurHelper:
     self.user = user
 
 
+class PaccacheOptions:
+  enabled: bool
+  options: Sequence[str]
+
+  def __init__(self, enabled: bool = False, options: str | Sequence[str] = "-ruvk2"):
+    self.options = [options] if isinstance(options, str) else options
+    self.enabled = enabled
+
+
 class PacmanPackageManager(ConfigManager[Package, PackageState]):
   managed_classes = [Package]
   cleanup_order = 70
@@ -29,13 +38,21 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
   explicit_packages_on_system: set[str]  # holds the list of explicitly installed packages on the system; will be updated whenever the manager adds/removes explicit packages.
   aur_helper: AurHelper | None
 
-  def __init__(self, keep_unmanaged_packages: bool, aur_helper: AurHelper | None = None):
+  def __init__(
+    self,
+    keep_unmanaged_packages: bool,
+    aur_helper: AurHelper | None = None,
+    update_system = False,
+    paccache: PaccacheOptions = PaccacheOptions(),
+  ):
     super().__init__()
     store = JsonStore("/var/cache/koti/PacmanPackageManager.json")
     self.aur_helper = aur_helper
     self.managed_packages_store = store.collection("managed_packages")
     self.ignore_manually_installed_packages = keep_unmanaged_packages
     self.explicit_packages_on_system = set()
+    self.update_system = update_system
+    self.paccache = paccache
 
   def initialize(self, model: ConfigModel, dryrun: bool):
     self.explicit_packages_on_system = set(self.pacman_list_explicit_packages())
@@ -46,8 +63,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
       self.managed_packages_store.replace_all(packages)
 
   def assert_installable(self, item: Package, model: ConfigModel):
-    if item.url is not None:
-      logger.info(f"packages installed via URL might later get updated to a different version by pacman if also contained in a package repository")
+    pass
 
   def state_current(self, item: Package) -> PackageState | None:
     installed: bool = item.name in self.explicit_packages_on_system
@@ -72,10 +88,12 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     additional_items_from_urls: list[Package] = []
     additional_items_from_repo: list[Package] = []
 
+    count = 0
     for item in items_to_check:
       current, target = self.states(item, model, dryrun)
       if current == target:
         continue
+      count += 1
       if item.name not in installed_packages:
         if item.url is not None:
           additional_items_from_urls.append(item)
@@ -85,6 +103,9 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
           additional_items_from_repo.append(item)
       elif item.name not in explicit_packages:
         additional_explicit_items.append(item)
+
+    if count:
+      logger.info("When installing new packages, Arch always needs to do a full system update (partial updates are unsupported).")
 
     additional_explicit_items.sort(key = lambda x: x.name)
     additional_items_from_script.sort(key = lambda x: x.name)
@@ -106,6 +127,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
       )
 
     if additional_items_from_urls:
+      logger.info(f"Packages installed via URL might later get updated to a different version by pacman if also contained in a package repository.")
       yield Action(
         installs = additional_items_from_urls,
         description = f"install package(s) from URL(s): {", ".join([item.name for item in additional_items_from_urls if item.url])}",
@@ -152,11 +174,25 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
         execute = lambda: self.mark_dependency(items_to_remove)
       )
 
+    if self.update_system:
+      yield Action(
+        description = f"update all pacman packages",
+        execute = lambda: self.update_all_packages(),
+      )
+
     yield Action(
-      description = f"prune unneeded packages",
-      additional_info = f"pacman will ask before actually deleting any packages",
+      description = f"prune unneeded pacman packages",
       execute = lambda: self.pacman_prune_unneeded(),
     )
+
+    if self.paccache.enabled:
+      if dryrun or shell_success("paccache --version"):
+        yield Action(
+          description = f"cleanup pacman package cache",
+          execute = lambda: self.cleanup_package_cache(self.paccache.options),
+        )
+      else:
+        logger.warn("paccache not available, cleanup of the package cache was skipped (install pacman-contrib to use this feature)")
 
   def mark_dependency(self, items_to_remove: list[Package]):
     shell(f"pacman -D --asdeps {" ".join([item.name for item in items_to_remove])}")
@@ -191,6 +227,14 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
       shell(f"pacman -Rns {" ".join(unneeded_packages)}")
     else:
       print("no unneeded packages found")
+
+  def update_all_packages(self):
+    pacman_or_helper = self.aur_helper.command if self.aur_helper else "pacman"
+    user = self.aur_helper.user if self.aur_helper else None
+    shell(f"{pacman_or_helper} -Syu", user = user)
+
+  def cleanup_package_cache(self, options: Sequence[str]):
+    shell(f"paccache {" ".join(options)}")
 
   def parse_pkgs(self, output: str) -> list[str]:
     if "there is nothing to do" in output: return []

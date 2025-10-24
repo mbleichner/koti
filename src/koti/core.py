@@ -75,7 +75,7 @@ class Koti:
 
   def plan(self, config_summary: bool = False, install_order_summary: bool = False, cleanup_order_summary: bool = False) -> ExecutionPlan:
     logger.clear()
-    logger.info(f"Please note that koti cannot always predict every action accurately. In case some unexpected action needs to be performed during execution phase, you will be asked to review and confirm it.")
+    # logger.info(f"Please note that koti cannot always predict every action accurately. In case some unexpected action needs to be performed during execution phase, you will be asked to review and confirm it.")
 
     dryrun = True
     model = self.create_model()
