@@ -29,8 +29,9 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
   managed_classes = [FlatpakRepo, FlatpakPackage]
   cleanup_order = 20
 
-  def __init__(self):
+  def __init__(self, perform_update: bool = False):
     super().__init__()
+    self.perform_update = perform_update
 
   def assert_installable(self, item: FlatpakRepo | FlatpakPackage, model: ConfigModel):
     if isinstance(item, FlatpakRepo):
@@ -121,6 +122,12 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
         execute = lambda: shell(f"flatpak remote-delete --force '{item.name}'"),
       )
 
+    if self.perform_update:
+      yield Action(
+        description = f"update all flatpak packages",
+        execute = lambda: self.update_all_packages(),
+      )
+
     yield Action(
       description = f"prune unneeded flatpak runtimes",
       execute = lambda: shell(f"flatpak uninstall --unused"),
@@ -130,6 +137,9 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     if remove_existing:
       shell(f"flatpak remote-delete --force '{item.name}'")
     shell(f"flatpak remote-add '{item.name}' '{item.spec_url}'")
+
+  def update_all_packages(self):
+    shell(f"flatpak update")
 
   def get_installed_repo_url(self, item: FlatpakRepo) -> str | None:
     for line in shell_output("flatpak remotes --columns name,url").splitlines():

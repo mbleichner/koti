@@ -1,33 +1,31 @@
-from koti.managers.pacman import AurHelper, PaccacheOptions
+from __future__ import annotations
+
+from typing import Sequence
+
 from koti.model import ConfigManager
 from koti.managers import *
 
 
-class ConfigManagerPresets:
-
-  @staticmethod
-  def arch(
-    aur_helper: AurHelper | None = None,
-    keep_unmanaged_packages: bool = False,
-    update_system = False,
-    paccache: PaccacheOptions = PaccacheOptions(),
-  ) -> list[ConfigManager]:
-    return [
-      UserManager(),
-      UserShellManager(),
-      UserHomeManager(),
-      UserGroupManager(),
-      PacmanKeyManager(),
-      PacmanPackageManager(
-        aur_helper = aur_helper,
-        keep_unmanaged_packages = keep_unmanaged_packages,
-        update_system = update_system,
-        paccache = paccache,
-      ),
-      SwapfileManager(),
-      CheckpointManager(),
-      FileManager(),
-      FlatpakManager(),
-      SystemdUnitManager(),
-      PostHookManager(),
-    ]
+# noinspection PyPep8Naming
+def ArchPreset(
+  *overrides: ConfigManager,
+) -> list[ConfigManager]:
+  defaults: Sequence[ConfigManager] = [
+    UserManager(),
+    UserShellManager(),
+    UserHomeManager(),
+    UserGroupManager(),
+    PacmanKeyManager(),
+    PacmanPackageManager(),
+    SwapfileManager(),
+    CheckpointManager(),
+    FileManager(),
+    FlatpakManager(),
+    SystemdUnitManager(),
+    PostHookManager(),
+  ]
+  overridden_classes = [manager.__class__ for manager in overrides]
+  return [
+    *(manager for manager in defaults if manager.__class__ not in overridden_classes),
+    *overrides,
+  ]

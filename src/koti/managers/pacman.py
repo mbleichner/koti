@@ -40,9 +40,9 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
 
   def __init__(
     self,
-    keep_unmanaged_packages: bool,
+    keep_unmanaged_packages = False,
     aur_helper: AurHelper | None = None,
-    update_system = False,
+    perform_update = False,
     paccache: PaccacheOptions = PaccacheOptions(),
   ):
     super().__init__()
@@ -51,7 +51,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     self.managed_packages_store = store.collection("managed_packages")
     self.ignore_manually_installed_packages = keep_unmanaged_packages
     self.explicit_packages_on_system = set()
-    self.update_system = update_system
+    self.perform_update = perform_update
     self.paccache = paccache
 
   def initialize(self, model: ConfigModel, dryrun: bool):
@@ -174,7 +174,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
         execute = lambda: self.mark_dependency(items_to_remove)
       )
 
-    if self.update_system:
+    if self.perform_update:
       yield Action(
         description = f"update all pacman packages",
         execute = lambda: self.update_all_packages(),

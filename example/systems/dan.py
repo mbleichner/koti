@@ -86,6 +86,5 @@ def dan() -> ConfigDict:
       Package("linphone-desktop-appimage"),
       Package("microsoft-edge-stable-bin"),
       FlatpakPackage("us.zoom.Zoom"),
-      FlatpakPackage("com.discordapp.Discord"),
     ),
   }

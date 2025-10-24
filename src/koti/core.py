@@ -7,6 +7,7 @@ from time import sleep
 import koti.utils.shell as shell_module
 from koti.model import *
 from koti.optimizer import CleanupPhaseOptimizer, InfeasibleError, InstallPhaseOptimizer
+from koti.utils.error_handling import handle_ctrl_c
 from koti.utils.text import *
 from koti.utils.confirm import confirm
 from koti.utils.json_store import *
@@ -20,13 +21,13 @@ class Koti:
 
   def __init__(
     self,
-    managers: Sequence[ConfigManager],
+    managers: Sequence[ConfigManager] | Iterable[ConfigManager],
     configs: ConfigDict,
   ):
     assert getuid() == 0, "this program must be run as root (or through sudo)"
     self.store = JsonStore("/var/cache/koti/Koti.json")
     self.configs = configs
-    self.managers = managers
+    self.managers = list(managers)
     self.assert_manager_consistency(self.managers, self.configs)
 
   def create_model(self) -> ConfigModel:
@@ -73,9 +74,9 @@ class Koti:
       ) for manager in managers_in_order
     ])
 
+  @handle_ctrl_c
   def plan(self, config_summary: bool = False, install_order_summary: bool = False, cleanup_order_summary: bool = False) -> ExecutionPlan:
     logger.clear()
-    # logger.info(f"Please note that koti cannot always predict every action accurately. In case some unexpected action needs to be performed during execution phase, you will be asked to review and confirm it.")
 
     dryrun = True
     model = self.create_model()
@@ -105,7 +106,7 @@ class Koti:
 
     # list all groups + items
     if config_summary:
-      printc(f"{BOLD}Config Section Summary:")
+      printc(f"{BOLD}Config Summary:")
       for group in model.configs:
         prefix = self.prefix_for_item(actions, *(item for item in group.provides if isinstance(item, ManagedConfigItem)))
         printc(f"{prefix} {group.description}")
@@ -147,6 +148,7 @@ class Koti:
       model = model,
     )
 
+  @handle_ctrl_c
   def execute(self, plan: ExecutionPlan):
     logger.clear()
     dryrun = False
@@ -179,6 +181,7 @@ class Koti:
       for message in set(logger.messages):
         printc(f"- {message}")
 
+  @handle_ctrl_c
   def run(self, config_summary: bool = False, install_order_summary: bool = False, cleanup_order_summary: bool = False):
     plan = self.plan(
       config_summary = config_summary,
