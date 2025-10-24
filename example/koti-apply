@@ -35,4 +35,6 @@ koti = Koti(
   ),
 )
 
-koti.run(config_summary = True)
+koti.run(
+  config_summary = True,  # ..... print a summary of all (enabled) config sections during planning phase
+)
