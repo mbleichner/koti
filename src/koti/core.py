@@ -147,7 +147,7 @@ class Koti:
       model = model,
     )
 
-  def apply(self, plan: ExecutionPlan):
+  def execute(self, plan: ExecutionPlan):
     logger.clear()
     dryrun = False
     model = plan.model
@@ -179,11 +179,21 @@ class Koti:
       for message in set(logger.messages):
         printc(f"- {message}")
 
-  def execute_action(self, action: Action, plan: ExecutionPlan):
+  def run(self, config_summary: bool = False, install_order_summary: bool = False, cleanup_order_summary: bool = False):
+    plan = self.plan(
+      config_summary = config_summary,
+      install_order_summary = install_order_summary,
+      cleanup_order_summary = cleanup_order_summary,
+    )
+    confirm("confirm execution")
+    self.execute(plan)
+
+  @classmethod
+  def execute_action(cls, action: Action, plan: ExecutionPlan):
     try:
       shell_module.verbose_mode = True
-      self.print_divider_line()
-      printc(f"executing: {self.color_for_action(action)}{action.description}")
+      cls.print_divider_line()
+      printc(f"executing: {cls.color_for_action(action)}{action.description}")
       for info in action.additional_info:
         printc(f"{info}")
       if action not in plan.expected_actions:

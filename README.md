@@ -10,18 +10,18 @@ This project is still very new and in an alpha state. Use at your own risk.
 
 ## Motivation
 
-Trying out NixOS, I was charmed by how nicely it lets you describe your system using just a few config files.
-The idea of having a single config describing your whole system and always being able to restore your system to a
-defined target state is simply amazing. And it gets even better if you have to manage multiple systems and want to sync
-configuration between them.
+Trying out NixOS, I was charmed by how nicely it lets you describe your system using just a few config files. The idea
+of having a single config describing your whole system and always being able to restore your system to a defined target
+state is simply amazing. And it gets even better if you have to manage multiple systems and want to sync configuration
+between them.
 
 In practice, using NixOS as a daily driver has been a bit of a disappointment though, mainly because customizing it is
 extremely time-consuming and often downright frustrating. After a few days, I already missed the simplicity and
 straightforwardness of Arch.
 
-So eventually, I went back to my beloved Arch and looked for a compromise - a tool that would allow me to describe my whole system in
-a similar manner. There are a few, but none of them managed to get that declarative approach quite right. They all had
-their problems:
+So eventually, I went back to my beloved Arch and looked for a compromise - a tool that would allow me to describe my
+whole system in a similar manner. There are a few, but none of them managed to get that declarative approach quite
+right. They all had their problems:
 
 - Not being able to detect stuff that has been removed from your config and uninstalling it from the system
 - Not being able to control the order of execution in a fine-grained way (unlike NixOS, configuration in Arch is done in
@@ -167,13 +167,13 @@ dependencies). In this case, koti will calculate and output the minimal set of i
 ### Recommendations
 
 - Try to use the same order within each section if possible - e.g. `Package()`s first, then `File()`s, then
-  `SystemdUnit()`s. Because koti isn't allowed to change the item order within each section, inconsistent ordering will 
+  `SystemdUnit()`s. Because koti isn't allowed to change the item order within each section, inconsistent ordering will
   prevent koti from merging multiple sections in an efficient way (i.e. minimizing pacman invocations).
-- Split up your config in multiple sections to keep it flexible. Each section is meant to describe one singular coherent
-  aspect of your system. By keeping them small and focused, it will be much easier to manage your configs - compared to
-  having a giant blob of everything.
-- You have the full power of python at your fingertips. Use it to compose and parameterize your configs, create
-  dynamic configs, whatever you want.
+- Split up your config into multiple sections. Each section is meant to describe one singular coherent aspect of your
+  system. By keeping them small and focused, it will be much easier to manage your configs - compared to having a giant
+  blob of everything.
+- You have the full power of python at your fingertips. Use it to compose and parameterize your configs, create dynamic
+  configs, call additional shell commands, whatever you want.
 
 ## Limitations and known problems
 

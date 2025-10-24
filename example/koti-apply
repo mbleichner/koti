@@ -10,6 +10,7 @@
 from socket import gethostname
 
 from koti import *
+from koti.utils.shell import shell
 from systems import dan, lenovo, mserver, quickemu
 
 my_arch_systems = {
@@ -27,6 +28,8 @@ koti = Koti(
   ),
 )
 
-plan = koti.plan(config_summary = True)
-confirm("confirm execution")
-koti.apply(plan)
+koti.run(config_summary = True)
+
+# shell("paru -Syu", user = "manuel")
+# shell("flatpak update")
+# shell("paccache -ruvk2")
