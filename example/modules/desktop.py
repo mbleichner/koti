@@ -54,6 +54,12 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
       SystemdUnit("bluetooth.service"),
     ),
 
+    Section("flatpak and flathub"): (
+      # flatpak currently required by plasma-meta
+      Package("flatpak", before = lambda item: isinstance(item, FlatpakRepo) or isinstance(item, FlatpakPackage)),
+      FlatpakRepo("flathub", spec_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"),
+    ),
+
     Section("display manager and auto-login"): (
       Package("greetd-tuigreet"),
       File("/etc/greetd/config.toml", content = cleandoc(f'''
@@ -153,15 +159,6 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
 
         PostHook("restart-ananicy-cpp", execute = lambda: shell("systemctl restart ananicy-cpp.service"))
       ),
-    ),
-  }
-
-
-def flatpak() -> ConfigDict:
-  return {
-    Section("flatpak and flathub"): (
-      Package("flatpak", before = lambda item: isinstance(item, FlatpakRepo) or isinstance(item, FlatpakPackage)),
-      FlatpakRepo("flathub", spec_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"),
     ),
   }
 

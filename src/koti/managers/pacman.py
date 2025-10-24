@@ -4,7 +4,7 @@ from koti.model import *
 from koti.items.package import Package
 from koti.utils.json_store import JsonCollection, JsonStore
 from koti.utils.logging import logger
-from koti.utils.shell import shell, shell_output, shell_success
+from koti.utils.shell import shell, shell_output
 
 
 class PackageState(ConfigItemState):
@@ -21,15 +21,6 @@ class AurHelper:
     self.user = user
 
 
-class PaccacheOptions:
-  enabled: bool
-  options: Sequence[str]
-
-  def __init__(self, enabled: bool = False, options: str | Sequence[str] = "-ruvk2"):
-    self.options = [options] if isinstance(options, str) else options
-    self.enabled = enabled
-
-
 class PacmanPackageManager(ConfigManager[Package, PackageState]):
   managed_classes = [Package]
   cleanup_order = 70
@@ -43,7 +34,6 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     keep_unmanaged_packages = False,
     aur_helper: AurHelper | None = None,
     perform_update = False,
-    paccache: PaccacheOptions = PaccacheOptions(),
   ):
     super().__init__()
     store = JsonStore("/var/cache/koti/PacmanPackageManager.json")
@@ -52,7 +42,6 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     self.ignore_manually_installed_packages = keep_unmanaged_packages
     self.explicit_packages_on_system = set()
     self.perform_update = perform_update
-    self.paccache = paccache
 
   def initialize(self, model: ConfigModel, dryrun: bool):
     self.explicit_packages_on_system = set(self.pacman_list_explicit_packages())
@@ -185,15 +174,6 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
       execute = lambda: self.pacman_prune_unneeded(),
     )
 
-    if self.paccache.enabled:
-      if dryrun or shell_success("paccache --version"):
-        yield Action(
-          description = f"cleanup pacman package cache",
-          execute = lambda: self.cleanup_package_cache(self.paccache.options),
-        )
-      else:
-        logger.warn("paccache not available, cleanup of the package cache was skipped (install pacman-contrib to use this feature)")
-
   def mark_dependency(self, items_to_remove: list[Package]):
     shell(f"pacman -D --asdeps {" ".join([item.name for item in items_to_remove])}")
     self.remove_managed_packages(items_to_remove)
@@ -232,9 +212,6 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     pacman_or_helper = self.aur_helper.command if self.aur_helper else "pacman"
     user = self.aur_helper.user if self.aur_helper else None
     shell(f"{pacman_or_helper} -Syu", user = user)
-
-  def cleanup_package_cache(self, options: Sequence[str]):
-    shell(f"paccache {" ".join(options)}")
 
   def parse_pkgs(self, output: str) -> list[str]:
     if "there is nothing to do" in output: return []

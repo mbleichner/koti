@@ -10,7 +10,7 @@
 from socket import gethostname
 
 from koti import *
-from koti.managers.pacman import AurHelper, PaccacheOptions
+from koti.managers.pacman import AurHelper
 from systems import dan, lenovo, mserver, quickemu
 
 my_arch_systems = {
@@ -27,7 +27,6 @@ koti = Koti(
       aur_helper = AurHelper("paru", "manuel"),  # ..... but use paru instead of pacman to install packages
       keep_unmanaged_packages = False,  # .............. remove any packages that aren't mentioned in the koti config (this is the default)
       perform_update = True,  # ........................ always perform a full system update
-      paccache = PaccacheOptions(enabled = True),  # ... clear the package cache using paccache (with default settings)
     ),
     FlatpakManager(
       perform_update = True,  # ........................ also perform a full flatpak update

@@ -219,6 +219,22 @@ def base() -> ConfigDict:
         auto_update = true
       ''')),
 
+      File("/etc/pacman.d/hooks/paccache.hook", requires = Package("pacman-contrib"), content = cleandoc('''
+        [Trigger]
+        Operation = Upgrade
+        Operation = Install
+        Operation = Remove
+        Type = Package
+        Target = *
+  
+        [Action]
+        When = PostTransaction
+        Description = Cleaning package cache...
+        Exec = /usr/bin/paccache -rk2 --quiet
+        Exec = /usr/bin/paccache -ruk0 --quiet
+      '''
+      )),
+
       SystemdUnit("systemd-timesyncd.service"),
       SystemdUnit("systemd-boot-update.service"),
       SystemdUnit("fstrim.timer"),

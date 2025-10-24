@@ -22,9 +22,8 @@ def fish() -> ConfigDict:
           fish_config theme choose "Base16 Default Dark"
           set -x fish_pager_color_selected_background --background=333
           
-          bind alt-u arch-update
+          bind alt-backspace backward-kill-word
           bind alt-m "history merge"
-          bind alt-y y
           
           # Fastfetch ausführen, wenn aus Konsole gestartet (Dolphin unterstützt z.B. keine PNG Images)
           if test (pstree -s $fish_pid | string match -r "konsole")

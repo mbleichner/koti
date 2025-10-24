@@ -64,7 +64,7 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     repo_items = [item for item in items_to_check if isinstance(item, FlatpakRepo)]
     package_items = [item for item in items_to_check if isinstance(item, FlatpakPackage)]
     if repo_items:
-      installed_remotes = shell_output("flatpak remotes --columns name").splitlines() if flatpak_available else []
+      installed_remotes = shell_output("flatpak --system remotes --columns name").splitlines() if flatpak_available else []
       for repo_item in repo_items:
         current, target = self.states(repo_item, model, dryrun)
         if current == target:
@@ -94,7 +94,7 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
         yield Action(
           installs = items_to_install,
           description = f"install flatpak(s): {", ".join(item.id for item in items_to_install)}",
-          execute = lambda: shell(f"flatpak install {" ".join(item.id for item in items_to_install)}"),
+          execute = lambda: shell(f"flatpak --system install --system {" ".join(item.id for item in items_to_install)}"),
         )
 
   def plan_cleanup(self, items_to_keep: Sequence[FlatpakRepo | FlatpakPackage], model: ConfigModel, dryrun: bool) -> Generator[Action]:
@@ -110,43 +110,40 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
       yield Action(
         removes = packages_to_remove,
         description = f"uninstall flatpak(s): {", ".join(item.id for item in packages_to_remove)}",
-        execute = lambda: shell(f"flatpak uninstall {" ".join(item.id for item in packages_to_remove)}"),
+        execute = lambda: shell(f"flatpak --system uninstall {" ".join(item.id for item in packages_to_remove)}"),
       )
 
-    installed_repos = [FlatpakRepo(name) for name in shell_output("flatpak remotes --columns name").splitlines()]
+    installed_repos = [FlatpakRepo(name) for name in shell_output("flatpak --system remotes --columns name").splitlines()]
     repos_to_remove = [item for item in installed_repos if item not in items_to_keep]
     for item in repos_to_remove:
       yield Action(
         removes = [item],
         description = f"uninstall flatpak remote: {item.name}",
-        execute = lambda: shell(f"flatpak remote-delete --force '{item.name}'"),
+        execute = lambda: shell(f"flatpak --system remote-delete --force '{item.name}'"),
       )
 
     if self.perform_update:
       yield Action(
         description = f"update all flatpak packages",
-        execute = lambda: self.update_all_packages(),
+        execute = lambda: shell(f"flatpak --system update"),
       )
 
     yield Action(
       description = f"prune unneeded flatpak runtimes",
-      execute = lambda: shell(f"flatpak uninstall --unused"),
+      execute = lambda: shell(f"flatpak --system uninstall --unused"),
     )
 
   def update_remote(self, item: FlatpakRepo, remove_existing: bool):
     if remove_existing:
-      shell(f"flatpak remote-delete --force '{item.name}'")
-    shell(f"flatpak remote-add '{item.name}' '{item.spec_url}'")
-
-  def update_all_packages(self):
-    shell(f"flatpak update")
+      shell(f"flatpak --system remote-delete --force '{item.name}'")
+    shell(f"flatpak --system remote-add '{item.name}' '{item.spec_url}'")
 
   def get_installed_repo_url(self, item: FlatpakRepo) -> str | None:
-    for line in shell_output("flatpak remotes --columns name,url").splitlines():
+    for line in shell_output("flatpak --system remotes --columns name,url").splitlines():
       split = re.split("\\s+", line)
       if split[0] == item.name:
         return split[1]
     return None
 
   def is_package_installed(self, package: str) -> bool:
-    return package in shell_output("flatpak list --app --columns application").splitlines()
+    return package in shell_output("flatpak --system list --app --columns application").splitlines()
