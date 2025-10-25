@@ -202,6 +202,20 @@ def base() -> ConfigDict:
         FONT=ter-124b
       ''')),
 
+      File("/etc/pacman.d/hooks/paccache.hook", requires = Package("pacman-contrib"), content = cleandoc('''
+        [Trigger]
+        Operation = Upgrade
+        Operation = Install
+        Operation = Remove
+        Type = Package
+        Target = *
+  
+        [Action]
+        When = PostTransaction
+        Description = Cleaning package cache...
+        Exec = /bin/sh -c "/usr/bin/paccache -qrk2; /usr/bin/paccache -qruk0"
+      ''')),
+
       File("/etc/modprobe.d/disable-watchdog-modules.conf", content = cleandoc('''
         blacklist sp5100_tco
       ''')),
@@ -218,22 +232,6 @@ def base() -> ConfigDict:
         [updates]
         auto_update = true
       ''')),
-
-      File("/etc/pacman.d/hooks/paccache.hook", requires = Package("pacman-contrib"), content = cleandoc('''
-        [Trigger]
-        Operation = Upgrade
-        Operation = Install
-        Operation = Remove
-        Type = Package
-        Target = *
-  
-        [Action]
-        When = PostTransaction
-        Description = Cleaning package cache...
-        Exec = /usr/bin/paccache -rvk2
-        Exec = /usr/bin/paccache -rvuk0
-      '''
-      )),
 
       SystemdUnit("systemd-timesyncd.service"),
       SystemdUnit("systemd-boot-update.service"),
