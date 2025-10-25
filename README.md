@@ -37,7 +37,7 @@ So I thought I'll give it a shot myself - and the result is koti.
   declarative in nature, it should be easy enough to learn, even with minimal programming experience.
 - koti gives you fine-grained control over the **order of execution**, without sacrificing a lot of performance (
   compared to Ansible for example). This is done using a linear optimization approach to merge all configs and settings,
-  and rearrange them in a way to optimize execution speed (i.e. install as many packages in one go)
+  and rearrange them in a way to optimize execution speed (i.e. install as many packages as possible in one go)
 - koti is able to track installed items (files, packages, systemd units, etc) and **clean them up** if they are removed
   from your config to avoid configuration drift.
 - koti will give you an extensive summary about everything that will be adjusted on your system (in the so called
