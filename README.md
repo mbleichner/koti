@@ -63,7 +63,7 @@ See the `examples` folder, specifically `koti-apply` and all the stuff in the `m
 - The whole system config is basically a large collection of **config items**, divided into **sections**.
 - Config items declare individual things to install, such as `Package("htop")`, or `File("/etc/fstab", content="...")`.
 - Sections contain multiple config items that belong together - for example `Package("nginx")`,
-  `File("/etc/nginx/nginx.conf")` and `SystemdUnit("nginx")`.
+  `File("/etc/nginx/nginx.conf")` and `SystemdUnit("nginx.service")`.
 - **Config managers** are responsible for applying config items to your system. They are largely part of koti itself and
   are not meant to be implemented by the user (although it can be done in case you need some special behavior)
 
