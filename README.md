@@ -127,8 +127,8 @@ config_example_snippet = {
   - Multiple occurrences of the same config items will be merged (to prevent inconsistencies).
   - All config items of all sections will be merged into a linear order; in a way such that similar items get grouped
     together in order to reduce manager invocations.
-  - Managers will be called on each group of items to plan their respective operations. Nothing will be executed here -
-    all actions will only be printed to the console.
+  - Managers will be called on each group of items to plan their respective install operations. Nothing will be executed
+    here - all actions will only be printed to the console.
   - Managers will try to predict what needs to be removed from the system. As before, nothing will be executed here -
     all actions will only be printed to the console.
 - **Execution phase**
