@@ -230,8 +230,8 @@ def base() -> ConfigDict:
         [Action]
         When = PostTransaction
         Description = Cleaning package cache...
-        Exec = /usr/bin/paccache -rk2 --quiet
-        Exec = /usr/bin/paccache -ruk0 --quiet
+        Exec = /usr/bin/paccache -rvk2
+        Exec = /usr/bin/paccache -rvuk0
       '''
       )),
 
