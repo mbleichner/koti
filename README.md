@@ -156,8 +156,8 @@ There are two mechanisms to control the order of installation:
     also be specified as a (lambda) function to allow dynamic dependencies.
   - `before` is like `after`, but reversed. It allows to declare an item as prerequisite for others. Since this also can
     be given a (lambda) function, it's possible to define something as a system-wide prerequisite - an example would be
-    `File("/etc/pacman.conf", before = lambda other: isinstane(other, Package))` to make sure
-    `/etc/pacman.conf` has been set up before any packages may be installed.
+    `File("/etc/pacman.conf", before = lambda other: isinstance(other, Package))` to make sure `/etc/pacman.conf` has
+    been set up before any packages may be installed.
   - Please note that some items have inherent dependencies, such as `File("...", owner = "example")` will by default
     have a dependency `after = User("example")`.
 
