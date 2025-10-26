@@ -1,7 +1,7 @@
 from inspect import cleandoc
 
 from koti import *
-from modules.base import base, swapfile
+from modules.base import base
 from modules.cpufreq import cpufreq, throttle_after_boot
 from modules.desktop import desktop
 from modules.fish import fish
@@ -20,7 +20,6 @@ def dan() -> ConfigDict:
     **base(),
     **cpufreq(min_freq = 2000, max_freq = 4500, governor = "performance"),
     **throttle_after_boot(2000),
-    **swapfile(size_gb = 12),
     **kernel_cachyos(sortkey = 1),
     **kernel_stock(sortkey = 2),
     **fish(),
@@ -32,8 +31,9 @@ def dan() -> ConfigDict:
     **ryzen_undervolting(),
     **network_manager(),
 
-    Section("filesystems for dan"): (
-      File("/etc/fstab", requires = Swapfile("/swapfile"), content = cleandoc('''
+    Section("swapfile (12GB) and fstab"): (
+      Swapfile("/swapfile", 12 * (1024 ** 3)),
+      File("/etc/fstab", content = cleandoc('''
         UUID=3409a847-0bd6-43e4-96fd-6e8be4e3c58d  /             ext4  rw,noatime 0 1
         UUID=AF4E-18BD                             /boot         vfat  rw,defaults 0 2
         UUID=CCA2A808A2A7F55C                      /mnt/windows  ntfs  rw,x-systemd.automount 0 0
@@ -71,13 +71,8 @@ def dan() -> ConfigDict:
       Package("nvidia-settings"),
     ),
 
-    Section("stuff for koti testing"): (
+    Section("quickemu for koti testing"): (
       Package("quickemu-git"),
-      # Package("python-flask"),
-      # Package("python-bottle"),
-      # File("/tmp/test", content = "moep moep moep"),
-      # PostHook("moep hook 1", execute = lambda: shell("echo moep 1"), trigger = File("/tmp/test")),
-      # PostHook("moep hook 2", execute = lambda: shell("echo moep 2"), trigger = PostHook("moep hook 1")),
     ),
 
     Section("homeoffice stuff"): (

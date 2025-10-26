@@ -1,7 +1,7 @@
 from inspect import cleandoc
 
 from koti import *
-from modules.base import base, swapfile
+from modules.base import base
 from modules.cpufreq import cpufreq, throttle_after_boot
 from modules.desktop import desktop
 from modules.fish import fish
@@ -17,7 +17,6 @@ def lenovo() -> ConfigDict:
     **base(),
     **cpufreq(min_freq = 1000, max_freq = 4500, governor = "powersave"),
     **throttle_after_boot(1500),
-    **swapfile(size_gb = 4),
     **kernel_cachyos(sortkey = 1),
     **kernel_stock(sortkey = 2),
     **fish(),
@@ -26,18 +25,19 @@ def lenovo() -> ConfigDict:
     **gaming(),
     **network_manager(),
 
-    Section("firmware for lenovo"): (
-      Package("linux-firmware-other"),
-      Package("linux-firmware-amdgpu"),
-      Package("linux-firmware-realtek"),
-    ),
-
-    Section("filesystems for lenovo"): (
+    Section("swapfile (4GB) and fstab"): (
+      Swapfile("/swapfile", 4 * (1024 ** 3)),
       File("/etc/fstab", requires = Swapfile("/swapfile"), content = cleandoc('''
         UUID=79969cb9-9b6e-48e2-a672-4aee50f04c56  /      ext4  rw,noatime 0 1
         UUID=1CA6-490D                             /boot  vfat  rw,defaults 0 2
         /swapfile                                  swap   swap  defaults 0 0
       '''))
+    ),
+
+    Section("firmware for lenovo"): (
+      Package("linux-firmware-other"),
+      Package("linux-firmware-amdgpu"),
+      Package("linux-firmware-realtek"),
     ),
 
     Section("graphics drivers for lenovo"): (

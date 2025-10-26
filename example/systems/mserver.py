@@ -2,7 +2,7 @@ from inspect import cleandoc
 
 from koti import *
 from koti.utils.shell import shell
-from modules.base import base, swapfile
+from modules.base import base
 from modules.cpufreq import cpufreq
 from modules.fish import fish
 from modules.kernel import kernel_lts, kernel_stock
@@ -13,21 +13,24 @@ def mserver() -> ConfigDict:
   return {
     **base(),
     **cpufreq(min_freq = 800, max_freq = 4200, governor = "powersave"),
-    **swapfile(size_gb = 8),
     **kernel_lts(sortkey = 1),
     **kernel_stock(sortkey = 2),
     **fish(),
 
-    Section("firmware, drivers and filesystems for mserver"): (
-      Package("linux-firmware-other"),
-      Package("linux-firmware-intel"),
-      Package("linux-firmware-realtek"),
+    Section("swapfile (8GB) and fstab"): (
+      Swapfile("/swapfile", 8 * 1024 ** 3),
       File("/etc/fstab", requires = Swapfile("/swapfile"), content = cleandoc('''
         UUID=77abf8d1-814f-4b0f-b3be-0b5f128f2e34  /      ext4  rw,noatime 0 1
         UUID=b964a65f-8230-4281-8401-d525b48c2a66  /opt   ext4  rw,noatime 0 1
         UUID=41E5-985A                             /boot  vfat  rw,defaults 0 2
         /swapfile                                  swap   swap  defaults 0 0
       ''')),
+    ),
+
+    Section("firmware for mserver"): (
+      Package("linux-firmware-other"),
+      Package("linux-firmware-intel"),
+      Package("linux-firmware-realtek"),
     ),
 
     Section("networking via systemd-networkd"): (

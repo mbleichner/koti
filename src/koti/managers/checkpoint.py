@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Generator, Sequence
 
 from koti.items.checkpoint import Checkpoint
-from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel
+from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel, Phase
 from koti.utils.json_store import JsonCollection
 
 
@@ -20,17 +20,17 @@ class CheckpointManager(ConfigManager[Checkpoint, CheckpointState]):
   def assert_installable(self, item: Checkpoint, model: ConfigModel):
     pass
 
-  def state_target(self, item: Checkpoint, model: ConfigModel, dryrun: bool) -> CheckpointState:
+  def get_state_target(self, item: Checkpoint, model: ConfigModel, phase: Phase) -> CheckpointState:
     return CheckpointState()
 
-  def state_current(self, item: Checkpoint) -> CheckpointState | None:
+  def get_state_current(self, item: Checkpoint) -> CheckpointState | None:
     return CheckpointState()
 
-  def plan_install(self, items_to_check: Sequence[Checkpoint], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[Checkpoint], model: ConfigModel, phase: Phase) -> Generator[Action]:
     yield from ()
 
-  def plan_cleanup(self, items_to_keep: Sequence[Checkpoint], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[Checkpoint], model: ConfigModel, phase: Phase) -> Generator[Action]:
     yield from ()
 
-  def finalize(self, model: ConfigModel, dryrun: bool):
+  def finalize(self, model: ConfigModel, phase: Phase):
     pass

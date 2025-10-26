@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Generator, Sequence
 
 from koti.utils.shell import shell, shell_output
-from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel
+from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel, Phase
 from koti.items.user_group import UserGroupAssignment
 from koti.managers.user import UserManager
 from koti.utils.json_store import JsonCollection, JsonStore
@@ -28,19 +28,19 @@ class UserGroupManager(ConfigManager[UserGroupAssignment, UserGroupAssignmentSta
   def assert_installable(self, item: UserGroupAssignment, model: ConfigModel):
     pass
 
-  def state_target(self, item: UserGroupAssignment, model: ConfigModel, dryrun: bool) -> UserGroupAssignmentState:
+  def get_state_target(self, item: UserGroupAssignment, model: ConfigModel, phase: Phase) -> UserGroupAssignmentState:
     return UserGroupAssignmentState()
 
-  def state_current(self, item: UserGroupAssignment) -> UserGroupAssignmentState | None:
+  def get_state_current(self, item: UserGroupAssignment) -> UserGroupAssignmentState | None:
     for line in shell_output("getent group | cut -d: -f1,4").splitlines():
       [group, users_csv] = line.split(":")
       if group == item.group and item.username in users_csv.split(","):
         return UserGroupAssignmentState()
     return None
 
-  def plan_install(self, items_to_check: Sequence[UserGroupAssignment], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[UserGroupAssignment], model: ConfigModel, phase: Phase) -> Generator[Action]:
     for item in items_to_check:
-      current, target = self.states(item, model, dryrun)
+      current, target = self.get_states(item, model, phase)
       if current == target:
         continue
       yield Action(
@@ -49,7 +49,7 @@ class UserGroupManager(ConfigManager[UserGroupAssignment, UserGroupAssignmentSta
         execute = lambda: self.assign_group(item),
       )
 
-  def plan_cleanup(self, items_to_keep: Sequence[UserGroupAssignment], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[UserGroupAssignment], model: ConfigModel, phase: Phase) -> Generator[Action]:
     for item in self.get_managed_items(model):
       if item in items_to_keep:
         continue
@@ -78,7 +78,7 @@ class UserGroupManager(ConfigManager[UserGroupAssignment, UserGroupAssignmentSta
     shell(f"gpasswd --delete {item.username} {item.group}")
     # do not delete user from list of managed users here, as there might be other assignments for this user
 
-  def finalize(self, model: ConfigModel, dryrun: bool):
-    if not dryrun:
+  def finalize(self, model: ConfigModel, phase: Phase):
+    if phase == "execution":
       usernames = set([item.username for group in model.configs for item in group.provides if isinstance(item, UserGroupAssignment)])
       self.managed_users_store.replace_all(list(usernames))

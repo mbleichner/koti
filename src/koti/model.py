@@ -3,26 +3,7 @@ from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from typing import Any, Callable, Generator, Iterable, Literal, Sequence, Type, TypedDict, cast, overload
 
-# class ConfigGroup:
-#   """The purpose of ConfigGroups is to provide ConfigItems that should be installed on the system.
-#   It's good practice to create a ConfigGroup for related ConfigItems that should be installed
-#   within the same phase. Also, ConfigGroups allow to define dependencies on other ConfigGroups
-#   so they are split into separate phases to control the order of installation."""
-#   description: str
-#   provides: Sequence[ConfigItem]
-#
-#   def __init__(
-#     self,
-#     description: str,
-#     *provides: ConfigItem | None,
-#   ):
-#     self.description = description
-#     self.provides = [item for item in (provides or []) if item is not None]
-#
-#   def items(self, *provides: ConfigItem | None) -> ConfigGroup:
-#     self.provides = [*self.provides, *(i for i in provides if i is not None)]
-#     return self
-
+type Phase = Literal["planning", "execution"]
 type ConfigItems = Sequence[ConfigItem | None] | Iterable[ConfigItem | None] | ConfigItem | None
 type ConfigDict = dict[Section, ConfigItems]
 
@@ -132,13 +113,6 @@ class ManagedConfigItem(ConfigItem, metaclass = ABCMeta):
       "after": [*item1.after, *item2.after],
     }
 
-  # @staticmethod
-  # def merge_before_after(
-  #   ba1: Sequence[ManagedConfigItem | Callable[[ManagedConfigItem], bool]],
-  #   ba2: Sequence[ManagedConfigItem | Callable[[ManagedConfigItem], bool]],
-  # ) -> Sequence[ManagedConfigItem | Callable[[ManagedConfigItem], bool]]:
-  #   return [*ba1, *ba2]
-
 
 class UnmanagedConfigItem(ConfigItem, metaclass = ABCMeta):
   """ConfigItems that only provide some kind of meta information (e.g. for declaring dependencies)
@@ -173,38 +147,39 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     pass
 
   @abstractmethod
-  def state_current(self, item: T) -> S | None:
+  def get_state_current(self, item: T) -> S | None:
     """Returns an object representing the state of a currently installed item on the system."""
     pass
 
   @abstractmethod
-  def state_target(self, item: T, model: ConfigModel, dryrun: bool) -> S:
+  def get_state_target(self, item: T, model: ConfigModel, phase: Phase) -> S:
     """Returns an object representing the state that the item will have after installation/updating.
     Can depend on the config model, as there might be e.g. Option()s that need to be considered.
-    Also the method can behave different during dryrun (e.g. PostHooks assume that their triggers
+    Also the method can behave different during planning phase (e.g. PostHooks assume that their triggers
     have already been updated to their respective target states)."""
     pass
 
-  def states(self, item: T, model: ConfigModel, dryrun: bool) -> tuple[S | None, S]:
+  def get_states(self, item: T, model: ConfigModel, phase: Phase) -> tuple[S | None, S]:
     """Convenience method to get both current and target state of an item."""
-    return self.state_current(item), self.state_target(item, model, dryrun)
+    return self.get_state_current(item), self.get_state_target(item, model, phase)
 
   @abstractmethod
-  def plan_install(self, items_to_check: Sequence[T], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[T], model: ConfigModel, phase: Phase) -> Generator[Action]:
     """Called during install phases. This method checks a set of items if any actions need to be
     performed and returns them via a Generator. Returned ExecutionPlans will immediately be executed."""
     pass
 
   @abstractmethod
-  def plan_cleanup(self, items_to_keep: Sequence[T], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[T], model: ConfigModel, phase: Phase) -> Generator[Action]:
     """Called during cleanup phase. This method is repsonsible for uninstalling items that are no longer needed.
     Returned ExecutionPlans will immediately be executed."""
     pass
 
-  def initialize(self, model: ConfigModel, dryrun: bool):
+  def initialize(self, model: ConfigModel, phase: Phase):
+    """Called at the start of a run. Can be used to initialize internal states (such as caches)."""
     pass
 
-  def finalize(self, model: ConfigModel, dryrun: bool):
+  def finalize(self, model: ConfigModel, phase: Phase):
     """Called at the end of a successful run. This method is primarily used to synchronise internal persistent
     state with the model (e.g. the list of koti-managed files currently installed on the system)."""
     pass

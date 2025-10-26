@@ -5,7 +5,7 @@ from typing import Generator, Sequence
 
 from koti import Action
 from koti.utils.shell import shell, shell_output
-from koti.model import ConfigItemState, ConfigManager, ConfigModel
+from koti.model import ConfigItemState, ConfigManager, ConfigModel, Phase
 from koti.items.user import User
 from koti.utils.json_store import JsonCollection, JsonStore
 
@@ -33,10 +33,10 @@ class UserManager(ConfigManager[User, UserState]):
   def assert_installable(self, item: User, model: ConfigModel):
     pass
 
-  def state_target(self, item: User, model: ConfigModel, dryrun: bool) -> UserState:
+  def get_state_target(self, item: User, model: ConfigModel, phase: Phase) -> UserState:
     return UserState(has_password = item.password or True)
 
-  def state_current(self, item: User) -> UserState | None:
+  def get_state_current(self, item: User) -> UserState | None:
     user_shells: dict[str, str] = dict([line.split(":") for line in shell_output("getent passwd | cut -d: -f1,7").splitlines()])
     if item.username not in user_shells.keys():
       return None  # user not in /etc/passwd
@@ -48,9 +48,9 @@ class UserManager(ConfigManager[User, UserState]):
     pw_status = shell_output(f"passwd --status {item.username}").split(" ")[1]
     return UserState(has_password = pw_status == "P")
 
-  def plan_install(self, items_to_check: Sequence[User], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[User], model: ConfigModel, phase: Phase) -> Generator[Action]:
     for user in items_to_check:
-      current, target = self.states(user, model, dryrun)
+      current, target = self.get_states(user, model, phase)
       if current == target:
         continue
       assert target is not None
@@ -74,7 +74,7 @@ class UserManager(ConfigManager[User, UserState]):
           execute = lambda: self.remove_password(user.username),
         )
 
-  def plan_cleanup(self, items_to_keep: Sequence[User], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[User], model: ConfigModel, phase: Phase) -> Generator[Action]:
     managed_users = [User(username) for username in self.managed_users_store.elements()]
     for user in managed_users:
       if user in items_to_keep:
@@ -104,6 +104,6 @@ class UserManager(ConfigManager[User, UserState]):
     shell(f"userdel {user.username}")
     self.managed_users_store.remove(user.username)
 
-  def finalize(self, model: ConfigModel, dryrun: bool):
-    if not dryrun:
+  def finalize(self, model: ConfigModel, phase: Phase):
+    if phase == "execution":
       self.managed_users_store.replace_all([item.username for group in model.configs for item in group.provides if isinstance(item, User)])

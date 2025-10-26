@@ -4,7 +4,7 @@ from hashlib import sha256
 from typing import Generator, Sequence
 
 from koti import Action
-from koti.model import ConfigItem, ConfigItemState, ConfigManager, ConfigModel, ManagedConfigItem
+from koti.model import ConfigItem, ConfigItemState, ConfigManager, ConfigModel, ManagedConfigItem, Phase
 from koti.items.hooks import PostHook
 from koti.utils.json_store import JsonMapping, JsonStore
 
@@ -51,17 +51,17 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
         result += 1
     return None
 
-  def state_current(self, hook: PostHook) -> PostHookState | None:
+  def get_state_current(self, hook: PostHook) -> PostHookState | None:
     stored_value = self.trigger_hash_store.get(hook.name, None)
     if stored_value is None or not isinstance(stored_value, dict):
       return None
     trigger_hashes: dict[str, str] = stored_value
     return PostHookState(trigger_hashes)
 
-  def state_target(self, hook: PostHook, model: ConfigModel, dryrun: bool) -> PostHookState:
+  def get_state_target(self, hook: PostHook, model: ConfigModel, phase: Phase) -> PostHookState:
     trigger_hashes: dict[str, str] = {}
     for trigger_ref in self.get_trigger_items(hook, model):
-      trigger_state = self.state_for_trigger(trigger_ref, model, dryrun)
+      trigger_state = self.state_for_trigger(trigger_ref, model, phase)
       if trigger_state is not None:
         trigger_hashes[str(trigger_ref)] = trigger_state.sha256()
     return PostHookState(trigger_hashes)
@@ -76,21 +76,21 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
         result.append(t)
     return result
 
-  def state_for_trigger(self, reference: ManagedConfigItem, model: ConfigModel, dryrun: bool) -> ConfigItemState | None:
+  def state_for_trigger(self, reference: ManagedConfigItem, model: ConfigModel, phase: Phase) -> ConfigItemState | None:
     manager: ConfigManager = model.manager(reference)
 
     # during dryrun, assume that the trigger item will already have been
     # updated to its target state (if managed by koti)
-    if dryrun:
+    if phase == "planning":
       trigger_item = model.item(reference, optional = True)
       if trigger_item is not None:
-        return manager.state_target(trigger_item, model, dryrun)
+        return manager.get_state_target(trigger_item, model, phase)
 
-    return manager.state_current(reference)
+    return manager.get_state_current(reference)
 
-  def plan_install(self, items_to_check: Sequence[PostHook], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[PostHook], model: ConfigModel, phase: Phase) -> Generator[Action]:
     for hook in items_to_check:
-      current, target = self.states(hook, model, dryrun)
+      current, target = self.get_states(hook, model, phase)
       if current == target:
         continue
       assert target is not None
@@ -107,7 +107,7 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
           execute = lambda: self.execute_hook(hook, target),
         )
 
-  def plan_cleanup(self, items_to_keep: Sequence[PostHook], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[PostHook], model: ConfigModel, phase: Phase) -> Generator[Action]:
     currently_tracked_hooks = [PostHook(name) for name in self.trigger_hash_store.keys()]
     for hook in currently_tracked_hooks:
       if hook in items_to_keep:
@@ -126,8 +126,8 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
   def unregister_hook(self, hook: PostHook):
     self.trigger_hash_store.remove(hook.name),
 
-  def finalize(self, model: ConfigModel, dryrun: bool):
-    if not dryrun:
+  def finalize(self, model: ConfigModel, phase: Phase):
+    if phase == "execution":
       currently_installed = [item.name for group in model.configs for item in group.provides if isinstance(item, PostHook)]
       previously_installed = self.trigger_hash_store.keys()
       for name in previously_installed:

@@ -1,5 +1,5 @@
 from koti import *
-from modules.base import base, swapfile
+from modules.base import base
 from modules.desktop import desktop
 from modules.fish import fish
 from modules.gaming import gaming
@@ -22,7 +22,6 @@ git pull --rebase; sudo PYTHONPATH=/home/arch/koti/src ./koti-apply
 def quickemu() -> ConfigDict:
   return {
     **base(),
-    **swapfile(size_gb = 1),
     **fish(),
     **desktop(nvidia = False, autologin = True, ms_fonts = False),
     **systray(ryzen = True, nvidia = False),

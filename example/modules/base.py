@@ -323,11 +323,3 @@ def base() -> ConfigDict:
       SystemdUnit("sshd.service"),
     )
   }
-
-
-def swapfile(size_gb: int) -> ConfigDict:
-  return {
-    Section(f"swapfile ({size_gb} GByte)"): (
-      Swapfile("/swapfile", size_gb * 1024 ** 3),  # 8GB
-    )
-  }

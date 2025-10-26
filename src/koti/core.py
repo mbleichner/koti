@@ -78,7 +78,7 @@ class Koti:
   def plan(self, config_summary: bool = False, install_order_summary: bool = False, cleanup_order_summary: bool = False) -> ExecutionPlan:
     logger.clear()
 
-    dryrun = True
+    phase: Phase = "planning"
     model = self.create_model()
 
     actions: list[Action] = []
@@ -86,20 +86,20 @@ class Koti:
     sys.stdout.flush()
 
     for manager in self.managers:
-      manager.initialize(model, dryrun)
+      manager.initialize(model, phase)
     for install_step in model.steps:
       sys.stdout.write(".")
       sys.stdout.flush()
-      for action in install_step.manager.plan_install(install_step.items_to_install, model, dryrun):
+      for action in install_step.manager.get_install_actions(install_step.items_to_install, model, phase):
         actions.append(action)
     cleanup_phase = self.create_cleanup_phase(model)
     for cleanup_step in cleanup_phase.steps:
       sys.stdout.write(".")
       sys.stdout.flush()
-      for action in cleanup_step.manager.plan_cleanup(cleanup_step.items_to_keep, model, dryrun):
+      for action in cleanup_step.manager.get_cleanup_actions(cleanup_step.items_to_keep, model, phase):
         actions.append(action)
     for manager in self.managers:
-      manager.finalize(model, dryrun)
+      manager.finalize(model, phase)
 
     print()
     print()
@@ -151,26 +151,26 @@ class Koti:
   @handle_ctrl_c
   def execute(self, plan: ExecutionPlan):
     logger.clear()
-    dryrun = False
+    phase: Phase = "execution"
     model = plan.model
 
     for manager in self.managers:
-      manager.initialize(model, dryrun)
+      manager.initialize(model, phase)
 
     # execute install phases
     for install_step in model.steps:
-      for action in install_step.manager.plan_install(install_step.items_to_install, model, dryrun):
+      for action in install_step.manager.get_install_actions(install_step.items_to_install, model, phase):
         self.execute_action(action, plan)
 
     # execute cleanup phase
     cleanup_phase = self.create_cleanup_phase(model)
     for cleanup_step in cleanup_phase.steps:
-      for action in cleanup_step.manager.plan_cleanup(cleanup_step.items_to_keep, model, dryrun):
+      for action in cleanup_step.manager.get_cleanup_actions(cleanup_step.items_to_keep, model, phase):
         self.execute_action(action, plan)
 
     # updating persistent data
     for manager in self.managers:
-      manager.finalize(model, dryrun)
+      manager.finalize(model, phase)
 
     self.print_divider_line()
     print("execution finished.")
