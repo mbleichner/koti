@@ -145,15 +145,17 @@ config_example_snippet = {
 
 There are two mechanisms to control the order of installation:
 
-- **Within sections**: in each section, all items will be installed in the order they are listed (items of the same type
-  are allowed to be installed in a single step for performance reasons).
+- **Within sections**: in each section, all items will be installed in the order they are listed (adjacent items of the
+  same type are allowed to be installed in a single step for performance reasons).
 - **Between sections**: koti allows to define explicit dependencies between items residing in different sections. To
   define such a dependency, use the `requires`, `before` and `after` parameters:
   - `requires` specifies one or more items that need to be installed before the current one. This is a hard dependency,
     meaning the program will fail to execute if it isn't satisfied. A typical example would be
     `File("/etc/fstab", requires = Swapfile("/var/swapfile"))`.
   - `after` is basically the same as `requires`, but doesn't fail if the dependency can't be found in the config. It can
-    also be specified as a (lambda) function to allow dynamic dependencies.
+    also be specified as a (lambda) function to allow dynamic dependencies. This can be useful if you manage multiple
+    systems and not all systems should have the same items installed - but you still want to ensure some well-defined
+    ordering as soon as certain related items are present.
   - `before` is like `after`, but reversed. It allows to declare an item as prerequisite for others. Since this also can
     be given a (lambda) function, it's possible to define something as a system-wide prerequisite - an example would be
     `File("/etc/pacman.conf", before = lambda other: isinstance(other, Package))` to make sure `/etc/pacman.conf` has
