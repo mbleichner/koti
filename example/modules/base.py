@@ -240,13 +240,21 @@ def base() -> ConfigDict:
       SystemdUnit("docker.socket"),
     ),
 
-    Section("python development and koti dependencies"): (
+    Section("python/koti dev stuff"): (
       Package("python"),
       Package("pyenv"),
       Package("mypy"),
       Package("python-urllib3"),
       Package("python-pyscipopt"),
       Package("python-numpy"),
+
+      # convenience executable
+      File("/usr/local/bin/koti", permissions = "r-x", content = cleandoc(r'''
+        #!/bin/sh
+        cd /home/manuel/koti/example
+        git pull --rebase
+        sudo PYTHONPATH=/home/manuel/koti/src ./koti-apply
+      ''')),
     ),
 
     Section("docker and containers"): (

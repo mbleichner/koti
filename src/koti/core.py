@@ -82,7 +82,7 @@ class Koti:
     model = self.create_model()
 
     actions: list[Action] = []
-    sys.stdout.write("calculating actions to perform...")
+    sys.stdout.write("checking state...")
     sys.stdout.flush()
 
     for manager in self.managers:

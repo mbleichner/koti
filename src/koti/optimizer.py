@@ -40,7 +40,7 @@ class InstallPhaseOptimizer:
     (This is a lot faster than specifying the full-scale problem, because the number of constraints grows
     quadratically and involves integer variables. We sacrifice a bit of optimality, but in practice, this
     seems to be barely ever noticeable.)"""
-    sys.stdout.write("calculating execution order...")
+    sys.stdout.write("merging configs...")
     sys.stdout.flush()
 
     try:
@@ -87,7 +87,7 @@ class InstallPhaseOptimizer:
     extra_constraints: ExtraConstraints = ExtraConstraints(),
   ) -> dict[ManagedConfigItem, int]:
     model = Model("koti")
-    objective = model.addVar("objective")
+    objective = model.addVar("objective", vtype = "I")
 
     # create a variable for each item
     items: list[ManagedConfigItem] = list(dict.fromkeys([item for config in configs for item in config]))
