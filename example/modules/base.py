@@ -9,11 +9,11 @@ def base() -> ConfigDict:
     Section("bootstrap sudo, pacman and paru"): (
 
       # setup sudo and sudo user
+      # (sudo is assumed to be already installed here)
       Package("sudo", tags = "bootstrap"),
       User("manuel"),
       UserHome("manuel", homedir = "/home/manuel"),
       UserGroupAssignment("manuel", "wheel"),
-
       File("/etc/sudoers", permissions = 0o440, content = cleandoc('''
         Defaults!/usr/bin/visudo env_keep += "SUDO_EDITOR EDITOR VISUAL"
         Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"

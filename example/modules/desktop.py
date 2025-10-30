@@ -7,15 +7,6 @@ from koti.utils.shell import shell
 def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
   return {
     Section("desktop packages"): (
-      Option("/etc/pacman.conf/NoExtract", "etc/xdg/autostart/org.kde.discover.notifier.desktop"),
-
-      # Dependencies that have multiple alternatives (pacman will ask during installation)
-      Package("qt6-multimedia-ffmpeg"),  # ... qt6-multimedia-backend
-      Package("phonon-qt6-vlc"),  # .......... phonon-qt6-backend
-      Package("pipewire-jack"),  # ........... jack
-      Package("jdk17-openjdk"),  # ........... java-runtime=17
-      Package("noto-fonts"),  # .............. ttf-fonts
-
       Package("archlinux-wallpaper"),
       Package("ark"),
       Package("code"),
@@ -44,14 +35,25 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
       Package("chromium"),
       Package("google-chrome"),
       Package("ttf-ms-win10-auto") if ms_fonts else None,  # Das win11 Package war zuletzt broken
+      Package("noto-fonts"),
       Package("noto-fonts-emoji"),
       Package("pycharm-community-edition"),
       Package("libva-utils"),
       Package("vdpauinfo") if nvidia else None,
       Package("libva-nvidia-driver") if nvidia else None,
+
+      # pacman will ask for these during installation:
+      # - qt6-multimedia-ffmpeg  (qt6-multimedia-backend)
+      # - phonon-qt6-vlc         (phonon-qt6-backend)
+      # - pipewire-jack          (jack)
+
       Directory("/opt/gamma-icc-profiles", source = "files/gamma-icc-profiles.zip", mask = "r--"),
+
       SystemdUnit("coolercontrold.service"),
       SystemdUnit("bluetooth.service"),
+
+      # prevent startup of discover (KDE package manager)
+      Option("/etc/pacman.conf/NoExtract", "etc/xdg/autostart/org.kde.discover.notifier.desktop"),
     ),
 
     Section("flatpak and flathub"): (
