@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 from collections import defaultdict
+from math import ceil
 
 from pyscipopt import Constraint as Cons, Expr, Model, Model, SCIP_PARAMEMPHASIS, Variable  # type: ignore
 
@@ -202,43 +203,26 @@ class InstallPhaseOptimizer:
     sys.stdout.flush()
     configs: Sequence[Sequence[ManagedConfigItem]] = self.configs
 
-    # successively remove whole item classes
-    item_classes = list(dict.fromkeys([item.__class__ for config in configs for item in config]))
-    for item_class in item_classes:
-      reduced_config = self.remove_item_class(configs, item_class)
-      if not self.is_feasible(reduced_config):
-        configs = reduced_config
-      sys.stdout.write(".")
-      sys.stdout.flush()
-
-    # successively remove singular items
-    for item in [item for config in configs for item in config]:
-      reduced_config = self.remove_item(configs, item)
-      if not self.is_feasible(reduced_config):
-        configs = reduced_config
-        sys.stdout.write(".")
-        sys.stdout.flush()
+    # successively remove items in chunks and check feasibility
+    chunk_size = ceil(len({item for config in configs for item in config}) / 2)
+    while True:
+      for chunk in self.chunks([item for config in configs for item in config], chunk_size):
+        reduced_config = self.remove_items(configs, lambda x: x in chunk)
+        if not self.is_feasible(reduced_config):
+          configs = reduced_config
+          sys.stdout.write(".")
+          sys.stdout.flush()
+      if chunk_size == 1: break
+      chunk_size = ceil(chunk_size / 2)
 
     print()
     return list(dict.fromkeys([item for config in configs for item in config]))
 
   @classmethod
-  def remove_item(cls, configs: Sequence[Sequence[ManagedConfigItem]], item: ManagedConfigItem) -> Sequence[Sequence[ManagedConfigItem]]:
+  def remove_items(cls, configs: Sequence[Sequence[ManagedConfigItem]], condition: Callable[[ManagedConfigItem], bool]) -> Sequence[Sequence[ManagedConfigItem]]:
     result: list[Sequence[ManagedConfigItem]] = []
     for config in configs:
-      if item in config:
-        reduced_items = [x for x in config if x != item]
-        if reduced_items:
-          result.append(reduced_items)
-      else:
-        result.append(config)
-    return result
-
-  @classmethod
-  def remove_item_class(cls, configs: Sequence[Sequence[ManagedConfigItem]], item_class: type[ManagedConfigItem]) -> Sequence[Sequence[ManagedConfigItem]]:
-    result: list[Sequence[ManagedConfigItem]] = []
-    for config in configs:
-      reduced_items = [x for x in config if x.__class__ != item_class]
+      reduced_items = [x for x in config if not condition(x)]
       if len(reduced_items) != len(config):
         if reduced_items:
           result.append(reduced_items)
@@ -258,6 +242,11 @@ class InstallPhaseOptimizer:
       if item.__class__ in manager.managed_classes:
         return manager
     raise AssertionError(f"no manager found for {item}")
+
+  @classmethod
+  def chunks(cls, lst: Sequence[ConfigItem], n: int):
+    for i in range(0, len(lst), n):
+      yield lst[i:i + n]
 
 
 class CleanupPhaseOptimizer:
