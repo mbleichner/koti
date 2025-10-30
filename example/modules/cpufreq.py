@@ -11,7 +11,7 @@ def cpufreq(min_freq: int, max_freq: int, governor: str) -> ConfigDict:
         governor="{governor}"
         min_freq="{min_freq}MHz"
         max_freq="{max_freq}MHz"
-     '''))
+      '''))
     )
   }
 
@@ -30,7 +30,7 @@ def throttle_after_boot(freq: int) -> ConfigDict:
   
         [Install]
         WantedBy=graphical.target
-     ''')),
+      ''')),
       SystemdUnit("cpu-freq-after-boot.service"),
     )
   }
