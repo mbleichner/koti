@@ -211,10 +211,7 @@ class Action:
     self.additional_info = [additional_info] if isinstance(additional_info, str) else (additional_info or [])
 
   def is_covered_by(self, other: Action) -> bool:
-    if self.description != other.description:
-      return False
-    if not (set(self.additional_info) <= set(other.additional_info)):
-      return False
+    # FIXME: check description?
     if not (set(self.installs) <= set(other.installs)):
       return False
     if not (set(self.updates) <= set(other.updates)):
