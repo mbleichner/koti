@@ -199,12 +199,19 @@ class Koti:
       printc(f"executing: {cls.color_for_action(action)}{action.description}")
       for info in action.additional_info:
         printc(f"{info}")
-      if action not in plan.expected_actions:
+      if not cls.is_expected_action(action, plan):
         confirm("this action was not predicted during planning phase - please confirm to continue")
       action.execute()
       sleep(0.05)  # add a small delay so it's easier to follow when a lot of actions happen
     finally:
       shell_module.verbose_mode = False
+
+  @classmethod
+  def is_expected_action(cls, action: Action, plan: ExecutionPlan) -> bool:
+    for other in plan.expected_actions:
+      if action.is_covered_by(other):
+        return True
+    return False
 
   @classmethod
   def print_divider_line(cls):

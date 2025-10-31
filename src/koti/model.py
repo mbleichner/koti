@@ -193,7 +193,6 @@ class Action:
   execute: Callable[[], None]
   description: str
   additional_info: list[str]
-  hash: str
 
   def __init__(
     self,
@@ -211,14 +210,18 @@ class Action:
     self.execute = execute
     self.additional_info = [additional_info] if isinstance(additional_info, str) else (additional_info or [])
 
-  def __tuple(self):
-    return self.description, self.additional_info, self.installs, self.updates, self.removes
-
-  def __hash__(self) -> int:
-    return hash(self.__tuple())
-
-  def __eq__(self, other) -> bool:
-    return self.__tuple() == other.__tuple() if isinstance(other, Action) else False
+  def is_covered_by(self, other: Action) -> bool:
+    if self.description != other.description:
+      return False
+    if not (set(self.additional_info) <= set(other.additional_info)):
+      return False
+    if not (set(self.installs) <= set(other.installs)):
+      return False
+    if not (set(self.updates) <= set(other.updates)):
+      return False
+    if not (set(self.removes) <= set(other.removes)):
+      return False
+    return True
 
 
 class ExecutionPlan:
