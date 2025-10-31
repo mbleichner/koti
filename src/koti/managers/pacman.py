@@ -133,12 +133,12 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
   def install_from_repo(self, additional_items_from_repo: list[Package]):
     pacman_or_helper = self.aur_helper.command if self.aur_helper else "pacman"
     user = self.aur_helper.user if self.aur_helper else None
-    shell(f"{pacman_or_helper} -Syu {" ".join([item.name for item in additional_items_from_repo])}", user = user)
+    shell(f"{pacman_or_helper} -Syu --asexplicit {" ".join([item.name for item in additional_items_from_repo])}", user = user)
     self.add_managed_packages(additional_items_from_repo)
     self.update_explicit_package_list()
 
   def install_from_url(self, additional_items_from_urls: list[Package]):
-    shell(f"pacman -U {" ".join([item.url for item in additional_items_from_urls if item.url])}")
+    shell(f"pacman -U --asexplicit {" ".join([item.url for item in additional_items_from_urls if item.url])}")
     self.add_managed_packages(additional_items_from_urls)
     self.update_explicit_package_list()
 
