@@ -6,7 +6,7 @@ from modules.cpufreq import cpufreq, throttle_after_boot
 from modules.desktop import desktop
 from modules.fish import fish
 from modules.gaming import gaming
-from modules.kernel import kernel_cachyos, kernel_stock
+from modules.kernel import kernel_cachyos, kernel_lts, kernel_stock
 from modules.networking import network_manager
 from modules.systray import systray
 
@@ -19,6 +19,7 @@ def lenovo() -> ConfigDict:
     **throttle_after_boot(1500),
     **kernel_cachyos(sortkey = 1),
     **kernel_stock(sortkey = 2),
+    **kernel_lts(sortkey = 3),
     **fish(),
     **desktop(nvidia = False, autologin = True, ms_fonts = True),
     **systray(ryzen = True, nvidia = False),
