@@ -16,7 +16,8 @@ def kernel_cachyos(sortkey: int) -> ConfigDict:
         filename = "/boot/loader/entries/arch-cachyos.conf",
         description = "Arch Linux with CachyOS Kernel",
         kernel = "linux-cachyos",
-        sortkey = sortkey
+        sortkey = sortkey,
+        fallback = False,
       ),
     )
   }
@@ -30,7 +31,8 @@ def kernel_stock(sortkey: int) -> ConfigDict:
         filename = "/boot/loader/entries/arch-stock.conf",
         description = "Arch Linux with Stock Kernel",
         kernel = "linux",
-        sortkey = sortkey
+        sortkey = sortkey,
+        fallback = True,
       ),
     )
   }
@@ -44,14 +46,15 @@ def kernel_lts(sortkey: int) -> ConfigDict:
         filename = "/boot/loader/entries/arch-lts.conf",
         description = "Arch Linux with LTS Kernel",
         kernel = "linux-lts",
-        sortkey = sortkey
+        sortkey = sortkey,
+        fallback = True,
       ),
     )
   }
 
 
 # noinspection PyPep8Naming
-def SystemdBootLoader(filename: str, description: str, kernel: str, sortkey: int) -> Sequence[ConfigItem]:
+def SystemdBootLoader(filename: str, description: str, kernel: str, sortkey: int, fallback: bool) -> Sequence[ConfigItem]:
   return (
     File(filename, permissions = "rwxr-xr-x", content = cleandoc(f'''
       title    {description}
@@ -66,5 +69,5 @@ def SystemdBootLoader(filename: str, description: str, kernel: str, sortkey: int
       initrd   /initramfs-{kernel}-fallback.img
       options  root=UUID={root_uuid} rw
       sort-key {sortkey + 80}
-    ''')),
+    ''')) if fallback else None,
   )
