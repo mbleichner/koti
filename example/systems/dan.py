@@ -65,6 +65,13 @@ def dan() -> ConfigDict:
         Exec=/usr/bin/mkinitcpio -P
       ''')),
 
+      # nvidia 580.105.08:
+      # Added a new environment variable, CUDA_DISABLE_PERF_BOOST, to allow for disabling the default behavior of boosting the GPU to a higher
+      # power state when running CUDA applications. Setting this environment variable to '1' will disable the boost.
+      File("/etc/environment.d/cuda-boost.conf", content = cleandoc(f'''
+        CUDA_DISABLE_PERF_BOOST=1
+      ''')),
+
       # Nicht das vorkompilierte NVIDIA Modul von CachyOS nehmen, sonst kommt es gelegentlich zu Dependency-Fehlern, wenn das
       # CachyOS-Modul von einer zu neuen nvidia-utils Version abhängt, die in den Arch-Repos noch nicht verfügbar ist
       Package("nvidia-open-dkms"),
