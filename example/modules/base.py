@@ -183,6 +183,7 @@ def base() -> ConfigDict:
       Package("gparted"),
       Package("ntfs-3g"),
       Package("dosfstools"),
+      Package("cryptsetup"),
 
       # Alternatives
       Package("zlib-ng"),
