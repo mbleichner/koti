@@ -15,6 +15,7 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool, greetd: bool = True) 
       Package("firefox"),
       Package("gimp"),
       Package("vlc"),
+      Package("vlc-plugins-all"),
       Package("gwenview"),
       Package("kate"),
       Package("kcalc"),

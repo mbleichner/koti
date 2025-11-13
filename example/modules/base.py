@@ -243,6 +243,7 @@ def base() -> ConfigDict:
 
     Section("python/koti dev stuff"): (
       Package("python"),
+      Package("python-uv"),
       Package("pyenv"),
       Package("mypy"),
       Package("python-urllib3"),
