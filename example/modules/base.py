@@ -242,6 +242,7 @@ def base() -> ConfigDict:
     ),
 
     Section("python/koti dev stuff"): (
+      Package("tk"),
       Package("python"),
       Package("python-uv"),
       Package("pyenv"),
