@@ -47,7 +47,7 @@ class FlatpakRepo(ManagedConfigItem):
   @staticmethod
   def get_repo_url_from_spec(install_url: str) -> str:
     response = request("GET", install_url)
-    assert response.status == 200
+    assert response.status == 200, f"invalid response status: {response.status}"
     data = response.data.decode("utf-8")
     match = re.findall("Url=(.+)", data)
     assert match

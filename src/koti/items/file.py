@@ -112,7 +112,7 @@ class File(ManagedConfigItem):
 
   def download(self, url: str) -> str:
     response = request("GET", url)
-    assert response.status == 200
+    assert response.status == 200, f"invalid response status: {response.status}"
     return response.data.decode("utf-8")
 
   @classmethod
