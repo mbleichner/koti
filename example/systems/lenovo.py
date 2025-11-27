@@ -20,7 +20,7 @@ def lenovo() -> ConfigDict:
     **kernel_cachyos(sortkey = 1),
     **kernel_stock(sortkey = 2),
     **fish(),
-    **desktop(nvidia = False, autologin = True, ms_fonts = True, greetd = False),
+    **desktop(nvidia = False, autologin = True, ms_fonts = True),
     **systray(ryzen = True, nvidia = False),
     **gaming(),
     **network_manager(),

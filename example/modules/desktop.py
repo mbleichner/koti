@@ -4,7 +4,7 @@ from koti import *
 from koti.utils.shell import shell
 
 
-def desktop(nvidia: bool, autologin: bool, ms_fonts: bool, greetd: bool = True) -> ConfigDict:
+def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
   return {
     Section("desktop packages"): (
       Package("archlinux-wallpaper"),
@@ -73,7 +73,7 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool, greetd: bool = True) 
         user = "{tuigreet_session(autologin)["user"]}"
         command = "{tuigreet_session(autologin)["command"]}"
       ''')),
-      SystemdUnit("greetd.service") if greetd else None,
+      SystemdUnit("greetd.service"),
     ),
 
     Section("wireplumber priorities"): (
