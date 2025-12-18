@@ -86,6 +86,6 @@ def dan() -> ConfigDict:
       Package("xwaylandvideobridge"),
       Package("linphone-desktop-appimage"),
       Package("microsoft-edge-stable-bin"),
-      FlatpakPackage("us.zoom.Zoom"),
+      # FlatpakPackage("us.zoom.Zoom"),
     ),
   }
