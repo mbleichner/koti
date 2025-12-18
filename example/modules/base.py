@@ -44,12 +44,14 @@ def base() -> ConfigDict:
       Package("cachyos-v3-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst", tags = "bootstrap"),
       Option[str]("/etc/pacman.conf/NoExtract"),  # Declare options for pacman.conf (so I don't have to null-check later)
       Option[str]("/etc/pacman.conf/NoUpgrade"),  # Declare options for pacman.conf (so I don't have to null-check later)
+      Option[str]("/etc/pacman.conf/IgnorePkg"),  # Declare options for pacman.conf (so I don't have to null-check later)
       File("/etc/pacman.conf", content = lambda model: cleandoc(f'''
         [options]
         HoldPkg = pacman glibc
         Architecture = auto x86_64_v3
         NoExtract = {" ".join(model.item(Option[str]("/etc/pacman.conf/NoExtract")).distinct())}
         NoUpgrade = {" ".join(model.item(Option[str]("/etc/pacman.conf/NoUpgrade")).distinct())}
+        IgnorePkg = {" ".join(model.item(Option[str]("/etc/pacman.conf/IgnorePkg")).distinct())}
         Color
         CheckSpace
         VerbosePkgLists

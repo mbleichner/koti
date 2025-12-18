@@ -57,10 +57,16 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
       Option("/etc/pacman.conf/NoExtract", "etc/xdg/autostart/org.kde.discover.notifier.desktop"),
     ),
 
-    Section("flatpak and flathub"): (
+    Section("flatpak and flathub", enabled = False): (
       # flatpak currently required by plasma-meta
       Package("flatpak", before = lambda item: isinstance(item, FlatpakRepo) or isinstance(item, FlatpakPackage)),
       FlatpakRepo("flathub", spec_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"),
+    ),
+
+    Section("prevent flatpak installation", enabled = True): (
+      # flathub currently has severe network problems, so currently force-uninstalling flatpak
+      Option("/etc/pacman.conf/IgnorePkg", "flatpak"),
+      Option("/etc/pacman.conf/IgnorePkg", "flatpak-kcm"),
     ),
 
     Section("display manager and auto-login"): (
