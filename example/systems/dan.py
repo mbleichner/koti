@@ -82,6 +82,10 @@ def dan() -> ConfigDict:
       Package("quickemu-git"),
     ),
 
+    Section("games"): (
+      Package("beyondallreason-appimage"),
+    ),
+
     Section("homeoffice stuff"): (
       Package("xwaylandvideobridge"),
       Package("linphone-desktop-appimage"),
