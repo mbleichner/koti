@@ -13,6 +13,8 @@ def gaming() -> ConfigDict:
       Package("gpu-screen-recorder-ui"),
       Package("ryujinx"),
       Package("steam"),
+      Package("heroic-games-launcher-bin"),
+      Package("lutris"),
       Package("r2modman-bin"),
       Package("mangohud"),
       UserGroupAssignment("manuel", "games"),
