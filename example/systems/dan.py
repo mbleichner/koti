@@ -82,8 +82,9 @@ def dan() -> ConfigDict:
       Package("quickemu-git"),
     ),
 
-    Section("games"): (
+    Section("dan specific gaming stuff"): (
       Package("beyondallreason-appimage"),
+      Package("teamspeak"),
     ),
 
     Section("homeoffice stuff"): (
