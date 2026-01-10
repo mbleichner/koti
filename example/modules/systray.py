@@ -35,7 +35,7 @@ def systray(ryzen: bool, nvidia: bool) -> ConfigDict:
 
     Section("systray: GPU items", enabled = nvidia): (
       Package("kdialog"),
-      Package("python-pynvml"),
+      Package("python-nvidia-ml-py"),
       File("/opt/systray/gpu/summary", permissions = "rwxr-xr-x", content = cleandoc(r'''
         #!/usr/bin/python3
         from pynvml import *

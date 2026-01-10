@@ -6,7 +6,7 @@ from koti import *
 def nvidia_undervolting() -> ConfigDict:
   return {
     Section("NVIDIA 3080 undervolting + clock tuning"): (
-      Package("python-pynvml"),
+      Package("python-nvidia-ml-py"),
 
       File("/opt/undervolting/nvidia-undervolting.py", content = cleandoc('''
         from pynvml import *
