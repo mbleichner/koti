@@ -111,13 +111,13 @@ def base() -> ConfigDict:
           [options]
           PgpFetch
           Devel
-          #Provides
           DevelSuffixes = -git -cvs -svn -bzr -darcs -always -hg -fossil
           SudoLoop
           CombinedUpgrade
           NewsOnUpgrade
           KeepSrc
           KeepRepoCache
+          RemoveMake
         '''),
       ),
     ),
