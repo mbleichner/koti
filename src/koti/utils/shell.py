@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import pwd, grp, os
 from inspect import cleandoc
 from subprocess import CalledProcessError, Popen, run
-from os import environ
 
 verbose_mode: bool = False
 
@@ -18,6 +18,8 @@ def shell(command: str, check: bool = True, executable: str = "/bin/sh", user: s
     shell = True,
     executable = executable,
     user = user,
+    group = group_for_user(user) if user else None,
+    extra_groups = extra_groups_for_user(user) if user else None,
     env = env_for_user(user) if user else None,
   ) as process:
     exitcode = process.wait()
@@ -33,6 +35,8 @@ def shell_output(command: str, check: bool = True, executable: str = "/bin/sh", 
     capture_output = True,
     universal_newlines = True,
     user = user,
+    group = group_for_user(user) if user else None,
+    extra_groups = extra_groups_for_user(user) if user else None,
     env = env_for_user(user) if user else None,
   ).stdout.strip()
 
@@ -47,6 +51,8 @@ def shell_success(command: str, executable: str = "/bin/sh", user: str | None = 
       capture_output = True,
       universal_newlines = True,
       user = user,
+      group = group_for_user(user) if user else None,
+      extra_groups = extra_groups_for_user(user) if user else None,
       env = env_for_user(user) if user else None,
     )
     return True
@@ -54,10 +60,22 @@ def shell_success(command: str, executable: str = "/bin/sh", user: str | None = 
     return False
 
 
+
+def group_for_user(user: str) -> str:
+  gid = pwd.getpwnam(user).pw_gid
+  return grp.getgrgid(gid).gr_name
+
+
+def extra_groups_for_user(user: str) -> list[str]:
+  return [g.gr_name for g in grp.getgrall() if user in g.gr_mem]
+
+
 def env_for_user(user: str) -> dict[str, str]:
-  user_homes: dict[str, str] = dict([line.split(":") for line in shell_output("getent passwd | cut -d: -f1,6").splitlines()])
-  home = user_homes.get(user, None)
-  result = {**environ, "USER": user}
-  if home:
-    result["HOME"] = home
-  return result
+  user_env_lines = run(
+    f"echo printenv | su - {user}",
+    check=True,
+    shell=True,
+    capture_output=True,
+    universal_newlines=True,
+  ).stdout.splitlines()
+  return {**os.environ, **dict([line.split('=', 1) for line in user_env_lines])}

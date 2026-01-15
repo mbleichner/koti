@@ -18,6 +18,10 @@ def base() -> ConfigDict:
         Defaults!/usr/bin/visudo env_keep += "SUDO_EDITOR EDITOR VISUAL"
         Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"
         Defaults passwd_tries=3, passwd_timeout=180
+        
+        # Fix credential caching when switching to root and back to manuel in koti
+        # https://unix.stackexchange.com/questions/148325/sudo-and-fish-no-credential-caching
+        Defaults !tty_tickets
   
         # Notwendig für paru SudoLoop ohne initiale Passworteingabe  
         Defaults verifypw = any
@@ -30,11 +34,6 @@ def base() -> ConfigDict:
         manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/cpupower
         manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/tee /sys/devices/system/cpu/*
         manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/nvidia-smi *
-  
-        # Erlaubt von arch-update aufgerufene Kommandos ohne Passwort
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/pacman *
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/paccache *
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/checkservices *
       ''')),
 
       # install CachyOS keyrings and mirrorlist, and set up pacman
@@ -305,24 +304,6 @@ def base() -> ConfigDict:
           name = "reflector: update mirrorlist",
           execute = lambda: shell("systemctl start reflector"),
         ),
-      )
-    ),
-
-    Section("arch-update"): (
-      Package("arch-update"),
-      File("/home/manuel/.config/arch-update/arch-update.conf", owner = "manuel", content = cleandoc('''
-        NoNotification
-        KeepOldPackages=2
-        KeepUninstalledPackages=0
-        DiffProg=diff
-        TrayIconStyle=light
-      ''')),
-      SystemdUnit("arch-update-tray.service", user = "manuel"),
-      SystemdUnit("arch-update.timer", user = "manuel"),
-      PostHook(
-        "restart-arch-update-tray",
-        execute = lambda: shell("systemctl --user -M manuel@ restart arch-update-tray.service"),
-        trigger = File("/home/manuel/.config/arch-update/arch-update.conf"),
       )
     ),
 

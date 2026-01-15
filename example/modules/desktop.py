@@ -133,10 +133,6 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
           apply_nice = true
         ''')),
 
-        File("/etc/ananicy.d/arch-update.rules", content = cleandoc('''
-          {"name": "arch-update", "nice": 10}
-        ''')),
-
         File("/etc/ananicy.d/audio-system.rules", content = cleandoc('''
           {"name": "pipewire", "nice": -10, "latency_nice": -10}
           {"name": "wireplumber", "nice": -10, "latency_nice": -10}
