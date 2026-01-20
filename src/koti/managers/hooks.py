@@ -67,7 +67,7 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
     return PostHookState(trigger_hashes)
 
   @classmethod
-  def get_trigger_items(cls, hook: PostHook, model: ConfigModel):
+  def get_trigger_items(cls, hook: PostHook, model: ConfigModel) -> Sequence[ManagedConfigItem]:
     result: list[ManagedConfigItem] = []
     for t in hook.trigger:
       if callable(t):
