@@ -43,11 +43,11 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     self.explicit_packages_on_system = set()
     self.perform_update = perform_update
 
-  def initialize(self, model: ConfigModel, phase: Phase):
+  def initialize(self, model: ConfigModel, dryrun: bool):
     self.explicit_packages_on_system = set(self.pacman_list_explicit_packages())
 
-  def finalize(self, model: ConfigModel, phase: Phase):
-    if phase == "execution":
+  def finalize(self, model: ConfigModel, dryrun: bool):
+    if not dryrun:
       packages = [item.name for group in model.configs for item in group.provides if isinstance(item, Package)]
       self.managed_packages_store.replace_all(packages)
 
@@ -58,7 +58,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     installed: bool = item.name in self.explicit_packages_on_system
     return PackageState() if installed else None
 
-  def get_state_target(self, item: Package, model: ConfigModel, phase: Phase) -> PackageState:
+  def get_state_target(self, item: Package, model: ConfigModel, dryrun: bool) -> PackageState:
     return PackageState()
 
   def reorder_for_install(self, items: Sequence[Package]) -> list[Package]:
@@ -68,7 +68,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
       *[item for item in items if item.script is None and item.url is None],
     ]
 
-  def get_install_actions(self, items_to_check: Sequence[Package], model: ConfigModel, phase: Phase) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[Package], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     installed_packages = self.pacman_list_installed_packages()
     explicit_packages = self.pacman_list_explicit_packages()
 
@@ -79,7 +79,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
 
     count = 0
     for item in items_to_check:
-      current, target = self.get_states(item, model, phase)
+      current, target = self.get_states(item, model, dryrun)
       if current == target:
         continue
       count += 1
@@ -93,7 +93,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
       elif item.name not in explicit_packages:
         additional_explicit_items.append(item)
 
-    if count and phase == "planning":
+    if count and dryrun:
       logger.info("When installing new packages, Arch always needs to do a full system update (partial updates are unsupported).")
 
     additional_explicit_items.sort(key = lambda x: x.name)
@@ -153,7 +153,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     self.add_managed_packages(additional_explicit_items)
     self.update_explicit_package_list()
 
-  def get_cleanup_actions(self, items_to_keep: Sequence[Package], model: ConfigModel, phase: Phase) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[Package], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     installed_items = self.installed_packages()
     items_to_remove = [item for item in installed_items if item not in items_to_keep]
     if items_to_remove:

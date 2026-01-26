@@ -6,7 +6,7 @@ from koti import Action
 from koti.utils.logging import logger
 from koti.utils.shell import shell, shell_output, shell_success
 from koti.items.flatpak_package import FlatpakPackage
-from koti.model import ConfigItemState, ConfigManager, ConfigModel, Phase
+from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.flatpak_repo import FlatpakRepo
 
 
@@ -49,14 +49,14 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
       installed = self.is_package_installed(item.id)
       return FlatpakPackageState() if installed else None
 
-  def get_state_target(self, item: FlatpakRepo | FlatpakPackage, model: ConfigModel, phase: Phase) -> FlatpakRepoState | FlatpakPackageState:
+  def get_state_target(self, item: FlatpakRepo | FlatpakPackage, model: ConfigModel, dryrun: bool) -> FlatpakRepoState | FlatpakPackageState:
     if isinstance(item, FlatpakRepo):
       assert item.repo_url is not None
       return FlatpakRepoState(repo_url = item.repo_url)
     else:
       return FlatpakPackageState()
 
-  def get_install_actions(self, items_to_check: Sequence[FlatpakRepo | FlatpakPackage], model: ConfigModel, phase: Phase) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[FlatpakRepo | FlatpakPackage], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     flatpak_available = shell_success("flatpak --version")
     if not flatpak_available:
       logger.error("could not accurately plan installation/cleanup of flatpak repos + packages due to (currently) missing flatpak installation")
@@ -66,7 +66,7 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     if repo_items:
       installed_remotes = shell_output("flatpak --system remotes --columns name").splitlines() if flatpak_available else []
       for repo_item in repo_items:
-        current, target = self.get_states(repo_item, model, phase)
+        current, target = self.get_states(repo_item, model, dryrun)
         if current == target:
           continue
         already_installed = repo_item.name in installed_remotes
@@ -86,7 +86,7 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
     if package_items:
       items_to_install: list[FlatpakPackage] = []
       for item in package_items:
-        current, target = self.get_states(item, model, phase)
+        current, target = self.get_states(item, model, dryrun)
         if current == target:
           continue
         items_to_install.append(item)
@@ -97,7 +97,7 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
           execute = lambda: shell(f"flatpak --system install --system {" ".join(item.id for item in items_to_install)}"),
         )
 
-  def get_cleanup_actions(self, items_to_keep: Sequence[FlatpakRepo | FlatpakPackage], model: ConfigModel, phase: Phase) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[FlatpakRepo | FlatpakPackage], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     flatpak_available = shell_success("flatpak --version")
     if not flatpak_available:
       if model.contains(lambda item: isinstance(item, FlatpakPackage) or isinstance(item, FlatpakRepo)):

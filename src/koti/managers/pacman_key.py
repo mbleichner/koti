@@ -21,12 +21,12 @@ class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
     installed: bool = shell_success(f"pacman-key --list-keys | grep {item.key_id}")
     return PacmanKeyState() if installed else None
 
-  def get_state_target(self, item: PacmanKey, model: ConfigModel, phase: Phase) -> PacmanKeyState:
+  def get_state_target(self, item: PacmanKey, model: ConfigModel, dryrun: bool) -> PacmanKeyState:
     return PacmanKeyState()
 
-  def get_install_actions(self, items_to_check: Sequence[PacmanKey], model: ConfigModel, phase: Phase) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[PacmanKey], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     for item in items_to_check:
-      current, target = self.get_states(item, model, phase)
+      current, target = self.get_states(item, model, dryrun)
       if current == target:
         continue
       yield Action(
@@ -40,5 +40,5 @@ class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
     shell(f"pacman-key --recv-keys {item.key_id} --keyserver {item.key_server}")
     shell(f"pacman-key --lsign-key {item.key_id}")
 
-  def get_cleanup_actions(self, items_to_keep: Sequence[PacmanKey], model: ConfigModel, phase: Phase) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[PacmanKey], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     yield from ()

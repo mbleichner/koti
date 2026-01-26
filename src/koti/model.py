@@ -3,7 +3,6 @@ from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from typing import Any, Callable, Generator, Iterable, Literal, Sequence, Type, TypedDict, cast, overload
 
-type Phase = Literal["planning", "execution"]
 type ConfigItems = Sequence[ConfigItem | None] | Iterable[ConfigItem | None] | ConfigItem | None
 type ConfigDict = dict[Section, ConfigItems]
 
@@ -152,34 +151,34 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     pass
 
   @abstractmethod
-  def get_state_target(self, item: T, model: ConfigModel, phase: Phase) -> S:
+  def get_state_target(self, item: T, model: ConfigModel, dryrun: bool) -> S:
     """Returns an object representing the state that the item will have after installation/updating.
     Can depend on the config model, as there might be e.g. Option()s that need to be considered.
     Also the method can behave different during planning phase (e.g. PostHooks assume that their triggers
     have already been updated to their respective target states)."""
     pass
 
-  def get_states(self, item: T, model: ConfigModel, phase: Phase) -> tuple[S | None, S]:
+  def get_states(self, item: T, model: ConfigModel, dryrun: bool) -> tuple[S | None, S]:
     """Convenience method to get both current and target state of an item."""
-    return self.get_state_current(item), self.get_state_target(item, model, phase)
+    return self.get_state_current(item), self.get_state_target(item, model, dryrun)
 
   @abstractmethod
-  def get_install_actions(self, items_to_check: Sequence[T], model: ConfigModel, phase: Phase) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[T], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     """Called during install phases. This method checks a set of items if any actions need to be
     performed and returns them via a Generator. Returned ExecutionPlans will immediately be executed."""
     pass
 
   @abstractmethod
-  def get_cleanup_actions(self, items_to_keep: Sequence[T], model: ConfigModel, phase: Phase) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[T], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     """Called during cleanup phase. This method is repsonsible for uninstalling items that are no longer needed.
     Returned ExecutionPlans will immediately be executed."""
     pass
 
-  def initialize(self, model: ConfigModel, phase: Phase):
+  def initialize(self, model: ConfigModel, dryrun: bool):
     """Called at the start of a run. Can be used to initialize internal states (such as caches)."""
     pass
 
-  def finalize(self, model: ConfigModel, phase: Phase):
+  def finalize(self, model: ConfigModel, dryrun: bool):
     """Called at the end of a successful run. This method is primarily used to synchronise internal persistent
     state with the model (e.g. the list of koti-managed files currently installed on the system)."""
     pass

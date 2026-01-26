@@ -3,7 +3,7 @@ from hashlib import sha256
 from typing import Generator, Sequence
 
 from koti import Action
-from koti.model import ConfigItemState, ConfigManager, ConfigModel, Phase
+from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.swapfile import Swapfile
 from koti.utils.json_store import JsonCollection, JsonStore
 from koti.utils.shell import shell, shell_success
@@ -63,13 +63,13 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
       return None
     return SwapfileState(size_bytes = os.stat(item.filename).st_size)
 
-  def get_state_target(self, item: Swapfile, model: ConfigModel, phase: Phase) -> SwapfileState:
+  def get_state_target(self, item: Swapfile, model: ConfigModel, dryrun: bool) -> SwapfileState:
     assert item.size_bytes is not None
     return SwapfileState(size_bytes = item.size_bytes)
 
-  def get_install_actions(self, items_to_check: Sequence[Swapfile], model: ConfigModel, phase: Phase) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[Swapfile], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     for item in items_to_check:
-      current, target = self.get_states(item, model, phase)
+      current, target = self.get_states(item, model, dryrun)
       if current == target:
         continue
 
@@ -90,7 +90,7 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
           execute = lambda: self.recreate_swapfile(item),
         )
 
-  def get_cleanup_actions(self, items_to_keep: Sequence[Swapfile], model: ConfigModel, phase: Phase) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[Swapfile], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     currently_managed_swapfiles = [Swapfile(filename) for filename in self.managed_files_store.elements()]
     for item in currently_managed_swapfiles:
       if item in items_to_keep:
@@ -102,8 +102,8 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
         execute = lambda: self.delete_swapfile(item),
       )
 
-  def finalize(self, model: ConfigModel, phase: Phase):
-    if phase == "execution":
+  def finalize(self, model: ConfigModel, dryrun: bool):
+    if not dryrun:
       self.managed_files_store.replace_all([
         item.filename for group in model.configs for item in group.provides if isinstance(item, Swapfile)
       ])

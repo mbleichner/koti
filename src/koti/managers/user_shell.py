@@ -4,7 +4,7 @@ from hashlib import sha256
 from typing import Generator, Sequence
 
 from koti.utils.shell import shell, shell_output
-from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel, Phase
+from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel
 from koti.items.user_shell import UserShell
 from koti.utils.json_store import JsonCollection, JsonStore
 from koti.managers.user import UserManager
@@ -34,7 +34,7 @@ class UserShellManager(ConfigManager[UserShell, UserShellState]):
   def assert_installable(self, item: UserShell, model: ConfigModel):
     assert item.shell is not None, f"{item}: no shell specified"
 
-  def get_state_target(self, item: UserShell, model: ConfigModel, phase: Phase) -> UserShellState:
+  def get_state_target(self, item: UserShell, model: ConfigModel, dryrun: bool) -> UserShellState:
     assert item.shell is not None
     return UserShellState(shell = item.shell)
 
@@ -44,9 +44,9 @@ class UserShellManager(ConfigManager[UserShell, UserShellState]):
       return None  # user not in /etc/passwd
     return UserShellState(shell = user_shells[item.username])
 
-  def get_install_actions(self, items_to_check: Sequence[UserShell], model: ConfigModel, phase: Phase) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[UserShell], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     for item in items_to_check:
-      current, target = self.get_states(item, model, phase)
+      current, target = self.get_states(item, model, dryrun)
       if current == target:
         continue
       yield Action(
@@ -55,7 +55,7 @@ class UserShellManager(ConfigManager[UserShell, UserShellState]):
         execute = lambda: self.update_user_shell(item, target.shell),
       )
 
-  def get_cleanup_actions(self, items_to_keep: Sequence[UserShell], model: ConfigModel, phase: Phase) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[UserShell], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     for item in self.get_managed_items(model):
       if item in items_to_keep:
         continue
@@ -83,7 +83,7 @@ class UserShellManager(ConfigManager[UserShell, UserShellState]):
         result.append(UserShell(username, user_shell))
     return result
 
-  def finalize(self, model: ConfigModel, phase: Phase):
-    if phase == "execution":
+  def finalize(self, model: ConfigModel, dryrun: bool):
+    if not dryrun:
       usernames = set([item.username for group in model.configs for item in group.provides if isinstance(item, UserShell)])
       self.managed_users_store.replace_all(list(usernames))

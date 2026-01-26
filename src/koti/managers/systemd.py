@@ -1,7 +1,7 @@
 from typing import Generator, Sequence
 
 from koti import Action
-from koti.model import ConfigItemState, ConfigManager, ConfigModel, Phase
+from koti.model import ConfigItemState, ConfigManager, ConfigModel
 from koti.items.systemd import SystemdUnit
 from koti.managers.pacman import shell
 from koti.utils.shell import shell_success
@@ -46,16 +46,16 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
     enabled: bool = shell_success(f"{self.systemctl_for_user(item.user)} is-enabled {item.name}")
     return SystemdUnitState() if enabled else None
 
-  def get_state_target(self, item: SystemdUnit, model: ConfigModel, phase: Phase) -> SystemdUnitState:
+  def get_state_target(self, item: SystemdUnit, model: ConfigModel, dryrun: bool) -> SystemdUnitState:
     return SystemdUnitState()
 
-  def get_install_actions(self, items_to_check: Sequence[SystemdUnit], model: ConfigModel, phase: Phase) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[SystemdUnit], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     users = {item.user for item in items_to_check}
     for username in users:
       items_to_activate_for_user: list[SystemdUnit] = []
       for item in items_to_check:
         if item.user == username:
-          current, target = self.get_states(item, model, phase)
+          current, target = self.get_states(item, model, dryrun)
           if current != target:
             items_to_activate_for_user.append(item)
       if not items_to_activate_for_user:
@@ -68,7 +68,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
           execute = lambda: self.activate_units(username, items_to_activate_for_user),
         )
 
-  def get_cleanup_actions(self, items_to_keep: Sequence[SystemdUnit], model: ConfigModel, phase: Phase) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[SystemdUnit], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     installed_units = self.installed_units()
     users = {item.user for item in installed_units}
     for username in users:
@@ -99,8 +99,8 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
   def systemctl_for_user(self, user: str | None):
     return f"systemctl --user -M {user}@" if user is not None else "systemctl"
 
-  def finalize(self, model: ConfigModel, phase: Phase):
-    if phase == "execution":
+  def finalize(self, model: ConfigModel, dryrun: bool):
+    if not dryrun:
       previously_managed_users = [(username if username != "$system" else None) for username in self.store.keys()]
       currently_managed_users = set([item.user for group in model.configs for item in group.provides if isinstance(item, SystemdUnit)])
       for username in previously_managed_users:

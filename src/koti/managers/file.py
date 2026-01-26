@@ -7,7 +7,7 @@ from hashlib import sha256
 from pwd import getpwnam, getpwuid
 from typing import Generator, Sequence
 
-from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel, Phase
+from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel
 from koti.items.file import File
 from koti.items.directory import Directory
 from koti.utils.json_store import JsonCollection, JsonStore
@@ -68,7 +68,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     dirnames = self.managed_dirs_store.elements()
     return [Directory(dirname) for dirname in dirnames]
 
-  def get_state_target(self, item: File | Directory, model: ConfigModel, phase: Phase) -> FileState | DirectoryState:
+  def get_state_target(self, item: File | Directory, model: ConfigModel, dryrun: bool) -> FileState | DirectoryState:
     if isinstance(item, File):
       return self.file_state_target(item, model)
     else:
@@ -80,17 +80,17 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     else:
       return self.dir_state_current(item)
 
-  def get_install_actions(self, items_to_check: Sequence[File | Directory], model: ConfigModel, phase: Phase) -> Generator[Action]:
-    yield from self.plan_file_install([item for item in items_to_check if isinstance(item, File)], model, phase, register_file = True)
-    yield from self.plan_dir_install([item for item in items_to_check if isinstance(item, Directory)], model, phase)
+  def get_install_actions(self, items_to_check: Sequence[File | Directory], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+    yield from self.plan_file_install([item for item in items_to_check if isinstance(item, File)], model, dryrun, register_file = True)
+    yield from self.plan_dir_install([item for item in items_to_check if isinstance(item, Directory)], model, dryrun)
 
-  def get_cleanup_actions(self, items_to_keep: Sequence[File | Directory], model: ConfigModel, phase: Phase) -> Generator[Action]:
-    yield from self.plan_file_cleanup([item for item in items_to_keep if isinstance(item, File)], model, phase)
-    yield from self.plan_dir_cleanup([item for item in items_to_keep if isinstance(item, Directory)], model, phase)
+  def get_cleanup_actions(self, items_to_keep: Sequence[File | Directory], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+    yield from self.plan_file_cleanup([item for item in items_to_keep if isinstance(item, File)], model, dryrun)
+    yield from self.plan_dir_cleanup([item for item in items_to_keep if isinstance(item, Directory)], model, dryrun)
 
-  def plan_file_install(self, items_to_check: Sequence[File], model: ConfigModel, phase: Phase, register_file: bool) -> Generator[Action]:
+  def plan_file_install(self, items_to_check: Sequence[File], model: ConfigModel, dryrun: bool, register_file: bool) -> Generator[Action]:
     for item in items_to_check:
-      current, target = self.get_states(item, model, phase)
+      current, target = self.get_states(item, model, dryrun)
       if current == target:
         continue
 
@@ -130,9 +130,9 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       os.chmod(fh.name, mode = target.mode)
     return f"preview content changes: diff '{item.filename}' '{tmpfile}'"
 
-  def plan_dir_install(self, items_to_check: Sequence[Directory], model: ConfigModel, phase: Phase) -> Generator[Action]:
+  def plan_dir_install(self, items_to_check: Sequence[Directory], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     for item in items_to_check:
-      current, target = self.get_states(item, model, phase)
+      current, target = self.get_states(item, model, dryrun)
       if current == target:
         continue
 
@@ -141,7 +141,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
 
       # install all files belonging to the directory
       directory_files = item.files()
-      yield from self.plan_file_install(directory_files, model, phase, register_file = False)
+      yield from self.plan_file_install(directory_files, model, dryrun, register_file = False)
 
       # remove files that should no longer be present
       files_current = [f"{base}/{subfile}" for base, subdirs, subfiles in os.walk(item.dirname) for subfile in subfiles]
@@ -172,7 +172,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       os.rmdir(empty_dir)
       print(f"leftover directory {empty_dir} removed")
 
-  def plan_file_cleanup(self, items_to_keep: Sequence[File], model: ConfigModel, phase: Phase) -> Generator[Action]:
+  def plan_file_cleanup(self, items_to_keep: Sequence[File], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     installed_files = self.installed_files()
     for item in installed_files:
       if item in items_to_keep:
@@ -188,7 +188,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     self.managed_files_store.remove(item.filename)
     print(f"file {item.filename} deleted")
 
-  def plan_dir_cleanup(self, items_to_keep: Sequence[Directory], model: ConfigModel, phase: Phase) -> Generator[Action]:
+  def plan_dir_cleanup(self, items_to_keep: Sequence[Directory], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     installed_dirs = self.installed_dirs()
     for item in installed_dirs:
       if item in items_to_keep:
@@ -275,7 +275,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     getpwnam = pwd.getpwnam(owner)
     os.chown(dirname, uid = getpwnam.pw_uid, gid = getpwnam.pw_gid)
 
-  def finalize(self, model: ConfigModel, phase: Phase):
-    if phase == "execution":
+  def finalize(self, model: ConfigModel, dryrun: bool):
+    if not dryrun:
       self.managed_files_store.replace_all([item.filename for group in model.configs for item in group.provides if isinstance(item, File)])
       self.managed_dirs_store.replace_all([item.dirname for group in model.configs for item in group.provides if isinstance(item, Directory)])
