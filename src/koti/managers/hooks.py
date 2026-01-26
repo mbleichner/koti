@@ -17,7 +17,7 @@ class PostHookState(ConfigItemState):
 
   def sha256(self) -> str:
     sha256_hash = sha256()
-    for identifier, trigger_hash in self.trigger_hashes.items():
+    for identifier, trigger_hash in iter(sorted(self.trigger_hashes.items())):
       sha256_hash.update(identifier.encode())
       sha256_hash.update(trigger_hash.encode())
     return sha256_hash.hexdigest()
@@ -59,6 +59,17 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
     return PostHookState(trigger_hashes)
 
   def get_state_target(self, hook: PostHook, model: ConfigModel, dryrun: bool) -> PostHookState:
+    return self.get_state_after_cleanup(hook, model, dryrun)
+
+  def get_state_after_install(self, hook: PostHook, model: ConfigModel, dryrun: bool) -> PostHookState:
+    trigger_hashes: dict[str, str] = {**self.trigger_hash_store.get(hook.name, {})}
+    for trigger_ref in self.get_trigger_items(hook, model):
+      trigger_state = self.state_for_trigger(trigger_ref, model, dryrun)
+      if trigger_state is not None:
+        trigger_hashes[str(trigger_ref)] = trigger_state.sha256()
+    return PostHookState(trigger_hashes)
+
+  def get_state_after_cleanup(self, hook: PostHook, model: ConfigModel, dryrun: bool) -> PostHookState:
     trigger_hashes: dict[str, str] = {}
     for trigger_ref in self.get_trigger_items(hook, model):
       trigger_state = self.state_for_trigger(trigger_ref, model, dryrun)
@@ -88,9 +99,14 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
 
     return manager.get_state_current(reference)
 
-  def get_install_actions(self, items_to_check: Sequence[PostHook], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[PostHook], model: ConfigModel, dryrun: bool, cleanup=False) -> Generator[Action]:
     for hook in items_to_check:
-      current, target = self.get_states(hook, model, dryrun)
+      if not cleanup:
+        current = self.get_state_current(hook)
+        target = self.get_state_after_install(hook, model, dryrun)
+      else:
+        current = self.get_state_after_install(hook, model, dryrun)
+        target = self.get_state_after_cleanup(hook, model, dryrun)
       if current == target:
         continue
       assert target is not None
@@ -108,6 +124,8 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
         )
 
   def get_cleanup_actions(self, items_to_keep: Sequence[PostHook], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+    installed_hooks = [item for step in model.steps for item in step.items_to_install if isinstance(item, PostHook)]
+    yield from self.get_install_actions(installed_hooks, model, dryrun, cleanup=True)
     currently_tracked_hooks = [PostHook(name) for name in self.trigger_hash_store.keys()]
     for hook in currently_tracked_hooks:
       if hook in items_to_keep:
