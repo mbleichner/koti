@@ -309,6 +309,18 @@ def base() -> ConfigDict:
       )
     ),
 
+    Section("ghostmirror"): (
+      Package("ghostmirror"),
+      File("/usr/local/bin/ghostmirror-refresh", permissions = "r-x", content=cleandoc('''
+        #!/bin/sh
+        sudo ghostmirror -Po -c Germany,Switzerland,France -l /etc/pacman.d/mirrorlist -L 20 -S state,outofdate,morerecent,ping
+      ''')),
+      File("/usr/local/bin/ghostmirror-reorder", permissions = "r-x", content=cleandoc('''
+        #!/bin/sh
+        sudo ghostmirror -Po -mu /etc/pacman.d/mirrorlist -l /etc/pacman.d/mirrorlist -s light -S state,outofdate,morerecent,estimated,speed
+      ''')),
+    ),
+
     Section("ssh daemon + config"): (
       Package("openssh"),
       File("/etc/ssh/sshd_config", owner = "root", content = cleandoc('''
