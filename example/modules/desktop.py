@@ -14,6 +14,7 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
       Package("dolphin"),
       Package("firefox"),
       Package("gimp"),
+      Package("gitkraken"),
       Package("vlc"),
       Package("vlc-plugins-all"),
       Package("gwenview"),
