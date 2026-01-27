@@ -175,7 +175,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
   def plan_file_cleanup(self, items_to_keep: Sequence[File], model: ConfigModel, dryrun: bool) -> Generator[Action]:
     installed_files = self.installed_files()
     for item in installed_files:
-      if item in items_to_keep:
+      if item in items_to_keep or self.get_state_current(item) is None:
         continue
       yield Action(
         removes = [item],
