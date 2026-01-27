@@ -28,6 +28,8 @@ def base() -> ConfigDict:
   
         root ALL=(ALL:ALL) ALL
         %wheel ALL=(ALL:ALL) ALL
+        %wheel ALL=(ALL:ALL) NOPASSWD: /usr/bin/poweroff
+        %wheel ALL=(ALL:ALL) NOPASSWD: /usr/bin/reboot
         @includedir /etc/sudoers.d
   
         # Für die Systray Tools
