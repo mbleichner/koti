@@ -323,6 +323,17 @@ def base() -> ConfigDict:
       ''')),
     ),
 
+    Section("rate-mirrors"): (
+      Package("rate-mirrors"),
+      *PostHookScope(
+        File("/usr/local/bin/update-mirrors", permissions = "r-x", content=cleandoc('''
+          #!/bin/sh
+          sudo rate-mirrors --concurrency=8 --max-jumps=2 --entry-country=DE --max-mirrors-to-output=10 --save /etc/pacman.d/mirrorlist --allow-root arch
+        ''')),
+        PostHook("update mirrorlist", execute=lambda: shell("/usr/local/bin/update-mirrors")),
+      ),
+    ),
+
     Section("ssh daemon + config"): (
       Package("openssh"),
       File("/etc/ssh/sshd_config", owner = "root", content = cleandoc('''
