@@ -297,10 +297,10 @@ def base() -> ConfigDict:
       *PostHookScope(
         File("/etc/xdg/reflector/reflector.conf", content = cleandoc('''
           --save /etc/pacman.d/mirrorlist
-          --protocol https
           --country France,Germany,Switzerland
-          --latest 5
-          --sort delay
+          --protocol https
+          --latest 20     # get the 20 most recently synced mirrors
+          --sort rate     # order by download rate
         ''')),
         PostHook(
           name = "reflector: update mirrorlist",
@@ -313,10 +313,12 @@ def base() -> ConfigDict:
       Package("ghostmirror"),
       File("/usr/local/bin/ghostmirror-refresh", permissions = "r-x", content=cleandoc('''
         #!/bin/sh
+        # compiles a list of 20 mirrors, ranked by their state and ping
         sudo ghostmirror -Po -c Germany,Switzerland,France -l /etc/pacman.d/mirrorlist -L 20 -S state,outofdate,morerecent,ping
       ''')),
       File("/usr/local/bin/ghostmirror-reorder", permissions = "r-x", content=cleandoc('''
         #!/bin/sh
+        # reorders the mirrorlist by speed and reliability
         sudo ghostmirror -Po -mu /etc/pacman.d/mirrorlist -l /etc/pacman.d/mirrorlist -s light -S state,outofdate,morerecent,estimated,speed
       ''')),
     ),
