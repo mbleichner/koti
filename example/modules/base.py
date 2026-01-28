@@ -328,16 +328,14 @@ def base() -> ConfigDict:
       *PostHookScope(
         File("/usr/local/bin/update-mirrors", permissions = "r-x", content=cleandoc(r'''
           #!/bin/sh
-          sudo rate-mirrors \
+          sudo -u nobody rate-mirrors \
             --protocol=https \
             --concurrency=8 \
             --max-jumps=2 \
             --entry-country=DE \
             --exclude-countries RU,BY \
             --max-mirrors-to-output=10 \
-            --save /etc/pacman.d/mirrorlist \
-            --allow-root \
-            arch
+            arch | sudo tee /etc/pacman.d/mirrorlist
         ''')),
         PostHook("update mirrorlist", execute=lambda: shell("/usr/local/bin/update-mirrors")),
       ),
