@@ -324,11 +324,20 @@ def base() -> ConfigDict:
     ),
 
     Section("rate-mirrors"): (
-      Package("rate-mirrors"),
+      Package("rate-mirrors-bin"), # Die non-bin Variante ist im CachyOS Repo in einer veralteten Version, die nicht alle Parameter unterstützt
       *PostHookScope(
-        File("/usr/local/bin/update-mirrors", permissions = "r-x", content=cleandoc('''
+        File("/usr/local/bin/update-mirrors", permissions = "r-x", content=cleandoc(r'''
           #!/bin/sh
-          sudo rate-mirrors --concurrency=8 --max-jumps=2 --entry-country=DE --max-mirrors-to-output=10 --save /etc/pacman.d/mirrorlist --allow-root arch
+          sudo rate-mirrors \
+            --protocol=https \
+            --concurrency=8 \
+            --max-jumps=2 \
+            --entry-country=DE \
+            --exclude-countries RU,BY \
+            --max-mirrors-to-output=10 \
+            --save /etc/pacman.d/mirrorlist \
+            --allow-root \
+            arch
         ''')),
         PostHook("update mirrorlist", execute=lambda: shell("/usr/local/bin/update-mirrors")),
       ),
