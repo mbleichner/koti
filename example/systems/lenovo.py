@@ -4,9 +4,10 @@ from koti import *
 from modules.base import base
 from modules.cpufreq import cpufreq, throttle_after_boot
 from modules.desktop import desktop
+from modules.development import development
 from modules.fish import fish
 from modules.gaming import gaming
-from modules.kernel import kernel_cachyos, kernel_lts, kernel_stock
+from modules.kernel import kernel_cachyos, kernel_stock
 from modules.networking import network_manager
 from modules.systray import systray
 
@@ -21,6 +22,7 @@ def lenovo() -> ConfigDict:
     **kernel_stock(sortkey = 2),
     **fish(),
     **desktop(nvidia = False, autologin = True, ms_fonts = True),
+    **development(),
     **systray(ryzen = True, nvidia = False),
     **gaming(),
     **network_manager(),

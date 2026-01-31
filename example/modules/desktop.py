@@ -14,7 +14,6 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
       Package("dolphin"),
       Package("firefox"),
       Package("gimp"),
-      Package("gitkraken"),
       Package("vlc"),
       Package("vlc-plugins-all"),
       Package("gwenview"),
@@ -39,7 +38,6 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
       Package("ttf-ms-win10-auto") if ms_fonts else None,  # Das win11 Package war zuletzt broken
       Package("noto-fonts"),
       Package("noto-fonts-emoji"),
-      Package("pycharm"),
       Package("libva-utils"),
       Package("vdpauinfo") if nvidia else None,
       Package("libva-nvidia-driver") if nvidia else None,

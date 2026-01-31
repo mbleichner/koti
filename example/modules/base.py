@@ -243,12 +243,8 @@ def base() -> ConfigDict:
       SystemdUnit("docker.socket"),
     ),
 
-    Section("python/koti dev stuff"): (
-      Package("tk"),
+    Section("koti runtime dependencies"): (
       Package("python"),
-      Package("python-uv"),
-      Package("pyenv"),
-      Package("mypy"),
       Package("python-urllib3"),
       Package("python-pyscipopt"),
       Package("python-numpy"),

@@ -4,6 +4,7 @@ from koti import *
 from modules.base import base
 from modules.cpufreq import cpufreq, throttle_after_boot
 from modules.desktop import desktop
+from modules.development import development
 from modules.fish import fish
 from modules.gaming import gaming
 from modules.kernel import kernel_cachyos, kernel_stock
@@ -24,6 +25,7 @@ def dan() -> ConfigDict:
     **kernel_stock(sortkey = 2),
     **fish(),
     **desktop(nvidia = True, autologin = True, ms_fonts = True),
+    **development(),
     **systray(ryzen = True, nvidia = True),
     **gaming(),
     **nvme_thermal_throttling(),
