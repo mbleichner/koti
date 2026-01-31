@@ -156,10 +156,8 @@ def base() -> ConfigDict:
 
       # Monitoring + Analyse
       Package("btop"),
-      # Package("htop", before = User("manuel")),
       Package("htop"),
       Package("iotop"),
-      Checkpoint("moep"),
       Package("ncdu"),
       Package("bandwhich"),
       Package("nload"),
