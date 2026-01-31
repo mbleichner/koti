@@ -38,7 +38,7 @@ class FlatpakManager(ConfigManager[FlatpakRepo | FlatpakPackage, FlatpakRepoStat
       assert item.spec_url is not None, "missing spec_url"
       assert item.repo_url is not None, "missing repo_url"
 
-  def get_state_current(self, item: FlatpakRepo | FlatpakPackage, system_state: SystemState) -> FlatpakRepoState | FlatpakPackageState | None:
+  def get_state(self, item: FlatpakRepo | FlatpakPackage) -> FlatpakRepoState | FlatpakPackageState | None:
     flatpak_available = shell_success("flatpak --version")
     if not flatpak_available:
       return None

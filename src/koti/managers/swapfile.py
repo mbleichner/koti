@@ -57,19 +57,16 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
   def is_mounted(self, swapfile: str) -> bool:
     return shell_success(f"swapon --show | grep {swapfile}")
 
-  def get_state_current(self, item: Swapfile, system_state: SystemState) -> SwapfileState | None:
+  def get_state(self, item: Swapfile) -> SwapfileState | None:
     if not os.path.isfile(item.filename):
       return None
     return SwapfileState(size_bytes = os.stat(item.filename).st_size)
 
-  def get_state_target(self, item: Swapfile) -> SwapfileState:
-    assert item.size_bytes is not None
-    return SwapfileState(size_bytes = item.size_bytes)
-
   def get_install_actions(self, items_to_check: Sequence[Swapfile], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     for item in items_to_check:
+      assert item.size_bytes is not None
       current = system_state.get_state(item, SwapfileState)
-      target = self.get_state_target(item)
+      target = SwapfileState(size_bytes = item.size_bytes)
       if current == target:
         continue
 

@@ -41,12 +41,9 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
       result += [SystemdUnit(name, username) for name in units_store.elements()]
     return result
 
-  def get_state_current(self, item: SystemdUnit, system_state: SystemState) -> SystemdUnitState | None:
+  def get_state(self, item: SystemdUnit) -> SystemdUnitState | None:
     enabled: bool = shell_success(f"{self.systemctl_for_user(item.user)} is-enabled {item.name}")
     return SystemdUnitState() if enabled else None
-
-  def get_state_target(self, item: SystemdUnit, model: ConfigModel, dryrun: bool) -> SystemdUnitState:
-    return SystemdUnitState()
 
   def get_install_actions(self, items_to_check: Sequence[SystemdUnit], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     users = {item.user for item in items_to_check}

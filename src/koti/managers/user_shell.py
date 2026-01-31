@@ -34,11 +34,7 @@ class UserShellManager(ConfigManager[UserShell, UserShellState]):
   def assert_installable(self, item: UserShell, model: ConfigModel):
     assert item.shell is not None, f"{item}: no shell specified"
 
-  def get_state_target(self, item: UserShell) -> UserShellState:
-    assert item.shell is not None
-    return UserShellState(shell = item.shell)
-
-  def get_state_current(self, item: UserShell, system_state: SystemState) -> UserShellState | None:
+  def get_state(self, item: UserShell) -> UserShellState | None:
     user_shells: dict[str, str] = self.get_all_user_shells()
     if item.username not in user_shells.keys():
       return None  # user not in /etc/passwd
@@ -46,8 +42,9 @@ class UserShellManager(ConfigManager[UserShell, UserShellState]):
 
   def get_install_actions(self, items_to_check: Sequence[UserShell], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     for item in items_to_check:
+      assert item.shell is not None
       current = system_state.get_state(item, UserShellState)
-      target = self.get_state_target(item)
+      target = UserShellState(shell = item.shell)
       if current == target:
         continue
       yield Action(

@@ -68,7 +68,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     dirnames = self.managed_dirs_store.elements()
     return [Directory(dirname) for dirname in dirnames]
 
-  def get_state_current(self, item: File | Directory, system_state: SystemState) -> FileState | DirectoryState | None:
+  def get_state(self, item: File | Directory) -> FileState | DirectoryState | None:
     if isinstance(item, File):
       return self.file_state_current(item)
     else:
@@ -171,7 +171,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
   def plan_file_cleanup(self, items_to_keep: Sequence[File], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     installed_files = self.installed_files()
     for item in installed_files:
-      if item in items_to_keep or self.get_state_current(item, system_state) is None:
+      if item in items_to_keep or self.get_state(item) is None:
         continue
       yield Action(
         removes = [item],

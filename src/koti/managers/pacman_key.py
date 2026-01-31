@@ -17,7 +17,7 @@ class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
   def assert_installable(self, item: PacmanKey, model: ConfigModel):
     pass
 
-  def get_state_current(self, item: PacmanKey, system_state: SystemState) -> PacmanKeyState | None:
+  def get_state(self, item: PacmanKey) -> PacmanKeyState | None:
     installed: bool = shell_success(f"pacman-key --list-keys | grep {item.key_id}")
     return PacmanKeyState() if installed else None
 

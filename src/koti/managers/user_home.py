@@ -39,11 +39,7 @@ class UserHomeManager(ConfigManager[UserHome, UserHomeState]):
   def assert_installable(self, item: UserHome, model: ConfigModel):
     assert item.homedir is not None, f"{item}: no homedir specified"
 
-  def get_state_target(self, item: UserHome) -> UserHomeState:
-    assert item.homedir is not None
-    return UserHomeState(home_dir = item.homedir, home_exists = True)
-
-  def get_state_current(self, item: UserHome, system_state: SystemState) -> UserHomeState | None:
+  def get_state(self, item: UserHome) -> UserHomeState | None:
     user_homes: dict[str, str] = self.get_all_user_homes()
     if item.username not in user_homes.keys():
       return None  # user not in /etc/passwd
@@ -52,8 +48,9 @@ class UserHomeManager(ConfigManager[UserHome, UserHomeState]):
 
   def get_install_actions(self, items_to_check: Sequence[UserHome], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     for item in items_to_check:
+      assert item.homedir is not None
       current = system_state.get_state(item, UserHomeState)
-      target = self.get_state_target(item)
+      target = UserHomeState(home_dir = item.homedir, home_exists = True)
       if current == target:
         continue
 

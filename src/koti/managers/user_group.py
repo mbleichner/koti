@@ -28,7 +28,7 @@ class UserGroupManager(ConfigManager[UserGroupAssignment, UserGroupAssignmentSta
   def assert_installable(self, item: UserGroupAssignment, model: ConfigModel):
     pass
 
-  def get_state_current(self, item: UserGroupAssignment, system_state: SystemState) -> UserGroupAssignmentState | None:
+  def get_state(self, item: UserGroupAssignment) -> UserGroupAssignmentState | None:
     for line in shell_output("getent group | cut -d: -f1,4").splitlines():
       [group, users_csv] = line.split(":")
       if group == item.group and item.username in users_csv.split(","):

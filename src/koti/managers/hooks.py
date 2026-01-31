@@ -51,14 +51,14 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
         result += 1
     return None
 
-  def get_state_current(self, hook: PostHook, system_state: SystemState) -> PostHookState | None:
+  def get_state(self, hook: PostHook) -> PostHookState | None:
     stored_value = self.trigger_hash_store.get(hook.name, None)
     if stored_value is None or not isinstance(stored_value, dict):
       return None
     trigger_hashes: dict[str, str] = stored_value
     return PostHookState(trigger_hashes)
 
-  def get_state_target(self, hook: PostHook, model: ConfigModel, system_state: SystemState, during_cleanup: bool) -> PostHookState:
+  def get_target_state(self, hook: PostHook, model: ConfigModel, system_state: SystemState, during_cleanup: bool) -> PostHookState:
     trigger_hashes: dict[str, str]
     if not during_cleanup:
       # during installation phase, there might be leftover triggers that aren't registered to the PostHook anymore, but we have
@@ -91,7 +91,7 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
   def get_install_actions(self, items_to_check: Sequence[PostHook], model: ConfigModel, system_state: SystemState, during_cleanup: bool = False) -> Generator[Action]:
     for hook in items_to_check:
       current = system_state.get_state(hook, PostHookState)
-      target = self.get_state_target(hook, model, system_state, during_cleanup)
+      target = self.get_target_state(hook, model, system_state, during_cleanup)
       if current == target:
         continue
       assert target is not None

@@ -33,10 +33,7 @@ class UserManager(ConfigManager[User, UserState]):
   def assert_installable(self, item: User, model: ConfigModel):
     pass
 
-  def get_state_target(self, item: User, model: ConfigModel, dryrun: bool) -> UserState:
-    return UserState(has_password = item.password or True)
-
-  def get_state_current(self, item: User, system_state: SystemState) -> UserState | None:
+  def get_state(self, item: User) -> UserState | None:
     user_shells: dict[str, str] = dict([line.split(":") for line in shell_output("getent passwd | cut -d: -f1,7").splitlines()])
     if item.username not in user_shells.keys():
       return None  # user not in /etc/passwd

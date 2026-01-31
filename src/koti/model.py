@@ -145,20 +145,17 @@ class SystemState(metaclass = ABCMeta):
 
 
 class DryRunSystemState(SystemState):
-  managers: Sequence[ConfigManager]
+  actual: ActualSystemState
   temp_states: dict[ManagedConfigItem, ConfigItemState | None]
 
   def __init__(self, managers: Sequence[ConfigManager]):
-    self.managers = managers
+    self.actual = ActualSystemState(managers)
     self.temp_states = {}
 
-  def get_state_untyped[S:ConfigItemState](self, reference: ManagedConfigItem) -> ConfigItemState | None:
+  def get_state_untyped(self, reference: ManagedConfigItem) -> ConfigItemState | None:
     if reference in self.temp_states.keys():
       return self.temp_states[reference]
-    for manager in self.managers:
-      if reference.__class__ in manager.managed_classes:
-        return manager.get_state_current(reference, self)
-    raise AssertionError(f"manager not found for {reference}")
+    return self.actual.get_state_untyped(reference)
 
   def put_state(self, reference: ManagedConfigItem, state: ConfigItemState | None):
     self.temp_states[reference] = state
@@ -170,10 +167,10 @@ class ActualSystemState(SystemState):
   def __init__(self, managers: Sequence[ConfigManager]):
     self.managers = managers
 
-  def get_state_untyped[S:ConfigItemState](self, reference: ManagedConfigItem) -> ConfigItemState | None:
+  def get_state_untyped(self, reference: ManagedConfigItem) -> ConfigItemState | None:
     for manager in self.managers:
       if reference.__class__ in manager.managed_classes:
-        return manager.get_state_current(reference, self)
+        return manager.get_state(reference)
     raise AssertionError(f"manager not found for {reference}")
 
 
@@ -190,7 +187,7 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     pass
 
   @abstractmethod
-  def get_state_current(self, item: T, system_state: SystemState) -> S | None:
+  def get_state(self, item: T) -> S | None:
     """Returns an object representing the state of a currently installed item on the system."""
     pass
 
