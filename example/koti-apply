@@ -36,4 +36,5 @@ koti = Koti(
 
 koti.run(
   config_summary = True,  # ..... print a summary of all (enabled) config sections during planning phase
+  install_order_summary = True,
 )
