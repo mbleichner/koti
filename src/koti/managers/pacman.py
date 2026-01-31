@@ -91,7 +91,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
       elif item.name not in explicit_packages:
         additional_explicit_items.append(item)
 
-    if count:
+    if count and isinstance(system_state, DryRunSystemState):
       logger.info("When installing new packages, Arch always needs to do a full system update (partial updates are unsupported).")
 
     additional_explicit_items.sort(key = lambda x: x.name)
