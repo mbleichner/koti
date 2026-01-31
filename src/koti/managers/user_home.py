@@ -7,7 +7,7 @@ from typing import Generator, Sequence
 
 from koti.utils.logging import logger
 from koti.utils.shell import shell, shell_output
-from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel
+from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel, DryRunSystemState, SystemState
 from koti.items.user_home import UserHome
 from koti.managers.user import UserManager
 from koti.utils.json_store import JsonCollection, JsonStore
@@ -39,26 +39,27 @@ class UserHomeManager(ConfigManager[UserHome, UserHomeState]):
   def assert_installable(self, item: UserHome, model: ConfigModel):
     assert item.homedir is not None, f"{item}: no homedir specified"
 
-  def get_state_target(self, item: UserHome, model: ConfigModel, dryrun: bool) -> UserHomeState:
+  def get_state_target(self, item: UserHome) -> UserHomeState:
     assert item.homedir is not None
     return UserHomeState(home_dir = item.homedir, home_exists = True)
 
-  def get_state_current(self, item: UserHome) -> UserHomeState | None:
+  def get_state_current(self, item: UserHome, system_state: SystemState) -> UserHomeState | None:
     user_homes: dict[str, str] = self.get_all_user_homes()
     if item.username not in user_homes.keys():
       return None  # user not in /etc/passwd
     user_home = user_homes[item.username]
     return UserHomeState(home_dir = user_home, home_exists = os.path.isdir(user_home))
 
-  def get_install_actions(self, items_to_check: Sequence[UserHome], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[UserHome], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     for item in items_to_check:
-      current, target = self.get_states(item, model, dryrun)
+      current = system_state.get_state(item, UserHomeState)
+      target = self.get_state_target(item)
       if current == target:
         continue
 
       if (current is None or not current.home_exists) and target.home_exists:
         yield Action(
-          updates = [item],
+          updates = {item: target},
           description = f"create homedir {target.home_dir} for user {item.username}",
           execute = lambda: self.create_user_home(item.username, target.home_dir),
         )
@@ -67,19 +68,19 @@ class UserHomeManager(ConfigManager[UserHome, UserHomeState]):
 
       if current is not None and current.home_dir != target.home_dir:
         yield Action(
-          updates = [item],
+          updates = {item: target},
           description = f"change homedir to {target.home_dir} for user {item.username}",
           execute = lambda: self.update_user_home(item.username, target.home_dir),
         )
 
-  def get_cleanup_actions(self, items_to_keep: Sequence[UserHome], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[UserHome], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     for item in self.get_managed_items(model):
       if item in items_to_keep:
         continue
       yield Action(
         removes = [item],
         description = f"clear homedir from /etc/passwd for user {item.username}",
-        execute = lambda: self.remove_user_home(item.username, dryrun),
+        execute = lambda: self.remove_user_home(item.username, isinstance(system_state, DryRunSystemState)),
       )
 
   def get_all_user_homes(self) -> dict[str, str]:

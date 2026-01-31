@@ -133,6 +133,50 @@ class ConfigItemState(metaclass = ABCMeta):
     return hash(self.sha256())
 
 
+class SystemState(metaclass = ABCMeta):
+  """Represents the state of the system at a specific point in time."""
+
+  def get_state[S:ConfigItemState](self, reference: ManagedConfigItem, state_type: Type[S]) -> S | None:
+    return cast(S | None, self.get_state_untyped(reference))
+
+  @abstractmethod
+  def get_state_untyped(self, reference: ManagedConfigItem) -> ConfigItemState | None:
+    pass
+
+
+class DryRunSystemState(SystemState):
+  managers: Sequence[ConfigManager]
+  temp_states: dict[ManagedConfigItem, ConfigItemState | None]
+
+  def __init__(self, managers: Sequence[ConfigManager]):
+    self.managers = managers
+    self.temp_states = {}
+
+  def get_state_untyped[S:ConfigItemState](self, reference: ManagedConfigItem) -> ConfigItemState | None:
+    if reference in self.temp_states.keys():
+      return self.temp_states[reference]
+    for manager in self.managers:
+      if reference.__class__ in manager.managed_classes:
+        return manager.get_state_current(reference, self)
+    raise AssertionError(f"manager not found for {reference}")
+
+  def put_state(self, reference: ManagedConfigItem, state: ConfigItemState | None):
+    self.temp_states[reference] = state
+
+
+class ActualSystemState(SystemState):
+  managers: Sequence[ConfigManager]
+
+  def __init__(self, managers: Sequence[ConfigManager]):
+    self.managers = managers
+
+  def get_state_untyped[S:ConfigItemState](self, reference: ManagedConfigItem) -> ConfigItemState | None:
+    for manager in self.managers:
+      if reference.__class__ in manager.managed_classes:
+        return manager.get_state_current(reference, self)
+    raise AssertionError(f"manager not found for {reference}")
+
+
 class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMeta):
   managed_classes: list[Type] = []
   cleanup_order: float = 0.0
@@ -146,30 +190,18 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     pass
 
   @abstractmethod
-  def get_state_current(self, item: T) -> S | None:
+  def get_state_current(self, item: T, system_state: SystemState) -> S | None:
     """Returns an object representing the state of a currently installed item on the system."""
     pass
 
   @abstractmethod
-  def get_state_target(self, item: T, model: ConfigModel, dryrun: bool) -> S:
-    """Returns an object representing the state that the item will have after installation/updating.
-    Can depend on the config model, as there might be e.g. Option()s that need to be considered.
-    Also the method can behave different during planning phase (e.g. PostHooks assume that their triggers
-    have already been updated to their respective target states)."""
-    pass
-
-  def get_states(self, item: T, model: ConfigModel, dryrun: bool) -> tuple[S | None, S]:
-    """Convenience method to get both current and target state of an item."""
-    return self.get_state_current(item), self.get_state_target(item, model, dryrun)
-
-  @abstractmethod
-  def get_install_actions(self, items_to_check: Sequence[T], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[T], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     """Called during install phases. This method checks a set of items if any actions need to be
     performed and returns them via a Generator. Returned ExecutionPlans will immediately be executed."""
     pass
 
   @abstractmethod
-  def get_cleanup_actions(self, items_to_keep: Sequence[T], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[T], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     """Called during cleanup phase. This method is repsonsible for uninstalling items that are no longer needed.
     Returned ExecutionPlans will immediately be executed."""
     pass
@@ -186,8 +218,8 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
 
 class Action:
   """Represents an executable action to update one or multiple ManagedConfigItems on the system."""
-  installs: Sequence[ManagedConfigItem]
-  updates: Sequence[ManagedConfigItem]
+  installs: dict[ManagedConfigItem, ConfigItemState]
+  updates: dict[ManagedConfigItem, ConfigItemState]
   removes: Sequence[ManagedConfigItem]
   execute: Callable[[], None]
   description: str
@@ -198,12 +230,12 @@ class Action:
     description: str,
     execute: Callable[[], None],
     additional_info: list[str] | str | None = None,
-    installs: Sequence[ManagedConfigItem] | None = None,
-    updates: Sequence[ManagedConfigItem] | None = None,
+    installs: dict[ManagedConfigItem, ConfigItemState] | None = None,
+    updates: dict[ManagedConfigItem, ConfigItemState] | None = None,
     removes: Sequence[ManagedConfigItem] | None = None,
   ):
-    self.installs = installs or []
-    self.updates = updates or []
+    self.installs = installs or {}
+    self.updates = updates or {}
     self.removes = removes or []
     self.description = description
     self.execute = execute

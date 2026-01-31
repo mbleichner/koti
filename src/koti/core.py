@@ -78,7 +78,7 @@ class Koti:
   def plan(self, config_summary: bool = False, install_order_summary: bool = False, cleanup_order_summary: bool = False) -> ExecutionPlan:
     logger.clear()
 
-    dryrun: bool = True
+    system_state = DryRunSystemState(self.managers)
     model = self.create_model()
 
     actions: list[Action] = []
@@ -86,20 +86,22 @@ class Koti:
     sys.stdout.flush()
 
     for manager in self.managers:
-      manager.initialize(model, dryrun)
+      manager.initialize(model, dryrun = True)
     for install_step in model.steps:
       sys.stdout.write(".")
       sys.stdout.flush()
-      for action in install_step.manager.get_install_actions(install_step.items_to_install, model, dryrun):
+      for action in install_step.manager.get_install_actions(install_step.items_to_install, model, system_state):
         actions.append(action)
+        self.update_dry_run_state(action, system_state)
     cleanup_phase = self.create_cleanup_phase(model)
     for cleanup_step in cleanup_phase.steps:
       sys.stdout.write(".")
       sys.stdout.flush()
-      for action in cleanup_step.manager.get_cleanup_actions(cleanup_step.items_to_keep, model, dryrun):
+      for action in cleanup_step.manager.get_cleanup_actions(cleanup_step.items_to_keep, model, system_state):
         actions.append(action)
+        self.update_dry_run_state(action, system_state)
     for manager in self.managers:
-      manager.finalize(model, dryrun)
+      manager.finalize(model, dryrun = True)
 
     print()
     print()
@@ -151,26 +153,26 @@ class Koti:
   @handle_ctrl_c
   def execute(self, plan: ExecutionPlan):
     logger.clear()
-    dryrun: bool = False
+    system_state = ActualSystemState(self.managers)
     model = plan.model
 
     for manager in self.managers:
-      manager.initialize(model, dryrun)
+      manager.initialize(model, dryrun = False)
 
     # execute install phases
     for install_step in model.steps:
-      for action in install_step.manager.get_install_actions(install_step.items_to_install, model, dryrun):
+      for action in install_step.manager.get_install_actions(install_step.items_to_install, model, system_state):
         self.execute_action(action, plan)
 
     # execute cleanup phase
     cleanup_phase = self.create_cleanup_phase(model)
     for cleanup_step in cleanup_phase.steps:
-      for action in cleanup_step.manager.get_cleanup_actions(cleanup_step.items_to_keep, model, dryrun):
+      for action in cleanup_step.manager.get_cleanup_actions(cleanup_step.items_to_keep, model, system_state):
         self.execute_action(action, plan)
 
     # updating persistent data
     for manager in self.managers:
-      manager.finalize(model, dryrun)
+      manager.finalize(model, dryrun = False)
 
     self.print_divider_line()
     print("execution finished.")
@@ -205,6 +207,13 @@ class Koti:
       sleep(0.05)  # add a small delay so it's easier to follow when a lot of actions happen
     finally:
       shell_module.verbose_mode = False
+
+  @classmethod
+  def update_dry_run_state(cls, action: Action, system_state: DryRunSystemState):
+    for ref, state in {**action.installs, **action.updates}.items():
+      system_state.put_state(ref, state)
+    for ref in action.removes:
+      system_state.put_state(ref, None)
 
   @classmethod
   def is_expected_action(cls, action: Action, plan: ExecutionPlan) -> bool:

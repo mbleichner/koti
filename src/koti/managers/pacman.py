@@ -54,12 +54,9 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
   def assert_installable(self, item: Package, model: ConfigModel):
     pass
 
-  def get_state_current(self, item: Package) -> PackageState | None:
+  def get_state_current(self, item: Package, system_state: SystemState) -> PackageState | None:
     installed: bool = item.name in self.explicit_packages_on_system
     return PackageState() if installed else None
-
-  def get_state_target(self, item: Package, model: ConfigModel, dryrun: bool) -> PackageState:
-    return PackageState()
 
   def reorder_for_install(self, items: Sequence[Package]) -> list[Package]:
     return [
@@ -68,7 +65,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
       *[item for item in items if item.script is None and item.url is None],
     ]
 
-  def get_install_actions(self, items_to_check: Sequence[Package], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[Package], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     installed_packages = self.pacman_list_installed_packages()
     explicit_packages = self.pacman_list_explicit_packages()
 
@@ -79,7 +76,8 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
 
     count = 0
     for item in items_to_check:
-      current, target = self.get_states(item, model, dryrun)
+      current = system_state.get_state(item, PackageState)
+      target = PackageState()
       if current == target:
         continue
       count += 1
@@ -93,7 +91,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
       elif item.name not in explicit_packages:
         additional_explicit_items.append(item)
 
-    if count and dryrun:
+    if count:
       logger.info("When installing new packages, Arch always needs to do a full system update (partial updates are unsupported).")
 
     additional_explicit_items.sort(key = lambda x: x.name)
@@ -103,14 +101,14 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
 
     if additional_explicit_items:
       yield Action(
-        updates = additional_explicit_items,
+        updates = {item: PackageState() for item in additional_explicit_items},
         description = f"mark package(s) explicitly installed: {", ".join([item.name for item in additional_explicit_items])}",
         execute = lambda: self.mark_explicit(additional_explicit_items)
       )
 
     for item in additional_items_from_script:
       yield Action(
-        installs = additional_items_from_script,
+        installs = {item: PackageState() for item in additional_items_from_script},
         description = f"install package from script: {item.name}",
         execute = lambda: self.install_from_script(item)
       )
@@ -118,14 +116,14 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     if additional_items_from_urls:
       logger.info(f"Packages installed via URL might later get updated to a different version by pacman if also contained in a package repository.")
       yield Action(
-        installs = additional_items_from_urls,
+        installs = {item: PackageState() for item in additional_items_from_urls},
         description = f"install package(s) from URL(s): {", ".join([item.name for item in additional_items_from_urls if item.url])}",
         execute = lambda: self.install_from_url(additional_items_from_urls)
       )
 
     if additional_items_from_repo:
       yield Action(
-        installs = additional_items_from_repo,
+        installs = {item: PackageState() for item in additional_items_from_repo},
         description = f"install package(s): {" ".join([item.name for item in additional_items_from_repo])}",
         execute = lambda: self.install_from_repo(additional_items_from_repo)
       )
@@ -153,7 +151,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
     self.add_managed_packages(additional_explicit_items)
     self.update_explicit_package_list()
 
-  def get_cleanup_actions(self, items_to_keep: Sequence[Package], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[Package], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     installed_items = self.installed_packages()
     items_to_remove = [item for item in installed_items if item not in items_to_keep]
     if items_to_remove:

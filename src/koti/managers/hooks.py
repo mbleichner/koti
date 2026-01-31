@@ -4,7 +4,7 @@ from hashlib import sha256
 from typing import Generator, Sequence
 
 from koti import Action
-from koti.model import ConfigItem, ConfigItemState, ConfigManager, ConfigModel, ManagedConfigItem
+from koti.model import ConfigItem, ConfigItemState, ConfigManager, ConfigModel, ManagedConfigItem, SystemState
 from koti.items.hooks import PostHook
 from koti.utils.json_store import JsonMapping, JsonStore
 
@@ -51,30 +51,31 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
         result += 1
     return None
 
-  def get_state_current(self, hook: PostHook) -> PostHookState | None:
+  def get_state_current(self, hook: PostHook, system_state: SystemState) -> PostHookState | None:
     stored_value = self.trigger_hash_store.get(hook.name, None)
     if stored_value is None or not isinstance(stored_value, dict):
       return None
     trigger_hashes: dict[str, str] = stored_value
     return PostHookState(trigger_hashes)
 
-  def get_state_target(self, hook: PostHook, model: ConfigModel, dryrun: bool) -> PostHookState:
-    return self.get_state_after_cleanup(hook, model, dryrun)
+  def get_state_target(self, hook: PostHook, model: ConfigModel, system_state: SystemState, during_cleanup: bool) -> PostHookState:
+    trigger_hashes: dict[str, str]
+    if not during_cleanup:
+      # during installation phase, there might be leftover triggers that aren't registered to the PostHook anymore, but we have
+      # to assume they stimm exist on the system. Therefore we keep any leftover trigger checksums from earlier runs here.
+      trigger_hashes = {**self.trigger_hash_store.get(hook.name, {})}
+    else:
+      # during the cleanup phase, all leftover triggers should have been removed by other managers, so we can assume that
+      # there are no leftover states to consider here.
+      trigger_hashes = {}
 
-  def get_state_after_install(self, hook: PostHook, model: ConfigModel, dryrun: bool) -> PostHookState:
-    trigger_hashes: dict[str, str] = {**self.trigger_hash_store.get(hook.name, {})}
+    # iterate over all triggers and get their current state on the system
     for trigger_ref in self.get_trigger_items(hook, model):
-      trigger_state = self.state_for_trigger(trigger_ref, model, dryrun)
+      trigger_state = system_state.get_state_untyped(trigger_ref)
       if trigger_state is not None:
         trigger_hashes[str(trigger_ref)] = trigger_state.sha256()
-    return PostHookState(trigger_hashes)
-
-  def get_state_after_cleanup(self, hook: PostHook, model: ConfigModel, dryrun: bool) -> PostHookState:
-    trigger_hashes: dict[str, str] = {}
-    for trigger_ref in self.get_trigger_items(hook, model):
-      trigger_state = self.state_for_trigger(trigger_ref, model, dryrun)
-      if trigger_state is not None:
-        trigger_hashes[str(trigger_ref)] = trigger_state.sha256()
+      else:
+        del trigger_hashes[str(trigger_ref)]
     return PostHookState(trigger_hashes)
 
   @classmethod
@@ -87,45 +88,29 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
         result.append(t)
     return result
 
-  def state_for_trigger(self, reference: ManagedConfigItem, model: ConfigModel, dryrun: bool) -> ConfigItemState | None:
-    manager: ConfigManager = model.manager(reference)
-
-    # during dryrun, assume that the trigger item will already have been
-    # updated to its target state (if managed by koti)
-    if dryrun:
-      trigger_item = model.item(reference, optional = True)
-      if trigger_item is not None:
-        return manager.get_state_target(trigger_item, model, dryrun)
-
-    return manager.get_state_current(reference)
-
-  def get_install_actions(self, items_to_check: Sequence[PostHook], model: ConfigModel, dryrun: bool, cleanup=False) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[PostHook], model: ConfigModel, system_state: SystemState, during_cleanup: bool = False) -> Generator[Action]:
     for hook in items_to_check:
-      if not cleanup:
-        current = self.get_state_current(hook)
-        target = self.get_state_after_install(hook, model, dryrun)
-      else:
-        current = self.get_state_after_install(hook, model, dryrun)
-        target = self.get_state_after_cleanup(hook, model, dryrun)
+      current = system_state.get_state(hook, PostHookState)
+      target = self.get_state_target(hook, model, system_state, during_cleanup)
       if current == target:
         continue
       assert target is not None
       if current is None:
         yield Action(
-          installs = [hook],
+          installs = {hook: target},
           description = f"execute hook '{hook.name}' for the first time",
           execute = lambda: self.execute_hook(hook, target),
         )
       else:
         yield Action(
-          updates = [hook],
+          updates = {hook: target},
           description = f"execute hook '{hook.name}' because of updated dependencies",
           execute = lambda: self.execute_hook(hook, target),
         )
 
-  def get_cleanup_actions(self, items_to_keep: Sequence[PostHook], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[PostHook], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     installed_hooks = [item for step in model.steps for item in step.items_to_install if isinstance(item, PostHook)]
-    yield from self.get_install_actions(installed_hooks, model, dryrun, cleanup=True)
+    yield from self.get_install_actions(installed_hooks, model, system_state, during_cleanup = True)
     currently_tracked_hooks = [PostHook(name) for name in self.trigger_hash_store.keys()]
     for hook in currently_tracked_hooks:
       if hook in items_to_keep:

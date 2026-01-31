@@ -54,7 +54,7 @@ def kernel_lts(sortkey: int) -> ConfigDict:
 
 
 # noinspection PyPep8Naming
-def SystemdBootLoader(filename: str, description: str, kernel: str, sortkey: int, fallback: bool) -> Sequence[ConfigItem]:
+def SystemdBootLoader(filename: str, description: str, kernel: str, sortkey: int, fallback: bool) -> Sequence[ConfigItem | None]:
   return (
     File(filename, permissions = "rwxr-xr-x", content = cleandoc(f'''
       title    {description}

@@ -4,7 +4,7 @@ from hashlib import sha256
 from typing import Generator, Sequence
 
 from koti.utils.shell import shell, shell_output
-from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel
+from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel, SystemState
 from koti.items.user_shell import UserShell
 from koti.utils.json_store import JsonCollection, JsonStore
 from koti.managers.user import UserManager
@@ -22,7 +22,7 @@ class UserShellState(ConfigItemState):
 
 class UserShellManager(ConfigManager[UserShell, UserShellState]):
   managed_classes = [UserShell]
-  cleanup_order:float = UserManager.cleanup_order  # these should usually stick together
+  cleanup_order: float = UserManager.cleanup_order  # these should usually stick together
   managed_users_store: JsonCollection[str]
   cleanup_order_before = [UserManager]
 
@@ -34,28 +34,29 @@ class UserShellManager(ConfigManager[UserShell, UserShellState]):
   def assert_installable(self, item: UserShell, model: ConfigModel):
     assert item.shell is not None, f"{item}: no shell specified"
 
-  def get_state_target(self, item: UserShell, model: ConfigModel, dryrun: bool) -> UserShellState:
+  def get_state_target(self, item: UserShell) -> UserShellState:
     assert item.shell is not None
     return UserShellState(shell = item.shell)
 
-  def get_state_current(self, item: UserShell) -> UserShellState | None:
+  def get_state_current(self, item: UserShell, system_state: SystemState) -> UserShellState | None:
     user_shells: dict[str, str] = self.get_all_user_shells()
     if item.username not in user_shells.keys():
       return None  # user not in /etc/passwd
     return UserShellState(shell = user_shells[item.username])
 
-  def get_install_actions(self, items_to_check: Sequence[UserShell], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[UserShell], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     for item in items_to_check:
-      current, target = self.get_states(item, model, dryrun)
+      current = system_state.get_state(item, UserShellState)
+      target = self.get_state_target(item)
       if current == target:
         continue
       yield Action(
-        updates = [item],
+        updates = {item: target},
         description = f"update shell for user {item.username} to {target.shell}",
         execute = lambda: self.update_user_shell(item, target.shell),
       )
 
-  def get_cleanup_actions(self, items_to_keep: Sequence[UserShell], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[UserShell], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     for item in self.get_managed_items(model):
       if item in items_to_keep:
         continue

@@ -2,8 +2,7 @@ import os.path
 from hashlib import sha256
 from typing import Generator, Sequence
 
-from koti import Action
-from koti.model import ConfigItemState, ConfigManager, ConfigModel
+from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel, SystemState
 from koti.items.swapfile import Swapfile
 from koti.utils.json_store import JsonCollection, JsonStore
 from koti.utils.shell import shell, shell_success
@@ -58,18 +57,19 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
   def is_mounted(self, swapfile: str) -> bool:
     return shell_success(f"swapon --show | grep {swapfile}")
 
-  def get_state_current(self, item: Swapfile) -> SwapfileState | None:
+  def get_state_current(self, item: Swapfile, system_state: SystemState) -> SwapfileState | None:
     if not os.path.isfile(item.filename):
       return None
     return SwapfileState(size_bytes = os.stat(item.filename).st_size)
 
-  def get_state_target(self, item: Swapfile, model: ConfigModel, dryrun: bool) -> SwapfileState:
+  def get_state_target(self, item: Swapfile) -> SwapfileState:
     assert item.size_bytes is not None
     return SwapfileState(size_bytes = item.size_bytes)
 
-  def get_install_actions(self, items_to_check: Sequence[Swapfile], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[Swapfile], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     for item in items_to_check:
-      current, target = self.get_states(item, model, dryrun)
+      current = system_state.get_state(item, SwapfileState)
+      target = self.get_state_target(item)
       if current == target:
         continue
 
@@ -78,19 +78,19 @@ class SwapfileManager(ConfigManager[Swapfile, SwapfileState]):
 
       if current is None:
         yield Action(
-          installs = [item],
+          installs = {item: target},
           description = f"create swapfile {item.filename} with size = {target.size_bytes}",
           execute = lambda: self.create_swapfile(item),
         )
 
       if current is not None and current.size_bytes != target.size_bytes:
         yield Action(
-          updates = [item],
+          updates = {item: target},
           description = f"resize swapfile {item.filename} from {current.size_bytes} to {target.size_bytes}",
           execute = lambda: self.recreate_swapfile(item),
         )
 
-  def get_cleanup_actions(self, items_to_keep: Sequence[Swapfile], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[Swapfile], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     currently_managed_swapfiles = [Swapfile(filename) for filename in self.managed_files_store.elements()]
     for item in currently_managed_swapfiles:
       if item in items_to_keep:

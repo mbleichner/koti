@@ -1,7 +1,6 @@
 from typing import Generator, Sequence
 
-from koti import Action
-from koti.model import ConfigItemState, ConfigManager, ConfigModel
+from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel, SystemState
 from koti.items.systemd import SystemdUnit
 from koti.managers.pacman import shell
 from koti.utils.shell import shell_success
@@ -42,20 +41,21 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
       result += [SystemdUnit(name, username) for name in units_store.elements()]
     return result
 
-  def get_state_current(self, item: SystemdUnit) -> SystemdUnitState | None:
+  def get_state_current(self, item: SystemdUnit, system_state: SystemState) -> SystemdUnitState | None:
     enabled: bool = shell_success(f"{self.systemctl_for_user(item.user)} is-enabled {item.name}")
     return SystemdUnitState() if enabled else None
 
   def get_state_target(self, item: SystemdUnit, model: ConfigModel, dryrun: bool) -> SystemdUnitState:
     return SystemdUnitState()
 
-  def get_install_actions(self, items_to_check: Sequence[SystemdUnit], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[SystemdUnit], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     users = {item.user for item in items_to_check}
     for username in users:
       items_to_activate_for_user: list[SystemdUnit] = []
       for item in items_to_check:
         if item.user == username:
-          current, target = self.get_states(item, model, dryrun)
+          current = system_state.get_state(item, SystemdUnitState)
+          target = SystemdUnitState()
           if current != target:
             items_to_activate_for_user.append(item)
       if not items_to_activate_for_user:
@@ -63,12 +63,12 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
 
       if items_to_activate_for_user:
         yield Action(
-          installs = items_to_activate_for_user,
+          installs = {item: SystemdUnitState() for item in items_to_activate_for_user},
           description = f"enable systemd unit(s) {", ".join([item.name for item in items_to_activate_for_user])}",
           execute = lambda: self.activate_units(username, items_to_activate_for_user),
         )
 
-  def get_cleanup_actions(self, items_to_keep: Sequence[SystemdUnit], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[SystemdUnit], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     installed_units = self.installed_units()
     users = {item.user for item in installed_units}
     for username in users:

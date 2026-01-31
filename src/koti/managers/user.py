@@ -5,7 +5,7 @@ from typing import Generator, Sequence
 
 from koti import Action
 from koti.utils.shell import shell, shell_output
-from koti.model import ConfigItemState, ConfigManager, ConfigModel
+from koti.model import ConfigItemState, ConfigManager, ConfigModel, SystemState
 from koti.items.user import User
 from koti.utils.json_store import JsonCollection, JsonStore
 
@@ -36,7 +36,7 @@ class UserManager(ConfigManager[User, UserState]):
   def get_state_target(self, item: User, model: ConfigModel, dryrun: bool) -> UserState:
     return UserState(has_password = item.password or True)
 
-  def get_state_current(self, item: User) -> UserState | None:
+  def get_state_current(self, item: User, system_state: SystemState) -> UserState | None:
     user_shells: dict[str, str] = dict([line.split(":") for line in shell_output("getent passwd | cut -d: -f1,7").splitlines()])
     if item.username not in user_shells.keys():
       return None  # user not in /etc/passwd
@@ -48,33 +48,34 @@ class UserManager(ConfigManager[User, UserState]):
     pw_status = shell_output(f"passwd --status {item.username}").split(" ")[1]
     return UserState(has_password = pw_status == "P")
 
-  def get_install_actions(self, items_to_check: Sequence[User], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_install_actions(self, items_to_check: Sequence[User], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     for user in items_to_check:
-      current, target = self.get_states(user, model, dryrun)
+      current = system_state.get_state(user, UserState)
+      target = UserState(has_password = user.password or True)
       if current == target:
         continue
       assert target is not None
 
       if current is None:
         yield Action(
-          installs = [user],
+          installs = {user: target},
           description = f"create new user {user.username}",
           execute = lambda: self.create_user(user.username, target.has_password),
         )
       elif not current.has_password and target.has_password:
         yield Action(
-          installs = [user],
+          installs = {user: target},
           description = f"set new password for {user.username}",
           execute = lambda: self.update_password(user.username),
         )
       elif current.has_password and not target.has_password:
         yield Action(
-          installs = [user],
+          installs = {user: target},
           description = f"remove password for {user.username}",
           execute = lambda: self.remove_password(user.username),
         )
 
-  def get_cleanup_actions(self, items_to_keep: Sequence[User], model: ConfigModel, dryrun: bool) -> Generator[Action]:
+  def get_cleanup_actions(self, items_to_keep: Sequence[User], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     managed_users = [User(username) for username in self.managed_users_store.elements()]
     for user in managed_users:
       if user in items_to_keep:
