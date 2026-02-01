@@ -287,7 +287,7 @@ def base() -> ConfigDict:
       PostHook("regenerate-locales", execute = lambda: shell("locale-gen"), trigger = File("/etc/locale.gen")),
     ),
 
-    Section("reflector"): (
+    Section("reflector", enabled = False): (
       Package("reflector"),
       *PostHookScope(
         File("/etc/xdg/reflector/reflector.conf", content = cleandoc('''
@@ -304,7 +304,7 @@ def base() -> ConfigDict:
       )
     ),
 
-    Section("ghostmirror"): (
+    Section("ghostmirror", enabled = False): (
       Package("ghostmirror"),
       File("/usr/local/bin/ghostmirror-refresh", permissions = "r-x", content=cleandoc('''
         #!/bin/sh
@@ -336,7 +336,7 @@ def base() -> ConfigDict:
       ),
     ),
 
-    Section("ssh daemon + config"): (
+    Section("ssh daemon"): (
       Package("openssh"),
       File("/etc/ssh/sshd_config", owner = "root", content = cleandoc('''
         Include /etc/ssh/sshd_config.d/*.conf

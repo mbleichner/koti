@@ -79,11 +79,7 @@ def fish() -> ConfigDict:
         end
       ''')),
 
-      File(
-        filename = "/home/manuel/.config/fastfetch/fastfetch-logo.png",
-        owner = "manuel",
-        source = "files/fastfetch-logo.png"
-      ),
+      File("/home/manuel/.config/fastfetch/fastfetch-logo.png", owner = "manuel", source = "files/fastfetch-logo.png"),
 
       File("/home/manuel/.config/fastfetch/config.jsonc", owner = "manuel", content = cleandoc(r'''
         {

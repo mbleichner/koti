@@ -7,34 +7,20 @@ from koti.utils.shell import shell
 
 def gaming() -> ConfigDict:
   return {
-    Section("game utilities"): (
+    Section("game launchers and utilities"): (
+      Package("ryujinx"),
+      Package("steam"),
+      Package("heroic-games-launcher-bin"),
+      Package("lutris"),
       Package("discord"),
       Package("gamescope"),
       Package("gpu-screen-recorder-ui"),
       Package("r2modman-bin"),
       Package("mangohud"),
       UserGroupAssignment("manuel", "games"),
-
-      # https://wiki.cachyos.org/configuration/general_system_tweaks
-      File("/etc/sysctl.d/99-splitlock.conf", content = cleandoc('''
-      kernel.split_lock_mitigate=0
-    ''')),
-
-      PostHook(
-        "apply-splitlock-sysctl",
-        execute = lambda: shell("sysctl --system"),
-        trigger = File("/etc/sysctl.d/99-splitlock.conf")
-      ),
     ),
 
-    Section("game launchers"): (
-      Package("ryujinx"),
-      Package("steam"),
-      Package("heroic-games-launcher-bin"),
-      Package("lutris"),
-    ),
-
-    Section("proton/wine + configs"): (
+    Section("proton"): (
       Package("proton-ge-custom-bin"),
       Package("protontricks"),
       Package("protonplus"),
@@ -63,6 +49,19 @@ def gaming() -> ConfigDict:
       ''')),
 
       Option("/etc/pacman.conf/NoUpgrade", "usr/bin/steam"),
+    ),
+
+    Section("disable splitlock mitigations"): (
+      # https://wiki.cachyos.org/configuration/general_system_tweaks
+      File("/etc/sysctl.d/99-splitlock.conf", content = cleandoc('''
+        kernel.split_lock_mitigate=0
+      ''')),
+
+      PostHook(
+        "apply-splitlock-sysctl",
+        execute = lambda: shell("sysctl --system"),
+        trigger = File("/etc/sysctl.d/99-splitlock.conf")
+      ),
     ),
 
     Section("lossless scaling + frame generation", disabled = True): (
