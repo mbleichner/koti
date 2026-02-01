@@ -28,9 +28,6 @@ koti = Koti(
       keep_unmanaged_packages = False,  # .............. remove any packages that aren't mentioned in the koti config (this is the default)
       perform_update = True,  # ........................ always perform a full system update
     ),
-    FlatpakPackageManager(
-      perform_update = True,  # ........................ also perform a full flatpak update
-    ),
   ),
 )
 
