@@ -59,7 +59,7 @@ def mserver() -> ConfigDict:
     Section("docker"): (
       User("manuel"),
       SystemdUnit("docker.service"),
-      File("/usr/local/bin/docker-update", permissions = "rwxr-xr-x", content = cleandoc('''
+      File("/usr/local/bin/update-docker", permissions = "rwxr-xr-x", content = cleandoc('''
         #!/bin/bash -e
         for DIR in homeassistant nextcloud pihole pyanodon-mapshot pacoloco traefik; do
           cd /opt/$DIR && docker compose pull && docker compose up -d
