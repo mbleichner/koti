@@ -20,7 +20,8 @@ def ArchPreset(
     SwapfileManager(),
     CheckpointManager(),
     FileManager(),
-    FlatpakManager(),
+    FlatpakRepoManager(),
+    FlatpakPackageManager(),
     SystemdUnitManager(),
     PostHookManager(),
   ]
