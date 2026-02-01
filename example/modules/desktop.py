@@ -6,54 +6,51 @@ from koti.utils.shell import shell
 
 def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
   return {
-    Section("desktop packages"): (
+    Section("plasma"): (
+      Package("plasma-meta"),
       Package("archlinux-wallpaper"),
-      Package("ark"),
-      Package("code"),
+      Directory("/opt/gamma-icc-profiles", source = "files/gamma-icc-profiles.zip", mask = "r--"),
+      Option("/etc/pacman.conf/NoExtract", "etc/xdg/autostart/org.kde.discover.notifier.desktop"),  # prevent startup of discover (KDE package manager)
+    ),
+
+    Section("applications"): (
+      Package("code"),  # vscode
       Package("coolercontrol"),
       Package("dolphin"),
       Package("firefox"),
       Package("gimp"),
-      Package("vlc"),
-      Package("vlc-plugins-all"),
+      Package("chromium"),
+      Package("google-chrome"),
+      Package("obsidian"),
+      Package("okular"),
+      Package("spectacle"),
       Package("gwenview"),
       Package("kate"),
       Package("kcalc"),
-      Package("kdiff3"),
       Package("kleopatra"),
       Package("kolourpaint"),
-      Package("konsole"),
       Package("ksnip"),
       Package("libreoffice-fresh"),
       Package("nextcloud-client"),
-      Package("obsidian"),
-      Package("okular"),
       Package("pavucontrol"),
-      Package("plasma-meta"),
-      Package("samba"),
-      Package("spectacle"),
+      Package("konsole"),
+      Package("ark"),
       Package("wine"),
-      Package("chromium"),
-      Package("google-chrome"),
+      SystemdUnit("coolercontrold.service"),
+    ),
+
+    Section("fonts"): (
       Package("ttf-ms-win10-auto") if ms_fonts else None,  # Das win11 Package war zuletzt broken
       Package("noto-fonts"),
       Package("noto-fonts-emoji"),
+    ),
+
+    Section("video players, codecs, hardware decoding"): (
+      Package("vlc"),
+      Package("vlc-plugins-all"),
       Package("libva-utils"),
       Package("vdpauinfo") if nvidia else None,
       Package("libva-nvidia-driver") if nvidia else None,
-
-      # pacman will ask for these during installation:
-      # - qt6-multimedia-ffmpeg  (qt6-multimedia-backend)
-      # - phonon-qt6-vlc         (phonon-qt6-backend)
-      # - pipewire-jack          (jack)
-
-      Directory("/opt/gamma-icc-profiles", source = "files/gamma-icc-profiles.zip", mask = "r--"),
-
-      SystemdUnit("coolercontrold.service"),
-      SystemdUnit("bluetooth.service"),
-
-      # prevent startup of discover (KDE package manager)
-      Option("/etc/pacman.conf/NoExtract", "etc/xdg/autostart/org.kde.discover.notifier.desktop"),
     ),
 
     Section("flatpak and flathub"): (
@@ -73,6 +70,10 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
         command = "{tuigreet_session(autologin)["command"]}"
       ''')),
       SystemdUnit("greetd.service"),
+    ),
+
+    Section("bluetooth"): (
+      SystemdUnit("bluetooth.service"),
     ),
 
     Section("wireplumber priorities"): (

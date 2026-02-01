@@ -13,5 +13,6 @@ def development() -> ConfigDict:
       Package("tk"),
       Package("python-uv"),
       Package("pyenv"),
+      Package("kdiff3"),
     ),
   }

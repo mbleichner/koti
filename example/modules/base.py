@@ -186,6 +186,7 @@ def base() -> ConfigDict:
       Package("ntfs-3g"),
       Package("dosfstools"),
       Package("cryptsetup"),
+      Package("samba"),
 
       # Alternatives
       Package("zlib-ng"),
