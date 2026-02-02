@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TypedDict, Unpack, reveal_type
+from typing import TypedDict, Unpack
 
 from koti.model import ConfigManager
 from koti.managers import *
@@ -23,11 +23,8 @@ class ArchPresetArgs(TypedDict, total = False):
 
 
 # noinspection PyPep8Naming
-def ArchPreset(
-  *overrides: ConfigManager,
-  **kwargs: Unpack[ArchPresetArgs],
-) -> list[ConfigManager]:
-  print(reveal_type(list(kwargs)))
+def ArchPreset(*overrides: ConfigManager, **kwargs: Unpack[ArchPresetArgs]) -> list[ConfigManager]:
+  """Utility method to quickly configure a default set of config managers for Arch Linux."""
 
   def effective(manager: ConfigManager) -> ConfigManager | None:
     if manager.__class__.__name__ in kwargs:
