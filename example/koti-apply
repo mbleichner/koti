@@ -21,17 +21,18 @@ my_arch_systems = {
 }
 
 koti = Koti(
-  configs = my_arch_systems[gethostname()],  # ......... choose system config based on the current hostname
-  managers = ArchPreset(  # ............................ use preconfigured default managers for Arch Linux
+  configs = my_arch_systems[gethostname()],  # ....... choose system config based on the current hostname
+  managers = ArchPreset(  # .......................... use preconfigured default managers for Arch Linux
     PacmanPackageManager(
-      aur_helper = AurHelper("paru", "manuel"),  # ..... but use paru instead of pacman to install packages
-      keep_unmanaged_packages = False,  # .............. remove any packages that aren't mentioned in the koti config (this is the default)
-      perform_update = True,  # ........................ always perform a full system update
+      aur_helper = AurHelper("paru", "manuel"),  # ... but use paru instead of pacman to install packages
+      keep_unmanaged_packages = False,  # ............ remove any packages that aren't mentioned in the koti config (this is the default)
+      perform_update = True,  # ...................... always perform a full system update
     ),
+    FlatpakPackageManager = None,  # ................. completely disable management of flatpak packages
   ),
 )
 
 koti.run(
-  config_summary = True,  # .......... print a summary of all (enabled) config sections during planning phase
-  install_order_summary = False, # ... (don't) print a summary of all config items in their install order (useful for debugging)
+  config_summary = True,  # ........... print a summary of all (enabled) config sections during planning phase
+  install_order_summary = False,  # ... (don't) print a summary of all config items in their install order (useful for debugging)
 )
