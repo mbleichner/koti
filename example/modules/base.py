@@ -6,12 +6,6 @@ from koti.utils.shell import shell
 
 def base() -> ConfigDict:
   return {
-
-    Section("pyscipopt incompatibility workaround"): (
-      # until pyscipopt compatibility with scip 10.0.1 is fixed, ignore the update
-      Option("/etc/pacman.conf/IgnorePkg", "scip")
-    ),
-
     Section("bootstrap sudo, pacman and paru"): (
 
       # setup sudo and sudo user
