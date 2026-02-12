@@ -8,7 +8,8 @@ from koti.utils.shell import shell
 def gaming() -> ConfigDict:
   return {
     Section("game launchers and utilities"): (
-      Package("ryujinx"),
+      #Package("ryujinx"),
+      Package("eden-bin"),
       Package("steam"),
       Package("heroic-games-launcher-bin"),
       Package("lutris"),
