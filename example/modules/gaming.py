@@ -39,6 +39,12 @@ def gaming() -> ConfigDict:
         PROTON_ENABLE_WAYLAND=1
       ''')),
 
+      File("/etc/environment.d/proton-dlss.conf", content = cleandoc(f'''
+        PROTON_DLSS_UPGRADE=1
+        PROTON_DLSS_INDICATOR=1
+        #DXVK_NVAPI_DRS_NGX_DLSS_SR_OVERRIDE_RENDER_PRESET_SELECTION=render_preset_k
+      ''')),
+
       File("/usr/bin/steam", permissions = "rwxr-xr-x", content = cleandoc(f'''
         #!/bin/sh
         
