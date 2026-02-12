@@ -86,6 +86,7 @@ def dan() -> ConfigDict:
 
     Section("dan specific gaming stuff"): (
       Package("beyondallreason-appimage"),
+      Package("headsetcontrol-git"),
       Package("teamspeak"),
     ),
 
