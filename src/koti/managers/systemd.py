@@ -1,5 +1,6 @@
 from typing import Generator, Sequence
 
+from koti.managers.file import FileManager
 from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel, SystemState
 from koti.items.systemd import SystemdUnit
 from koti.managers.pacman import shell
@@ -15,6 +16,7 @@ class SystemdUnitState(ConfigItemState):
 class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
   managed_classes = [SystemdUnit]
   cleanup_order = 30
+  cleanup_order_before = [FileManager]  # already removed systemd files cause cleanup to fail
   store: JsonStore
 
   def __init__(self):

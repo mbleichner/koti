@@ -2,7 +2,7 @@ from inspect import cleandoc
 
 from koti import *
 from modules.base import base
-from modules.cpufreq import cpufreq, throttle_after_boot
+from modules.cpufreq import cpufreq, throttle_after_boot, auto_cpufreq
 from modules.desktop import desktop
 from modules.development import development
 from modules.fish import fish
@@ -20,7 +20,7 @@ def dan() -> ConfigDict:
   return {
     **base(),
     **cpufreq(min_freq = 2000, max_freq = 4500, governor = "performance"),
-    **throttle_after_boot(2000),
+    **auto_cpufreq(2000),
     **kernel_cachyos(sortkey = 1),
     **kernel_stock(sortkey = 2),
     **fish(),

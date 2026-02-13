@@ -1,6 +1,7 @@
 from inspect import cleandoc
 
 from koti import *
+from koti.utils.shell import shell
 
 
 def cpufreq(min_freq: int, max_freq: int, governor: str) -> ConfigDict:
@@ -32,5 +33,32 @@ def throttle_after_boot(freq: int) -> ConfigDict:
         WantedBy=graphical.target
       ''')),
       SystemdUnit("cpu-freq-after-boot.service"),
+    )
+  }
+
+
+def auto_cpufreq(base_freq: int) -> ConfigDict:
+  return {
+    Section(f"automatic cpu frequency switching"): (
+      File(f"/opt/systray/cpu/actions/max-freq-{base_freq}mhz", permissions = "rwxr-xr-x"),  # dependency
+      *PostHookScope(
+        File("/opt/auto-cpu-freq/auto-cpu-freq.py", source = "files/auto-cpu-freq.py", permissions = "r-x"),
+        File("/etc/systemd/system/auto-cpu-freq.service", content = cleandoc(f'''
+          [Unit]
+          Description=Auto adjust CPU frequency
+    
+          [Service]
+          Type=simple
+          ExecStart=/bin/sh -c "sleep 8 && /opt/auto-cpu-freq/auto-cpu-freq.py {base_freq}"
+    
+          [Install]
+          WantedBy=graphical.target
+        ''')),
+        SystemdUnit("auto-cpu-freq.service"),
+        PostHook(
+          name = "restart auto-cpu-freq.service on script updates",
+          execute = lambda: shell("systemctl restart auto-cpu-freq.service"),
+        ),
+      )
     )
   }
