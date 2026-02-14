@@ -2,7 +2,7 @@ services:
   homeassistant:
     restart: always
     container_name: homeassistant
-    image: "ghcr.io/home-assistant/home-assistant:stable"
+    image: homeassistant/home-assistant:stable
     volumes:
     - ./config:/config
     - /etc/localtime:/etc/localtime:ro
