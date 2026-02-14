@@ -4,7 +4,7 @@ purge_files_after: 2592000  # seconds
 download_timeout: 600       # seconds
 user_agent: Pacoloco/1.2
 prefetch:
-  cron: 0 30 * * * * *
+  cron: 0 30 2-19 * * * *
   ttl_unaccessed_in_days: 30
   ttl_unupdated_in_days: 120
 repos:
