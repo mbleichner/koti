@@ -1,0 +1,7 @@
+#!/usr/bin/python3
+
+from pynvml import *
+nvmlInit()
+myGPU = nvmlDeviceGetHandleByIndex(0)
+print("GPU: %iW" % (nvmlDeviceGetPowerManagementLimit(myGPU) / 1000))
+print("+%i/+%i" % (nvmlDeviceGetGpcClkVfOffset(myGPU), nvmlDeviceGetMemClkVfOffset(myGPU)))

@@ -10,14 +10,7 @@ def nvidia_systray() -> ConfigDict:
       Package("kdialog"),
       Package("python-nvidia-ml-py"),
       Option[str]("/etc/sudoers/ExtraLines", value = "manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/nvidia-smi *"),
-      File("/opt/systray/gpu/summary", permissions = "rwxr-xr-x", content = cleandoc(r'''
-        #!/usr/bin/python3
-        from pynvml import *
-        nvmlInit()
-        myGPU = nvmlDeviceGetHandleByIndex(0)
-        print("GPU: %iW" % (nvmlDeviceGetPowerManagementLimit(myGPU) / 1000))
-        print("+%i/+%i" % (nvmlDeviceGetGpcClkVfOffset(myGPU), nvmlDeviceGetMemClkVfOffset(myGPU)))
-      ''')),
+      File("/opt/systray/gpu/summary", permissions = "rwxr-xr-x", source = "files/gpu-summary"),
       systray_dialog("/opt/systray/gpu/dialog", "/opt/systray/gpu/actions"),
       systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-160w", 160),
       systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-180w", 180),

@@ -1,0 +1,25 @@
+#!/bin/bash
+
+MODE=$(yq -r .mode /etc/cpufreq/settings.yaml)
+TARGET=$(yq -r .freq /etc/cpufreq/settings.yaml)
+if [[ "$MODE" == "auto" ]]; then
+  MODE_DESC="auto:${TARGET}MHz"
+elif [[ "$MODE" == "manual" ]]; then
+  MODE_DESC="manual"
+fi
+
+CURRENT=$(( $(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq) / 1000 ))
+SMT="$(cat /sys/devices/system/cpu/smt/control)"
+if [[ "$SMT" == "0" || "$SMT" == "off" ]]; then
+  HYPERTHREADING="ht:off"
+fi
+
+GOVERNOR="$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_governor)"
+if [[ "$GOVERNOR" == "performance" ]]; then
+  GOVERNOR="perf"
+elif [[ "$GOVERNOR" == "powersave" ]]; then
+  GOVERNOR="eco"
+fi
+
+echo "CPU: ${CURRENT}MHz"
+echo "${MODE_DESC} ${GOVERNOR} ${HYPERTHREADING}"

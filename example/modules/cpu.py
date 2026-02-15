@@ -78,19 +78,7 @@ def cpufreq_systray(freq_options: list[int] = (1000, 1500, 2000, 2500, 3000, 350
         "manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/systemctl restart cpufreq-adjuster.service",
       ]),
 
-      File("/opt/systray/cpu/summary", permissions = "rwxr-xr-x", content = cleandoc(r'''
-        #!/bin/bash
-        MODE=$(yq -r .mode /etc/cpufreq/settings.yaml)
-        TARGET=$(yq -r .freq /etc/cpufreq/settings.yaml)
-        CURRENT=$(( $(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq) / 1000 ))
-        SMT="$(cat /sys/devices/system/cpu/smt/control)"
-        if [[ "$SMT" == "0" || "$SMT" == "off" ]]; then
-          HYPERTHREADING="ht:off"
-        fi
-        GOVERNOR="$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_governor)"
-        echo "CPU: ${CURRENT}MHz gov:${GOVERNOR}"
-        echo "mode:${MODE} target:${TARGET}MHz ${HYPERTHREADING}"
-      ''')),
+      File("/opt/systray/cpu/summary", permissions = "rwxr-xr-x", source = "files/cpu-summary"),
       systray_dialog("/opt/systray/cpu/dialog", "/opt/systray/cpu/actions"),
 
       File("/etc/systemd/system/cpufreq-adjuster.service"),  # dependency for the following items
