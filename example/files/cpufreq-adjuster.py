@@ -16,7 +16,7 @@ assert mode in ["manual", "auto"]
 
 if mode == "auto":
 
-  with open("/etc/cpufreq/processes.yaml") as stream:
+  with open("/etc/cpufreq/rules.yaml") as stream:
     freq_by_process = yaml.safe_load(stream)
     print(freq_by_process)
 

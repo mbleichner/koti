@@ -19,12 +19,12 @@ def gaming() -> ConfigDict:
       Package("mangohud"),
       UserGroupAssignment("manuel", "games"),
 
-      Option[tuple[str, int]]("/etc/cpufreq/processes.yaml/ExtraEntries", value = [
+      Option[tuple[str, int]]("/etc/cpufreq/rules.yaml/ExtraEntries", value = [
         ("SteamLinuxRuntime", 4000),
         ("beyond-all-reason", 4000),
+        ("/usr/bin/eden", 4000),
         ("wineserver", 4000),
         ("fossilize", 3000),
-        ("/usr/bin/eden", 3000),
       ]),
     ),
 

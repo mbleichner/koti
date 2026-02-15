@@ -21,14 +21,14 @@ def cpufreq_auto_adjust(base_freq: int) -> ConfigDict:
     Section(f"automatic cpu frequency switching"): (
       Package("python-yaml"),
       Package("ryzen_smu-dkms-git"),
-      Option[tuple[str, int]]("/etc/cpufreq/processes.yaml/ExtraEntries"),
+      Option[tuple[str, int]]("/etc/cpufreq/rules.yaml/ExtraEntries"),
 
       File("/etc/cpufreq/settings.yaml", permissions = "rw-r--r--", content = cleandoc(f'''
         mode: auto
         freq: {base_freq}
       ''')),
 
-      File("/etc/cpufreq/processes.yaml", permissions = "r--r--r--", content = lambda model: cleandoc(f'''
+      File("/etc/cpufreq/rules.yaml", permissions = "r--r--r--", content = lambda model: cleandoc(f'''
         "koti": 3500
         "pacman": 3500
         "makepkg": 3500
@@ -60,7 +60,7 @@ def cpufreq_auto_adjust(base_freq: int) -> ConfigDict:
 
 
 def format_processes_extra_entries(model: ConfigModel) -> str:
-  entries = model.item(Option[tuple[str, int]]("/etc/cpufreq/processes.yaml/ExtraEntries")).distinct()
+  entries = model.item(Option[tuple[str, int]]("/etc/cpufreq/rules.yaml/ExtraEntries")).distinct()
   return "\n".join(f'"{name}": {freq}' for name, freq in entries)
 
 
@@ -68,6 +68,7 @@ def cpufreq_systray(freq_options: list[int] = (1000, 1500, 2000, 2500, 3000, 350
   return {
     Section("systray: CPU items"): (
       Package("yq"),  # needed to adjust target freq in /etc/cpufreq/settings.yaml
+      Package("moreutils"),  # sponge
       Package("kdialog"),
       Package("ryzen_smu-dkms-git"),
 
@@ -111,7 +112,7 @@ def systray_dialog(filename: str, actiondir: str) -> File:
 def systray_cpufreq_mode(filename: str, mode: Literal["manual", "auto"]) -> File:
   return File(filename, permissions = "rwxr-xr-x", content = cleandoc(f'''
     #!/bin/bash
-    sudo yq -y -i '.mode = "{mode}"' /etc/cpufreq/settings.yaml
+    yq -y '.mode = "{mode}"' /etc/cpufreq/settings.yaml | sudo sponge /etc/cpufreq/settings.yaml
     sudo systemctl restart cpufreq-adjuster.service
   '''))
 
@@ -119,7 +120,7 @@ def systray_cpufreq_mode(filename: str, mode: Literal["manual", "auto"]) -> File
 def systray_cpufreq_target(filename: str, freq: int) -> File:
   return File(filename, permissions = "rwxr-xr-x", content = cleandoc(f'''
     #!/bin/bash
-    sudo yq -y -i '.freq = "{freq}"' /etc/cpufreq/settings.yaml
+    yq -y '.freq = {freq}' /etc/cpufreq/settings.yaml | sudo sponge /etc/cpufreq/settings.yaml
     sudo systemctl restart cpufreq-adjuster.service
   '''))
 
