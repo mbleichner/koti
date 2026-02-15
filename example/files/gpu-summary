@@ -1,6 +1,10 @@
 #!/usr/bin/python3
+import os
 
 from pynvml import *
+
+os.nice(19)
+
 nvmlInit()
 myGPU = nvmlDeviceGetHandleByIndex(0)
 print("GPU: %iW" % (nvmlDeviceGetPowerManagementLimit(myGPU) / 1000))

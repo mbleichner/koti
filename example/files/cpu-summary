@@ -1,7 +1,9 @@
 #!/bin/bash
 
-MODE=$(yq -r .mode /etc/cpufreq/settings.yaml)
-TARGET=$(yq -r .freq /etc/cpufreq/settings.yaml)
+renice +19
+
+MODE=$(yq -r .mode /etc/cpufreq/state.yaml)
+TARGET=$(yq -r .freq /etc/cpufreq/state.yaml)
 if [[ "$MODE" == "auto" ]]; then
   MODE_DESC="auto:${TARGET}MHz"
 elif [[ "$MODE" == "manual" ]]; then

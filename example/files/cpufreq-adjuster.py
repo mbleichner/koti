@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import os
+import sys
 import time
 import subprocess
 
@@ -7,13 +8,26 @@ import yaml
 
 os.nice(19)
 
-with open("/etc/cpufreq/settings.yaml") as stream:
-  settings = yaml.safe_load(stream)
-  print(settings)
+# load state
+try:
+  with open("/etc/cpufreq/state.yaml", "r") as stream:
+    saved_state = yaml.safe_load(stream) or {}
+except FileNotFoundError:
+  saved_state = {}
 
-mode = settings["mode"]
+# merge with defaults
+default_state = {"mode": sys.argv[1], "freq": int(sys.argv[2])}
+state = {**default_state, **saved_state}
+
+# update yaml file if effective state differs
+if saved_state != state:
+  with open("/etc/cpufreq/state.yaml", "w") as stream:
+    yaml.dump(state, stream)
+
+print(state)
+
+mode = state["mode"]
 assert mode in ["manual", "auto"]
-
 if mode == "auto":
 
   with open("/etc/cpufreq/rules.yaml") as stream:
@@ -21,17 +35,15 @@ if mode == "auto":
     print(freq_by_process)
 
   while True:
-    new_freq = int(settings["freq"])
-
     running_processes = subprocess.check_output(["/usr/bin/ps", "-eo", "args"], shell = False).decode("utf-8")
+    new_freq = int(state["freq"])
     for proc, speed in freq_by_process.items():
       if speed > new_freq and proc in running_processes:
         new_freq = speed
     subprocess.check_output(["/usr/bin/cpupower", "frequency-set", "-u", f"{new_freq}MHz"])
-
     time.sleep(5)
 
 if mode == "manual":
-  new_freq = int(settings["freq"])
+  new_freq = int(state["freq"])
   print(f"setting cpu max freq to {new_freq}")
   subprocess.check_output(["/usr/bin/cpupower", "frequency-set", "-u", f"{new_freq}MHz"])
