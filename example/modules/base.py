@@ -14,7 +14,8 @@ def base() -> ConfigDict:
       User("manuel"),
       UserHome("manuel", homedir = "/home/manuel"),
       UserGroupAssignment("manuel", "wheel"),
-      File("/etc/sudoers", permissions = 0o440, content = cleandoc('''
+      Option[str]("/etc/sudoers/ExtraLines"),
+      File("/etc/sudoers", permissions = 0o440, content = lambda model: cleandoc(f'''
         Defaults!/usr/bin/visudo env_keep += "SUDO_EDITOR EDITOR VISUAL"
         Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"
         Defaults passwd_tries=3, passwd_timeout=180
@@ -31,12 +32,7 @@ def base() -> ConfigDict:
         %wheel ALL=(ALL:ALL) NOPASSWD: /usr/bin/poweroff
         %wheel ALL=(ALL:ALL) NOPASSWD: /usr/bin/reboot
         @includedir /etc/sudoers.d
-  
-        # Für die Systray Tools
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/cpupower
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/tee /sys/devices/system/cpu/*
-        manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/nvidia-smi *
-      ''')),
+      ''') + "\n\n" + "\n".join(model.item(Option[str]("/etc/sudoers/ExtraLines")).distinct())),
 
       # install CachyOS keyrings and mirrorlist, and set up pacman
       PacmanKey("F3B607488DB35A47"),

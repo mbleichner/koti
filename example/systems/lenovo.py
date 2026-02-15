@@ -2,30 +2,27 @@ from inspect import cleandoc
 
 from koti import *
 from modules.base import base
-from modules.cpufreq import cpufreq, throttle_after_boot
+from modules.cpu import cpufreq_auto_adjust, cpufreq_defaults, cpufreq_systray
 from modules.desktop import desktop
 from modules.development import development
 from modules.fish import fish
 from modules.gaming import gaming
 from modules.kernel import kernel_cachyos, kernel_stock
-from modules.networking import network_manager
-from modules.systray import systray
 
 
 # Configuration for my Lenovo X13 laptop
 def lenovo() -> ConfigDict:
   return {
     **base(),
-    **cpufreq(min_freq = 1000, max_freq = 4500, governor = "powersave"),
-    **throttle_after_boot(1500),
-    **kernel_cachyos(sortkey = 1),
-    **kernel_stock(sortkey = 2),
     **fish(),
     **desktop(nvidia = False, autologin = True, ms_fonts = True),
-    **development(),
-    **systray(ryzen = True, nvidia = False),
+    **cpufreq_defaults(min_freq = 1500, max_freq = 4000, governor = "powersave"),
+    **cpufreq_auto_adjust(base_freq = 1500),
+    **cpufreq_systray(),
+    **kernel_cachyos(sortkey = 1),
+    **kernel_stock(sortkey = 2),
     **gaming(),
-    **network_manager(),
+    **development(),
 
     Section("swapfile (4GB) and fstab"): (
       Swapfile("/swapfile", 4 * (1024 ** 3)),
@@ -40,6 +37,12 @@ def lenovo() -> ConfigDict:
       Package("linux-firmware-other"),
       Package("linux-firmware-amdgpu"),
       Package("linux-firmware-realtek"),
+    ),
+
+    Section("network-manager and wifi"): (
+      Package("networkmanager"),
+      SystemdUnit("NetworkManager.service"),
+      SystemdUnit("wpa_supplicant.service"),
     ),
 
     Section("graphics drivers for lenovo"): (

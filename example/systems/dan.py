@@ -2,36 +2,32 @@ from inspect import cleandoc
 
 from koti import *
 from modules.base import base
-from modules.cpufreq import cpufreq, throttle_after_boot, auto_cpufreq
+from modules.cpu import cpufreq_auto_adjust, cpufreq_defaults, cpufreq_systray
 from modules.desktop import desktop
 from modules.development import development
 from modules.fish import fish
 from modules.gaming import gaming
 from modules.kernel import kernel_cachyos, kernel_stock
-from modules.networking import network_manager
-from modules.nvidia_undervolting import nvidia_undervolting
-from modules.nvme_thermal_throttling import nvme_thermal_throttling
-from modules.ryzen_undervolting import ryzen_undervolting
-from modules.systray import systray
+from modules.nvidia import nvidia_systray, nvidia_undervolting
+from modules.ryzen import ryzen_undervolting
 
 
 # Configuration for my DAN A4-SFX desktop machine (Ryzen 5800X3D, RTX3080)
 def dan() -> ConfigDict:
   return {
     **base(),
-    **cpufreq(min_freq = 2000, max_freq = 4500, governor = "performance"),
-    **throttle_after_boot(2000),
-    **kernel_cachyos(sortkey = 1),
-    **kernel_stock(sortkey = 2),
     **fish(),
     **desktop(nvidia = True, autologin = True, ms_fonts = True),
-    **development(),
-    **systray(ryzen = True, nvidia = True),
-    **gaming(),
-    **nvme_thermal_throttling(),
+    **cpufreq_defaults(min_freq = 2000, max_freq = 4000, governor = "performance"),
+    **cpufreq_auto_adjust(base_freq = 2000),
+    **cpufreq_systray(),
+    **kernel_cachyos(sortkey = 1),
+    **kernel_stock(sortkey = 2),
+    **nvidia_systray(),
     **nvidia_undervolting(),
     **ryzen_undervolting(),
-    **network_manager(),
+    **gaming(),
+    **development(),
 
     Section("swapfile (12GB) and fstab"): (
       Swapfile("/swapfile", 12 * (1024 ** 3)),
@@ -48,6 +44,12 @@ def dan() -> ConfigDict:
       Package("linux-firmware-other"),
       Package("linux-firmware-intel"),
       Package("linux-firmware-nvidia"),
+    ),
+
+    Section("network-manager and wifi"): (
+      Package("networkmanager"),
+      SystemdUnit("NetworkManager.service"),
+      SystemdUnit("wpa_supplicant.service"),
     ),
 
     Section("nvidia drivers for dan"): (
@@ -78,6 +80,23 @@ def dan() -> ConfigDict:
       # CachyOS-Modul von einer zu neuen nvidia-utils Version abhängt, die in den Arch-Repos noch nicht verfügbar ist
       Package("nvidia-open-dkms"),
       Package("nvidia-settings"),
+    ),
+
+    Section("NVMe thermal throttling (Kingston KC3000)"): (
+      Package("nvme-cli"),
+      File("/etc/systemd/system/nvme-thermal-throttling.service", content = cleandoc('''
+      [Unit]
+      Description=NVMe Thermal Throttling
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=true
+      ExecStart=/sbin/nvme set-feature /dev/nvme0 --feature-id=0x10 --value=0x01520160
+
+      [Install]
+      WantedBy=multi-user.target
+   ''')),
+      SystemdUnit("nvme-thermal-throttling.service"),
     ),
 
     Section("quickemu for koti testing"): (

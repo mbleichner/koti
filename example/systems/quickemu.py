@@ -1,9 +1,9 @@
 from koti import *
 from modules.base import base
+from modules.cpu import cpufreq_systray
 from modules.desktop import desktop
 from modules.fish import fish
 from modules.gaming import gaming
-from modules.systray import systray
 
 """
 wget https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-basic.qcow2
@@ -24,7 +24,7 @@ def quickemu() -> ConfigDict:
     **base(),
     **fish(),
     **desktop(nvidia = False, autologin = True, ms_fonts = False),
-    **systray(ryzen = True, nvidia = False),
+    **cpufreq_systray(),
     **gaming(),
     Section("firmware, drivers and filesystems for quickemu"): (
       Package("linux-firmware-other"),

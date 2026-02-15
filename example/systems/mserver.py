@@ -3,7 +3,7 @@ from inspect import cleandoc
 from koti import *
 from koti.utils.shell import shell
 from modules.base import base
-from modules.cpufreq import cpufreq
+from modules.cpu import cpufreq_defaults
 from modules.fish import fish
 from modules.kernel import kernel_lts, kernel_stock
 
@@ -12,7 +12,7 @@ from modules.kernel import kernel_lts, kernel_stock
 def mserver() -> ConfigDict:
   return {
     **base(),
-    **cpufreq(min_freq = 800, max_freq = 4200, governor = "powersave"),
+    **cpufreq_defaults(min_freq = 800, max_freq = 4200, governor = "powersave"),
     **kernel_lts(sortkey = 1),
     **kernel_stock(sortkey = 2),
     **fish(),

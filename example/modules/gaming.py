@@ -8,7 +8,6 @@ from koti.utils.shell import shell
 def gaming() -> ConfigDict:
   return {
     Section("game launchers and utilities"): (
-      #Package("ryujinx"),
       Package("eden-bin"),
       Package("steam"),
       Package("heroic-games-launcher-bin"),
@@ -19,6 +18,14 @@ def gaming() -> ConfigDict:
       Package("r2modman-bin"),
       Package("mangohud"),
       UserGroupAssignment("manuel", "games"),
+
+      Option[tuple[str, int]]("/etc/cpufreq/processes.yaml/ExtraEntries", value = [
+        ("SteamLinuxRuntime", 4000),
+        ("beyond-all-reason", 4000),
+        ("wineserver", 4000),
+        ("fossilize", 3000),
+        ("/usr/bin/eden", 3000),
+      ]),
     ),
 
     Section("proton"): (
