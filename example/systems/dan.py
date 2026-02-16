@@ -107,6 +107,7 @@ def dan() -> ConfigDict:
       Package("beyondallreason-appimage"),
       Package("headsetcontrol-git"),
       Package("teamspeak"),
+      Package("teamspeak3"),
     ),
 
     Section("homeoffice stuff"): (
