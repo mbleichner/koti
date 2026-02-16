@@ -25,8 +25,6 @@ def cpufreq_auto_adjust(base_freq: int) -> ConfigDict:
 
       File("/etc/cpufreq/rules.yaml", permissions = "r--r--r--", content = lambda model: cleandoc(f'''
         "koti": 3500
-        "pacman": 3500
-        "makepkg": 3500
       ''') + "\n\n" + format_processes_extra_entries(model)),
 
       File("/opt/cpufreq-adjuster/cpufreq-adjuster.py", source = "files/cpufreq-adjuster.py", permissions = "r-x"),
