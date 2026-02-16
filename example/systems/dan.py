@@ -108,6 +108,7 @@ def dan() -> ConfigDict:
       Package("headsetcontrol-git"),
       Package("teamspeak"),
       Package("teamspeak3"),
+      Package("mumble"),
     ),
 
     Section("homeoffice stuff"): (
