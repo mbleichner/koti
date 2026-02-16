@@ -1,0 +1,17 @@
+services:
+  teamspeak:
+    image: teamspeaksystems/teamspeak6-server
+    container_name: teamspeak
+    restart: always
+    ports:
+    - "0.0.0.0:9987:9987/udp"            # Audio/Video
+    - "0.0.0.0:30033:30033"              # File Transfer
+    - "127.0.0.1:10022:10022"            # ServerQuery (SSH)
+    - "127.0.0.1:10080:10080"            # WebQuery
+    environment:
+    - TSSERVER_LICENSE_ACCEPTED=accept
+    - TSSERVER_QUERY_SSH_ENABLED=true
+    - TSSERVER_QUERY_HTTP_ENABLED=true
+    env_file: .env                       # should contain TSSERVER_QUERY_ADMIN_PASSWORD
+    volumes:
+    - ./data:/var/tsserver

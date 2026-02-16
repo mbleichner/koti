@@ -61,7 +61,7 @@ def mserver() -> ConfigDict:
       SystemdUnit("docker.service"),
       File("/usr/local/bin/update-docker", permissions = "rwxr-xr-x", content = cleandoc('''
         #!/bin/bash -e
-        for DIR in homeassistant nextcloud pihole pyanodon-mapshot pacoloco traefik; do
+        for DIR in homeassistant nextcloud pihole pyanodon-mapshot pacoloco teamspeak traefik; do
           cd /opt/$DIR && docker compose pull && docker compose up -d
         done
       ''')),
@@ -94,6 +94,12 @@ def mserver() -> ConfigDict:
     Section("pyanodon-mapshot"): (
       *DockerComposeService(
         File("/opt/pyanodon-mapshot/docker-compose.yml", source = "files/pyanodon-mapshot/docker-compose.yml"),
+      ),
+    ),
+
+    Section("teamspeak"): (
+      *DockerComposeService(
+        File("/opt/teamspeak/docker-compose.yml", source = "files/teamspeak/docker-compose.yml"),
       ),
     ),
 
