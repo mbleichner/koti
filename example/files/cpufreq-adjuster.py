@@ -36,7 +36,6 @@ if mode == "auto":
 
   while True:
     running_processes = subprocess.check_output(["/usr/bin/ps", "-eo", "exe"], shell = False).decode("utf-8").splitlines()
-    print(running_processes)
     new_freq = int(state["freq"])
     for proc, speed in freq_by_process.items():
       if speed > new_freq and any(proc in running_proc for running_proc in running_processes):
