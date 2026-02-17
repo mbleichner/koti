@@ -174,7 +174,6 @@ def base() -> ConfigDict:
 
       # Hardware Utilities
       Package("cpupower"),
-      Package("bluez-utils"),
       Package("fwupd"),
 
       # Dateisysteme
@@ -302,12 +301,12 @@ def base() -> ConfigDict:
 
     Section("ghostmirror", enabled = False): (
       Package("ghostmirror"),
-      File("/usr/local/bin/ghostmirror-refresh", permissions = "r-x", content=cleandoc('''
+      File("/usr/local/bin/ghostmirror-refresh", permissions = "r-x", content = cleandoc('''
         #!/bin/sh
         # compiles a list of 20 mirrors, ranked by their state and ping
         sudo ghostmirror -Po -c Germany,Switzerland,France -l /etc/pacman.d/mirrorlist -L 20 -S state,outofdate,morerecent,ping
       ''')),
-      File("/usr/local/bin/ghostmirror-reorder", permissions = "r-x", content=cleandoc('''
+      File("/usr/local/bin/ghostmirror-reorder", permissions = "r-x", content = cleandoc('''
         #!/bin/sh
         # reorders the mirrorlist by speed and reliability
         sudo ghostmirror -Po -mu /etc/pacman.d/mirrorlist -l /etc/pacman.d/mirrorlist -s light -S state,outofdate,morerecent,estimated,speed
@@ -315,9 +314,9 @@ def base() -> ConfigDict:
     ),
 
     Section("rate-mirrors"): (
-      Package("rate-mirrors-bin"), # Die non-bin Variante ist im CachyOS Repo in einer veralteten Version, die nicht alle Parameter unterstützt
+      Package("rate-mirrors-bin"),  # Die non-bin Variante ist im CachyOS Repo in einer veralteten Version, die nicht alle Parameter unterstützt
       *PostHookScope(
-        File("/usr/local/bin/update-mirrors", permissions = "r-x", content=cleandoc(r'''
+        File("/usr/local/bin/update-mirrors", permissions = "r-x", content = cleandoc(r'''
           #!/bin/sh
           sudo -u nobody rate-mirrors \
             --protocol=https \
@@ -328,7 +327,7 @@ def base() -> ConfigDict:
             --max-mirrors-to-output=10 \
             arch | sudo tee /etc/pacman.d/mirrorlist
         ''')),
-        PostHook("update mirrorlist", execute=lambda: shell("/usr/local/bin/update-mirrors")),
+        PostHook("update mirrorlist", execute = lambda: shell("/usr/local/bin/update-mirrors")),
       ),
     ),
 

@@ -74,39 +74,40 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
     ),
 
     Section("bluetooth"): (
+      Package("bluez-utils"),
       SystemdUnit("bluetooth.service"),
     ),
 
-    Section("wireplumber priorities"): (
+    Section("wireplumber config"): (
       Package("wireplumber"),
-      File("/home/manuel/.config/wireplumber/wireplumber.conf.d/priorities.conf", owner = "manuel", content = cleandoc('''
-        monitor.alsa.rules = [
-        
-          # Alle Bluetooth Devices bekommen immer Prio 1010 zugewiesen und diese kann hier
-          # aus bislang unerfindlichen Gründen nicht geändert werden
-        
-          { # Steelseries Game Channel
-            matches = [{node.name = "alsa_output.usb-SteelSeries_SteelSeries_Arctis_7-00.stereo-game"}]
-            actions = {
-              update-props = {
-                priority.driver = 1000
-                priority.session = 1000
-              }
+      *PostHookScope(
+        File("/home/manuel/.config/wireplumber/wireplumber.conf.d/prevent-messing-with-mic-volume.conf", owner = "manuel", content = cleandoc('''
+          access.rules = [ {
+            matches = [
+              { application.process.binary = "chromium" }
+              { application.process.binary = "chrome" }
+              { application.process.binary = "firefox" }
+              { application.process.binary = "msedge" }
+            ]
+            actions = { update-props = { default_permissions = "rx" } }
+          } ]
+        ''')),
+        File("/home/manuel/.config/wireplumber/wireplumber.conf.d/priorities.conf", owner = "manuel", content = cleandoc('''
+          monitor.alsa.rules = [
+            # Alle Bluetooth Devices bekommen immer Prio 1010 zugewiesen und diese kann hier
+            # aus bislang unerfindlichen Gründen nicht geändert werden
+            { # Steelseries Game Channel
+              matches = [ { node.name = "alsa_output.usb-SteelSeries_SteelSeries_Arctis_7-00.stereo-game" } ]
+              actions = { update-props = { priority.driver = 1000, priority.session = 1000 } }
             }
-          }
-        
-          { # Steelseries Chat Channel
-            matches = [{node.name = "alsa_output.usb-SteelSeries_SteelSeries_Arctis_7-00.mono-chat"}]
-            actions = {
-              update-props = {
-                priority.driver = 900
-                priority.session = 900
-              }
+            { # Steelseries Chat Channel
+              matches = [ { node.name = "alsa_output.usb-SteelSeries_SteelSeries_Arctis_7-00.mono-chat" } ]
+              actions = { update-props = { priority.driver = 900, priority.session = 900 } }
             }
-          }
-        ]
-      ''')),
-
+          ]
+        ''')),
+        PostHook("restart wireplumber", execute = lambda: shell("systemctl --user -M manuel@ restart wireplumber"))
+      ),
     ),
 
     Section("ananicy-cpp and configuration"): (
