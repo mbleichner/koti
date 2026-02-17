@@ -34,12 +34,18 @@ if mode == "auto":
     freq_by_process = yaml.safe_load(stream)
     print(freq_by_process)
 
+  hide_kernel_threads = {"LIBPROC_HIDE_KERNEL": "1"}
   while True:
-    running_processes = subprocess.check_output(["/usr/bin/ps", "-eo", "exe"], shell = False).decode("utf-8").splitlines()
+    running_processes = {
+      *subprocess.check_output(["/usr/bin/ps", "--no-headers", "-eo", "exe"], shell = False, env = hide_kernel_threads).decode("utf-8").splitlines(),
+      *subprocess.check_output(["/usr/bin/ps", "--no-headers", "-eo", "args"], shell = False, env = hide_kernel_threads).decode("utf-8").splitlines()
+    }
+    #print(running_processes)
     new_freq = int(state["freq"])
-    for proc, speed in freq_by_process.items():
-      if speed > new_freq and any(proc in running_proc for running_proc in running_processes):
+    for expr, speed in freq_by_process.items():
+      if speed > new_freq and any(expr in proc for proc in running_processes):
         new_freq = speed
+    print(new_freq)
     subprocess.check_output(["/usr/bin/cpupower", "frequency-set", "-u", f"{new_freq}MHz"])
     time.sleep(5)
 

@@ -24,7 +24,7 @@ def cpufreq_auto_adjust(base_freq: int) -> ConfigDict:
       Option[tuple[str, int]]("/etc/cpufreq/rules.yaml/ExtraEntries"),
 
       File("/etc/cpufreq/rules.yaml", permissions = "r--r--r--", content = lambda model: cleandoc(f'''
-        "/usr/local/bin/koti": 3500
+        "koti": 3500
         "/usr/bin/pacman": 3500
         "/usr/bin/makepkg": 3500
       ''') + "\n\n" + format_processes_extra_entries(model)),
