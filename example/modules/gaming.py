@@ -19,13 +19,30 @@ def gaming() -> ConfigDict:
       Package("mangohud"),
       UserGroupAssignment("manuel", "games"),
 
+      File("/home/manuel/.steam/steam/steam_dev.cfg", owner = "manuel", content = cleandoc(f'''
+        # number of fossilize_replay processes to run
+        unShaderBackgroundProcessingThreads 16
+      ''')),
+
+      File("/usr/bin/steam", permissions = "rwxr-xr-x", content = cleandoc(f'''
+        #!/bin/sh
+    
+        # Workaround für Wine/Wayland Keyboard Layout Bug
+        # https://bugs.winehq.org/show_bug.cgi?id=57097#c7
+        export LC_ALL=de_DE.UTF-8
+    
+        exec /usr/lib/steam/steam "$@"
+      ''')),
+
       Option[tuple[str, int]]("/etc/cpufreq/rules.yaml/ExtraEntries", value = [
         ("SteamLinuxRuntime", 4000),
         ("beyond-all-reason", 4000),
         ("/usr/bin/eden", 4000),
         ("wineserver", 4000),
-        ("fossilize", 3000),
+        ("fossilize_replay", 3000),
       ]),
+
+      Option("/etc/pacman.conf/NoUpgrade", "usr/bin/steam"),
     ),
 
     Section("proton"): (
@@ -45,18 +62,6 @@ def gaming() -> ConfigDict:
         PROTON_USE_WAYLAND=1
         PROTON_ENABLE_WAYLAND=1
       ''')),
-
-      File("/usr/bin/steam", permissions = "rwxr-xr-x", content = cleandoc(f'''
-        #!/bin/sh
-        
-        # Workaround für Wine/Wayland Keyboard Layout Bug
-        # https://bugs.winehq.org/show_bug.cgi?id=57097#c7
-        export LC_ALL=de_DE.UTF-8
-        
-        exec /usr/lib/steam/steam "$@"
-      ''')),
-
-      Option("/etc/pacman.conf/NoUpgrade", "usr/bin/steam"),
     ),
 
     Section("disable splitlock mitigations"): (
