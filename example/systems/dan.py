@@ -35,7 +35,6 @@ def dan() -> ConfigDict:
         UUID=3409a847-0bd6-43e4-96fd-6e8be4e3c58d  /             ext4  rw,noatime 0 1
         UUID=AF4E-18BD                             /boot         vfat  rw,defaults 0 2
         UUID=CCA2A808A2A7F55C                      /mnt/windows  ntfs  rw,x-systemd.automount 0 0
-        UUID=c0b79d2c-5a0a-4f82-8fab-9554344159a5  /home/shared  ext4  rw,noatime 0 1
         /swapfile                                  swap          swap  defaults 0 0
       ''')),
     ),
