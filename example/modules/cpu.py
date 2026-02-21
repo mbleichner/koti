@@ -8,10 +8,11 @@ def cpufreq_defaults(min_freq: int, max_freq: int, governor: str) -> ConfigDict:
     Section("set default cpu frequency range and governor"): (
       Package("cpupower"),
       File("/etc/default/cpupower-service.conf", content = cleandoc(f'''
-        GOVERNOR="{governor}"
-        MIN_FREQ="{min_freq}MHz"
-        MAX_FREQ="{max_freq}MHz"
-      '''))
+        GOVERNOR={governor}
+        MAX_FREQ={max_freq}MHz
+        MIN_FREQ={min_freq}MHz
+      ''')),
+      SystemdUnit("cpupower.service"),
     )
   }
 
