@@ -112,11 +112,52 @@ def base() -> ConfigDict:
           SudoLoop
           CombinedUpgrade
           NewsOnUpgrade
-          KeepSrc
-          KeepRepoCache
           RemoveMake
+          CleanAfter
         '''),
       ),
+      File("/etc/makepkg.conf", content = cleandoc(r'''
+        #!/hint/bash
+        DLAGENTS=('file::/usr/bin/curl -qgC - -o %o %u'
+                  'ftp::/usr/bin/curl -qgfC - --ftp-pasv --retry 3 --retry-delay 3 -o %o %u'
+                  'http::/usr/bin/curl -qgb "" -fLC - --retry 3 --retry-delay 3 -o %o %u'
+                  'https::/usr/bin/curl -qgb "" -fLC - --retry 3 --retry-delay 3 -o %o %u'
+                  'rsync::/usr/bin/rsync --no-motd -z %u %o'
+                  'scp::/usr/bin/scp -C %u %o')
+        VCSCLIENTS=('bzr::breezy' 'fossil::fossil' 'git::git' 'hg::mercurial' 'svn::subversion')
+        CARCH="x86_64"
+        CHOST="x86_64-pc-linux-gnu"
+        CFLAGS="-march=x86-64 -mtune=generic -O2 -pipe -fno-plt -fexceptions -Wp,-D_FORTIFY_SOURCE=3 -Wformat -Werror=format-security \
+                -fstack-clash-protection -fcf-protection -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer"
+        CXXFLAGS="$CFLAGS -Wp,-D_GLIBCXX_ASSERTIONS"
+        LDFLAGS="-Wl,-O1 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,-z,pack-relative-relocs"
+        LTOFLAGS="-flto=auto"
+        MAKEFLAGS="-j16"
+        DEBUG_CFLAGS="-g"
+        DEBUG_CXXFLAGS="$DEBUG_CFLAGS"
+        OPTIONS=(strip docs !libtool !staticlibs emptydirs zipman purge debug lto)
+        INTEGRITY_CHECK=(sha256)
+        STRIP_BINARIES="--strip-all"
+        STRIP_SHARED="--strip-unneeded"
+        STRIP_STATIC="--strip-debug"
+        MAN_DIRS=(usr{,/local}{,/share}/{man,info})
+        DOC_DIRS=(usr/{,local/}{,share/}{doc,gtk-doc})
+        PURGE_TARGETS=(usr/{,share}/info/dir .packlist *.pod)
+        DBGSRCDIR="/usr/src/debug"
+        LIB_DIRS=('lib:usr/lib' 'lib32:usr/lib32')
+        PKGDEST=~/.cache/makepkg
+        COMPRESSGZ=(gzip -c -f -n)
+        COMPRESSBZ2=(bzip2 -c -f)
+        COMPRESSXZ=(xz -c -z -)
+        COMPRESSZST=(zstd -c -T0 -)
+        COMPRESSLRZ=(lrzip -q)
+        COMPRESSLZO=(lzop -q)
+        COMPRESSZ=(compress -c -f)
+        COMPRESSLZ4=(lz4 -q)
+        COMPRESSLZ=(lzip -c -f)
+        PKGEXT='.pkg.tar.zst'
+        SRCEXT='.src.tar.gz'
+      '''))
     ),
 
     Section("base packages and configs needed on every system"): (
