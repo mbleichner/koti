@@ -40,6 +40,18 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
       SystemdUnit("coolercontrold.service"),
     ),
 
+    Section("network-manager and wifi"): (
+      Package("networkmanager"),
+      File("/etc/NetworkManager/NetworkManager.conf", content = cleandoc(f'''
+        # Disable connectivity checks, so networks stay connected even without internet access
+        [connectivity]
+        uri=
+        interval=0
+      ''')),
+      SystemdUnit("NetworkManager.service"),
+      SystemdUnit("wpa_supplicant.service"),
+    ),
+
     Section("fonts"): (
       Package("ttf-ms-win10-auto") if ms_fonts else None,  # Das win11 Package war zuletzt broken
       Package("noto-fonts"),

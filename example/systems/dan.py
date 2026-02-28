@@ -45,12 +45,6 @@ def dan() -> ConfigDict:
       Package("linux-firmware-nvidia"),
     ),
 
-    Section("network-manager and wifi"): (
-      Package("networkmanager"),
-      SystemdUnit("NetworkManager.service"),
-      SystemdUnit("wpa_supplicant.service"),
-    ),
-
     Section("nvidia drivers for dan"): (
       File("/etc/pacman.d/hooks/nvidia.hook", content = cleandoc('''
         [Trigger]

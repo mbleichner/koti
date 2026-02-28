@@ -39,12 +39,6 @@ def lenovo() -> ConfigDict:
       Package("linux-firmware-realtek"),
     ),
 
-    Section("network-manager and wifi"): (
-      Package("networkmanager"),
-      SystemdUnit("NetworkManager.service"),
-      SystemdUnit("wpa_supplicant.service"),
-    ),
-
     Section("graphics drivers for lenovo"): (
       Package('vulkan-radeon'),
       Package('lib32-vulkan-radeon'),
