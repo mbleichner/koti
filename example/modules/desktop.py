@@ -86,8 +86,9 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
     ),
 
     Section("bluetooth"): (
-      Package("bluez-utils"),
+      Package("bluetooth-support"),
       SystemdUnit("bluetooth.service"),
+      UserGroupAssignment("manuel", "lp"),
     ),
 
     Section("wireplumber config"): (
