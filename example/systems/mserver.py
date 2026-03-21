@@ -5,7 +5,7 @@ from koti.utils.shell import shell
 from modules.base import base
 from modules.cpu import cpufreq_defaults
 from modules.fish import fish
-from modules.kernel import kernel_lts, kernel_stock
+from modules.kernel import kernel_cachyos, kernel_cachyos_lts
 
 
 # Configuration for my 7700K homelab server
@@ -13,8 +13,8 @@ def mserver() -> ConfigDict:
   return {
     **base(),
     **cpufreq_defaults(min_freq = 800, max_freq = 4200, governor = "powersave"),
-    **kernel_lts(sortkey = 1),
-    **kernel_stock(sortkey = 2),
+    **kernel_cachyos(sortkey = 1),
+    **kernel_cachyos_lts(sortkey = 2),
     **fish(),
 
     Section("swapfile (8GB) and fstab"): (
@@ -123,6 +123,8 @@ def mserver() -> ConfigDict:
           curl http://pacoloco.fritz.box/repo/archlinux/core/os/x86_64/core.db > /dev/null
           curl http://pacoloco.fritz.box/repo/archlinux/extra/os/x86_64/extra.db > /dev/null
           curl http://pacoloco.fritz.box/repo/archlinux/multilib/os/x86_64/multilib.db > /dev/null
+          curl http://pacoloco.fritz.box/repo/cachyos-extra-v3/x86_64_v3/cachyos-extra-v3/cachyos-v3.db > /dev/null
+          curl http://pacoloco.fritz.box/repo/cachyos-core-v3/x86_64_v3/cachyos-core-v3/cachyos-v3.db > /dev/null
           curl http://pacoloco.fritz.box/repo/cachyos-v3/x86_64_v3/cachyos-v3/cachyos-v3.db > /dev/null
           curl http://pacoloco.fritz.box/repo/cachyos/x86_64/cachyos/cachyos.db > /dev/null
         '''),

@@ -7,7 +7,7 @@ from modules.desktop import desktop
 from modules.development import development
 from modules.fish import fish
 from modules.gaming import gaming
-from modules.kernel import kernel_cachyos, kernel_stock
+from modules.kernel import kernel_cachyos, kernel_cachyos_lts
 
 
 # Configuration for my Lenovo X13 laptop
@@ -20,7 +20,7 @@ def lenovo() -> ConfigDict:
     **cpufreq_auto_adjust(base_freq = 1500),
     **cpufreq_systray(),
     **kernel_cachyos(sortkey = 1),
-    **kernel_stock(sortkey = 2),
+    **kernel_cachyos_lts(sortkey = 2),
     **gaming(),
     **development(),
 

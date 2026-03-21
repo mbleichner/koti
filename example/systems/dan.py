@@ -7,7 +7,7 @@ from modules.desktop import desktop
 from modules.development import development
 from modules.fish import fish
 from modules.gaming import gaming
-from modules.kernel import kernel_cachyos, kernel_stock
+from modules.kernel import kernel_cachyos, kernel_cachyos_lts
 from modules.nvidia import nvidia_systray, nvidia_undervolting
 from modules.ryzen import ryzen_undervolting
 
@@ -22,7 +22,7 @@ def dan() -> ConfigDict:
     **cpufreq_auto_adjust(base_freq = 2000),
     **cpufreq_systray(),
     **kernel_cachyos(sortkey = 1),
-    **kernel_stock(sortkey = 2),
+    **kernel_cachyos_lts(sortkey = 2),
     **nvidia_systray(),
     **nvidia_undervolting(),
     **ryzen_undervolting(),
@@ -53,7 +53,9 @@ def dan() -> ConfigDict:
         Operation=Remove
         Type=Package
         Target=nvidia-open
-  
+        Target=nvidia-open-lts
+        Target=linux-cachyos-nvidia-open
+    
         [Action]
         Description=Updating NVIDIA module in initcpio
         Depends=mkinitcpio
@@ -69,9 +71,8 @@ def dan() -> ConfigDict:
         CUDA_DISABLE_PERF_BOOST=1
       ''')),
 
-      # Nicht das vorkompilierte NVIDIA Modul von CachyOS nehmen, sonst kommt es gelegentlich zu Dependency-Fehlern, wenn das
-      # CachyOS-Modul von einer zu neuen nvidia-utils Version abhängt, die in den Arch-Repos noch nicht verfügbar ist
-      Package("nvidia-open-dkms"),
+      Package("linux-cachyos-nvidia-open"),
+      Package("linux-cachyos-lts-nvidia-open"),
       Package("nvidia-settings"),
     ),
 

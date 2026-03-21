@@ -23,6 +23,21 @@ def kernel_cachyos(sortkey: int) -> ConfigDict:
   }
 
 
+def kernel_cachyos_lts(sortkey: int) -> ConfigDict:
+  return {
+    Section("CachyOS LTS kernel + systemd-boot entry"): (
+      *Packages("linux-cachyos-lts", "linux-cachyos-lts-headers"),
+      *SystemdBootLoader(
+        filename = "/boot/loader/entries/arch-cachyos-lts.conf",
+        description = "Arch Linux with CachyOS LTS Kernel",
+        kernel = "linux-cachyos-lts",
+        sortkey = sortkey,
+        fallback = False,
+      ),
+    )
+  }
+
+
 def kernel_stock(sortkey: int) -> ConfigDict:
   return {
     Section("Arch kernel + systemd-boot entry"): (

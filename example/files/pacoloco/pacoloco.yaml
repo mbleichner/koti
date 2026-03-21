@@ -14,3 +14,7 @@ repos:
     mirrorlist: /etc/pacman.d/cachyos-mirrorlist
   cachyos-v3:
     mirrorlist: /etc/pacman.d/cachyos-v3-mirrorlist
+  cachyos-core-v3:
+    mirrorlist: /etc/pacman.d/cachyos-v3-mirrorlist
+  cachyos-extra-v3:
+    mirrorlist: /etc/pacman.d/cachyos-v3-mirrorlist

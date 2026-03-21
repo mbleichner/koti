@@ -46,6 +46,8 @@ def gaming() -> ConfigDict:
     ),
 
     Section("proton"): (
+      Package("proton-cachyos"),
+      Package("proton-cachyos-slr"),
       Package("proton-ge-custom-bin"),
       Package("protontricks"),
       Package("protonplus"),

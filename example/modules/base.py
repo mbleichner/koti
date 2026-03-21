@@ -57,6 +57,22 @@ def base() -> ConfigDict:
         SigLevel = Required DatabaseOptional
         LocalFileSigLevel = Optional
     
+        [cachyos-v3]
+        CacheServer = http://pacoloco.fritz.box/repo/cachyos-v3/$arch_v3/$repo
+        Include = /etc/pacman.d/cachyos-v3-mirrorlist
+        
+        [cachyos-core-v3]
+        CacheServer = http://pacoloco.fritz.box/repo/cachyos-core-v3/$arch_v3/$repo
+        Include = /etc/pacman.d/cachyos-v3-mirrorlist
+        
+        [cachyos-extra-v3]
+        CacheServer = http://pacoloco.fritz.box/repo/cachyos-extra-v3/$arch_v3/$repo
+        Include = /etc/pacman.d/cachyos-v3-mirrorlist
+    
+        [cachyos]
+        CacheServer = http://pacoloco.fritz.box/repo/cachyos/$arch/$repo
+        Include = /etc/pacman.d/cachyos-mirrorlist
+    
         [core]
         CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
         Include = /etc/pacman.d/mirrorlist
@@ -68,26 +84,6 @@ def base() -> ConfigDict:
         [multilib]
         CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
         Include = /etc/pacman.d/mirrorlist
-    
-        [core-testing]
-        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
-        Include = /etc/pacman.d/mirrorlist
-    
-        [extra-testing]
-        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
-        Include = /etc/pacman.d/mirrorlist
-    
-        [multilib-testing]
-        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
-        Include = /etc/pacman.d/mirrorlist
-    
-        [cachyos-v3]
-        CacheServer = http://pacoloco.fritz.box/repo/cachyos-v3/$arch_v3/$repo
-        Include = /etc/pacman.d/cachyos-v3-mirrorlist
-    
-        [cachyos]
-        CacheServer = http://pacoloco.fritz.box/repo/cachyos/$arch/$repo
-        Include = /etc/pacman.d/cachyos-mirrorlist
       ''')),
       PostHook(
         name = "update pacman databases after config change",
@@ -367,6 +363,15 @@ def base() -> ConfigDict:
             --exclude-countries RU,BY \
             --max-mirrors-to-output=10 \
             arch | sudo tee /etc/pacman.d/mirrorlist
+          sudo -u nobody rate-mirrors \
+            --protocol=https \
+            --concurrency=8 \
+            --max-jumps=2 \
+            --entry-country=DE \
+            --exclude-countries RU,BY \
+            --max-mirrors-to-output=10 \
+            cachyos | sudo tee /etc/pacman.d/cachyos-mirrorlist
+          sed 's|$arch|$arch_v3|g' /etc/pacman.d/cachyos-mirrorlist > /etc/pacman.d/cachyos-v3-mirrorlist
         ''')),
         PostHook("update mirrorlist", execute = lambda: shell("/usr/local/bin/update-mirrors")),
       ),
