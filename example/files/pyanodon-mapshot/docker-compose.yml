@@ -1,6 +1,6 @@
 services:
   nginx:
-    image: nginx:1.25
+    image: nginx
     restart: always
     volumes:
     - ./mapshot:/usr/share/nginx/html:ro
