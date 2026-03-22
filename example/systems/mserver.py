@@ -13,8 +13,8 @@ def mserver() -> ConfigDict:
   return {
     **base(),
     **cpufreq_defaults(min_freq = 800, max_freq = 4200, governor = "powersave"),
-    **kernel_cachyos(sortkey = 1),
-    **kernel_cachyos_lts(sortkey = 2),
+    **kernel_cachyos(sortkey = 1, powersave = True),
+    **kernel_cachyos_lts(sortkey = 2, powersave = True),
     **fish(),
 
     Section("swapfile (8GB) and fstab"): (
