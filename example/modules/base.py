@@ -269,6 +269,12 @@ def base() -> ConfigDict:
         auto_update = true
       ''')),
 
+      File("/etc/systemd/timesyncd.conf", content = cleandoc('''
+        [Time]
+        NTP=time.cloudflare.com
+        FallbackNTP=time.google.com 0.arch.pool.ntp.org 1.arch.pool.ntp.org 2.arch.pool.ntp.org 3.arch.pool.ntp.org
+      ''')),
+
       SystemdUnit("systemd-timesyncd.service"),
       SystemdUnit("systemd-boot-update.service"),
       SystemdUnit("fstrim.timer"),
