@@ -2,7 +2,6 @@ from inspect import cleandoc
 
 from koti import *
 from koti.items import *
-from koti.utils.shell import shell
 
 
 def gaming() -> ConfigDict:
@@ -42,6 +41,7 @@ def gaming() -> ConfigDict:
         ("fossilize_replay", 3000),
       ]),
 
+      Option("/etc/pacman.conf/NoExtract", "usr/bin/steam"),
       Option("/etc/pacman.conf/NoUpgrade", "usr/bin/steam"),
     ),
 
@@ -52,13 +52,6 @@ def gaming() -> ConfigDict:
       Package("protontricks"),
       Package("protonplus"),
 
-      File("/etc/modules-load.d/proton-ntsync.conf", content = cleandoc(f'''
-        # ntsync module has to be loaded manually in order for proton to be able to use it
-        # (not all proton version will actually use ntsync - e.g. proton-cachyos is built
-        # without ntsync support atm due to technical issues)
-        ntsync
-      ''')),
-
       File("/etc/environment.d/proton-wayland.conf", content = cleandoc(f'''
         # Force use of wayland in proton if available
         PROTON_USE_WAYLAND=1
@@ -66,17 +59,17 @@ def gaming() -> ConfigDict:
       ''')),
     ),
 
-    Section("disable splitlock mitigations"): (
-      # https://wiki.cachyos.org/configuration/general_system_tweaks
-      File("/etc/sysctl.d/99-splitlock.conf", content = cleandoc('''
+    Section("gaming optimizations"): (
+      # Increase shader cache size on disk to avoid recompilation due to eviction
+      File("/etc/environment.d/shader-cache-size.conf", content = cleandoc(f'''
+        # NVIDIA:
+        __GL_SHADER_DISK_CACHE_SIZE=20000000000
+        # AMD:
+        MESA_SHADER_CACHE_MAX_SIZE=20G
+      ''')),
+      File("/etc/sysctl.d/splitlock-mitigation.conf", content = cleandoc(f'''
         kernel.split_lock_mitigate=0
       ''')),
-
-      PostHook(
-        "apply-splitlock-sysctl",
-        execute = lambda: shell("sysctl --system"),
-        trigger = File("/etc/sysctl.d/99-splitlock.conf")
-      ),
     ),
 
     Section("lossless scaling + frame generation", disabled = True): (

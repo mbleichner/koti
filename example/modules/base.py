@@ -158,13 +158,14 @@ def base() -> ConfigDict:
 
     Section("base packages and configs needed on every system"): (
 
-      # basic arch dependencies
+      # Basic Arch dependencies
       Package("base"),
       Package("base-devel"),
       Package("efibootmgr"),
       Package("terminus-font"),
       Package("ca-certificates"),
       Package("ca-certificates-mozilla"),
+      Package("cachyos-settings"),
 
       # Command Line Utilities
       Package("nano"),
@@ -247,10 +248,6 @@ def base() -> ConfigDict:
         Exec = /bin/sh -c "/usr/bin/paccache -qrk2; /usr/bin/paccache -qruk0"
       ''')),
 
-      File("/etc/modprobe.d/blacklist-watchdog.conf", content = cleandoc('''
-        blacklist sp5100_tco
-      ''')),
-
       File("/home/manuel/.gitconfig", owner = "manuel", content = cleandoc('''
         [user]
         email = mbleichner@gmail.com
@@ -264,24 +261,14 @@ def base() -> ConfigDict:
         auto_update = true
       ''')),
 
-      SystemdUnit("fstrim.timer"),
-      SystemdUnit("fwupd.service"),
-    ),
-
-    Section("systemd-boot config"): (
       File("/boot/loader/loader.conf", permissions = 0o755, content = cleandoc(f'''
         timeout 3
         console-mode 2
       ''')),
-      SystemdUnit("systemd-boot-update.service"),
-    ),
 
-    Section("systemd-timesyncd config"): (
-      File("/etc/systemd/timesyncd.conf", content = cleandoc('''
-        [Time]
-        NTP=time.cloudflare.com
-        FallbackNTP=time.google.com 0.arch.pool.ntp.org 1.arch.pool.ntp.org 2.arch.pool.ntp.org 3.arch.pool.ntp.org
-      ''')),
+      SystemdUnit("fstrim.timer"),
+      SystemdUnit("fwupd.service"),
+      SystemdUnit("systemd-boot-update.service"),
       SystemdUnit("systemd-timesyncd.service"),
     ),
 
