@@ -228,11 +228,6 @@ def base() -> ConfigDict:
         EDITOR=nano
       ''')),
 
-      File("/boot/loader/loader.conf", permissions = "rwxr-xr-x", content = cleandoc(f'''
-        timeout 3
-        console-mode 2
-      ''')),
-
       File("/etc/vconsole.conf", content = cleandoc('''
         KEYMAP=de-latin1
         FONT=ter-124b
@@ -269,17 +264,25 @@ def base() -> ConfigDict:
         auto_update = true
       ''')),
 
+      SystemdUnit("fstrim.timer"),
+      SystemdUnit("fwupd.service"),
+    ),
+
+    Section("systemd-boot config"): (
+      File("/boot/loader/loader.conf", permissions = 0o755, content = cleandoc(f'''
+        timeout 3
+        console-mode 2
+      ''')),
+      SystemdUnit("systemd-boot-update.service"),
+    ),
+
+    Section("systemd-timesyncd config"): (
       File("/etc/systemd/timesyncd.conf", content = cleandoc('''
         [Time]
         NTP=time.cloudflare.com
         FallbackNTP=time.google.com 0.arch.pool.ntp.org 1.arch.pool.ntp.org 2.arch.pool.ntp.org 3.arch.pool.ntp.org
       ''')),
-
       SystemdUnit("systemd-timesyncd.service"),
-      SystemdUnit("systemd-boot-update.service"),
-      SystemdUnit("fstrim.timer"),
-      SystemdUnit("fwupd.service"),
-      SystemdUnit("docker.socket"),
     ),
 
     Section("koti runtime dependencies"): (
@@ -302,6 +305,7 @@ def base() -> ConfigDict:
       Package("docker-compose"),
       Package("containerd"),
       UserGroupAssignment("manuel", "docker", requires = User("manuel")),
+      SystemdUnit("docker.socket"),
     ),
 
     Section("locales"): (
@@ -323,37 +327,6 @@ def base() -> ConfigDict:
         # without this linebreak, the last locale will be ignored
       ''')),
       PostHook("regenerate-locales", execute = lambda: shell("locale-gen"), trigger = File("/etc/locale.gen")),
-    ),
-
-    Section("reflector", enabled = False): (
-      Package("reflector"),
-      *PostHookScope(
-        File("/etc/xdg/reflector/reflector.conf", content = cleandoc('''
-          --save /etc/pacman.d/mirrorlist
-          --country France,Germany,Switzerland
-          --protocol https
-          --latest 20     # get the 20 most recently synced mirrors
-          --sort rate     # order by download rate
-        ''')),
-        PostHook(
-          name = "reflector: update mirrorlist",
-          execute = lambda: shell("systemctl start reflector"),
-        ),
-      )
-    ),
-
-    Section("ghostmirror", enabled = False): (
-      Package("ghostmirror"),
-      File("/usr/local/bin/ghostmirror-refresh", permissions = "r-x", content = cleandoc('''
-        #!/bin/sh
-        # compiles a list of 20 mirrors, ranked by their state and ping
-        sudo ghostmirror -Po -c Germany,Switzerland,France -l /etc/pacman.d/mirrorlist -L 20 -S state,outofdate,morerecent,ping
-      ''')),
-      File("/usr/local/bin/ghostmirror-reorder", permissions = "r-x", content = cleandoc('''
-        #!/bin/sh
-        # reorders the mirrorlist by speed and reliability
-        sudo ghostmirror -Po -mu /etc/pacman.d/mirrorlist -l /etc/pacman.d/mirrorlist -s light -S state,outofdate,morerecent,estimated,speed
-      ''')),
     ),
 
     Section("rate-mirrors"): (
