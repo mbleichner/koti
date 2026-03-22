@@ -66,12 +66,6 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
       Package("libva-nvidia-driver") if nvidia else None,
     ),
 
-    Section("flatpak and flathub"): (
-      # flatpak currently required by plasma-meta
-      Package("flatpak", before = lambda item: isinstance(item, FlatpakRepo) or isinstance(item, FlatpakPackage)),
-      FlatpakRepo("flathub", spec_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"),
-    ),
-
     Section("display manager and auto-login"): (
       Package("greetd-tuigreet"),
       File("/etc/greetd/config.toml", content = cleandoc(f'''
@@ -120,22 +114,6 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
           ]
         ''')),
         PostHook("restart wireplumber", execute = lambda: shell("systemctl --user -M manuel@ restart wireplumber"))
-      ),
-    ),
-
-    Section("ananicy-cpp and configuration"): (
-      *PostHookScope(
-        Package("ananicy-cpp"),
-        Package("cachyos-ananicy-rules"),  # (also a dependency of cachyos-settings)
-        File("/etc/ananicy.d/compilers.rules", content = cleandoc('''
-          {"name": "cc",    "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-          {"name": "gcc",   "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-          {"name": "make",  "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-          {"name": "clang", "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-          {"name": "rustc", "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-        ''')),
-        SystemdUnit("ananicy-cpp.service"),
-        PostHook("restart-ananicy-cpp", execute = lambda: shell("systemctl restart ananicy-cpp.service"))
       ),
     ),
   }

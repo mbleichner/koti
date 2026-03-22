@@ -266,10 +266,30 @@ def base() -> ConfigDict:
         console-mode 2
       ''')),
 
+      File("/etc/locale.conf", content = cleandoc('''
+        LANG=en_US.UTF-8
+        LC_ADDRESS=de_DE.UTF-8
+        LC_IDENTIFICATION=de_DE.UTF-8
+        LC_MEASUREMENT=de_DE.UTF-8
+        LC_MONETARY=de_DE.UTF-8
+        LC_NAME=de_DE.UTF-8
+        LC_NUMERIC=de_DE.UTF-8
+        LC_PAPER=de_DE.UTF-8
+        LC_TELEPHONE=de_DE.UTF-8
+        LC_TIME=de_DE.UTF-8
+      ''')),
+
+      File("/etc/locale.gen", content = cleandoc('''
+        en_US.UTF-8 UTF-8
+        de_DE.UTF-8 UTF-8
+        # without this linebreak, the last locale will be ignored
+      ''')),
+
       SystemdUnit("fstrim.timer"),
       SystemdUnit("fwupd.service"),
       SystemdUnit("systemd-boot-update.service"),
       SystemdUnit("systemd-timesyncd.service"),
+      PostHook("regenerate-locales", execute = lambda: shell("locale-gen"), trigger = File("/etc/locale.gen")),
     ),
 
     Section("koti runtime dependencies"): (
@@ -293,27 +313,6 @@ def base() -> ConfigDict:
       Package("containerd"),
       UserGroupAssignment("manuel", "docker", requires = User("manuel")),
       SystemdUnit("docker.socket"),
-    ),
-
-    Section("locales"): (
-      File("/etc/locale.conf", content = cleandoc('''
-        LANG=en_US.UTF-8
-        LC_ADDRESS=de_DE.UTF-8
-        LC_IDENTIFICATION=de_DE.UTF-8
-        LC_MEASUREMENT=de_DE.UTF-8
-        LC_MONETARY=de_DE.UTF-8
-        LC_NAME=de_DE.UTF-8
-        LC_NUMERIC=de_DE.UTF-8
-        LC_PAPER=de_DE.UTF-8
-        LC_TELEPHONE=de_DE.UTF-8
-        LC_TIME=de_DE.UTF-8
-      ''')),
-      File("/etc/locale.gen", content = cleandoc('''
-        en_US.UTF-8 UTF-8
-        de_DE.UTF-8 UTF-8
-        # without this linebreak, the last locale will be ignored
-      ''')),
-      PostHook("regenerate-locales", execute = lambda: shell("locale-gen"), trigger = File("/etc/locale.gen")),
     ),
 
     Section("rate-mirrors"): (
@@ -345,5 +344,27 @@ def base() -> ConfigDict:
         Subsystem sftp /usr/lib/ssh/sftp-server
       ''')),
       SystemdUnit("sshd.service"),
-    )
+    ),
+
+    Section("ananicy-cpp and configuration"): (
+      *PostHookScope(
+        Package("ananicy-cpp"),
+        Package("cachyos-ananicy-rules"),  # (also a dependency of cachyos-settings)
+        File("/etc/ananicy.d/compilers.rules", content = cleandoc('''
+          {"name": "cc",    "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
+          {"name": "gcc",   "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
+          {"name": "make",  "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
+          {"name": "clang", "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
+          {"name": "rustc", "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
+        ''')),
+        SystemdUnit("ananicy-cpp.service"),
+        PostHook("restart-ananicy-cpp", execute = lambda: shell("systemctl restart ananicy-cpp.service"))
+      ),
+    ),
+
+    Section("flatpak and flathub"): (
+      # flatpak currently required by plasma-meta
+      Package("flatpak", before = lambda item: isinstance(item, FlatpakRepo) or isinstance(item, FlatpakPackage)),
+      FlatpakRepo("flathub", spec_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"),
+    ),
   }
