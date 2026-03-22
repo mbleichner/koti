@@ -46,6 +46,10 @@ def dan() -> ConfigDict:
     ),
 
     Section("nvidia drivers for dan"): (
+
+      # Nvidia Driver Tweaks from CachyOS
+      File("/etc/modprobe.d/nvidia.conf", source = "https://raw.githubusercontent.com/CachyOS/CachyOS-Settings/refs/heads/master/usr/lib/modprobe.d/nvidia.conf"),
+
       File("/etc/pacman.d/hooks/nvidia.hook", content = cleandoc('''
         [Trigger]
         Operation=Install
@@ -102,7 +106,6 @@ def dan() -> ConfigDict:
       Package("headsetcontrol-git"),
       Package("teamspeak"),
       Package("teamspeak3"),
-      Package("mumble"),
     ),
 
     Section("homeoffice stuff"): (

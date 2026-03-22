@@ -252,7 +252,7 @@ def base() -> ConfigDict:
         Exec = /bin/sh -c "/usr/bin/paccache -qrk2; /usr/bin/paccache -qruk0"
       ''')),
 
-      File("/etc/modprobe.d/disable-watchdog-modules.conf", content = cleandoc('''
+      File("/etc/modprobe.d/blacklist-watchdog.conf", content = cleandoc('''
         blacklist sp5100_tco
       ''')),
 
