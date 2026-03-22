@@ -351,27 +351,20 @@ def base() -> ConfigDict:
     ),
 
     Section("rate-mirrors"): (
-      Package("rate-mirrors-bin"),  # Die non-bin Variante ist im CachyOS Repo in einer veralteten Version, die nicht alle Parameter unterstützt
+      Package("rate-mirrors"),
       *PostHookScope(
         File("/usr/local/bin/update-mirrors", permissions = "r-x", content = cleandoc(r'''
           #!/bin/sh
-          sudo -u nobody rate-mirrors \
-            --protocol=https \
-            --concurrency=8 \
-            --max-jumps=2 \
-            --entry-country=DE \
-            --exclude-countries RU,BY \
-            --max-mirrors-to-output=10 \
-            arch | sudo tee /etc/pacman.d/mirrorlist
-          sudo -u nobody rate-mirrors \
-            --protocol=https \
-            --concurrency=8 \
-            --max-jumps=2 \
-            --entry-country=DE \
-            --exclude-countries RU,BY \
-            --max-mirrors-to-output=10 \
-            cachyos | sudo tee /etc/pacman.d/cachyos-mirrorlist
-          sed 's|$arch|$arch_v3|g' /etc/pacman.d/cachyos-mirrorlist > /etc/pacman.d/cachyos-v3-mirrorlist
+          RATE_MIRRORS_ARGS=()
+          RATE_MIRRORS_ARGS+=("--protocol=https")
+          RATE_MIRRORS_ARGS+=("--concurrency=8")
+          RATE_MIRRORS_ARGS+=("--max-jumps=2")
+          RATE_MIRRORS_ARGS+=("--entry-country=DE")
+          RATE_MIRRORS_ARGS+=("--exclude-countries RU,BY")
+          RATE_MIRRORS_ARGS+=("--max-mirrors-to-output=10")
+          sudo -u nobody rate-mirrors ${RATE_MIRRORS_ARGS[@]} arch    | sudo tee /etc/pacman.d/mirrorlist
+          sudo -u nobody rate-mirrors ${RATE_MIRRORS_ARGS[@]} cachyos | sudo tee /etc/pacman.d/cachyos-mirrorlist
+          sed 's|$arch|$arch_v3|g' /etc/pacman.d/cachyos-mirrorlist   | sudo tee /etc/pacman.d/cachyos-v3-mirrorlist
         ''')),
         PostHook("update mirrorlist", execute = lambda: shell("/usr/local/bin/update-mirrors")),
       ),
