@@ -7,7 +7,7 @@ from modules.desktop import desktop
 from modules.development import development
 from modules.fish import fish
 from modules.gaming import gaming
-from modules.kernel import kernel_cachyos, kernel_cachyos_lts
+from modules.kernel import kernel
 from modules.nvidia import nvidia_systray, nvidia_undervolting
 from modules.ryzen import ryzen_undervolting
 
@@ -21,8 +21,8 @@ def dan() -> ConfigDict:
     **cpufreq_defaults(min_freq = 2000, max_freq = 4000, governor = "performance"),
     **cpufreq_auto_adjust(base_freq = 2000),
     **cpufreq_systray(),
-    **kernel_cachyos(sortkey = 1),
-    **kernel_cachyos_lts(sortkey = 2),
+    **kernel("linux-cachyos", sortkey = 1),
+    **kernel("linux-cachyos-lts", sortkey = 2),
     **nvidia_systray(),
     **nvidia_undervolting(),
     **ryzen_undervolting(),

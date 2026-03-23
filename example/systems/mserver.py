@@ -5,7 +5,7 @@ from koti.utils.shell import shell
 from modules.base import base
 from modules.cpu import cpufreq_defaults
 from modules.fish import fish
-from modules.kernel import kernel_cachyos, kernel_cachyos_lts
+from modules.kernel import kernel
 
 
 # Configuration for my 7700K homelab server
@@ -13,8 +13,8 @@ def mserver() -> ConfigDict:
   return {
     **base(),
     **cpufreq_defaults(min_freq = 800, max_freq = 4200, governor = "powersave"),
-    **kernel_cachyos(sortkey = 1, powersave = True),
-    **kernel_cachyos_lts(sortkey = 2, powersave = True),
+    **kernel("linux-cachyos-server", sortkey = 1, powersave = True),
+    **kernel("linux-cachyos-lts", sortkey = 2, powersave = True),
     **fish(),
 
     Section("swapfile (8GB) and fstab"): (

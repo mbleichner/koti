@@ -112,6 +112,7 @@ def base() -> ConfigDict:
           CleanAfter
         '''),
       ),
+
       File("/etc/makepkg.conf", content = cleandoc(r'''
         #!/hint/bash
         DLAGENTS=('file::/usr/bin/curl -qgC - -o %o %u'
@@ -153,87 +154,11 @@ def base() -> ConfigDict:
         COMPRESSLZ=(lzip -c -f)
         PKGEXT='.pkg.tar.zst'
         SRCEXT='.src.tar.gz'
-      '''))
-    ),
+      ''')),
 
-    Section("base packages and configs needed on every system"): (
-
-      # Basic Arch dependencies
-      Package("base"),
-      Package("base-devel"),
-      Package("efibootmgr"),
-      Package("terminus-font"),
-      Package("ca-certificates"),
-      Package("ca-certificates-mozilla"),
-      Package("cachyos-settings"),
-
-      # Command Line Utilities
-      Package("nano"),
-      Package("less"),
-      Package("bat"),
-      Package("moreutils"),  # enthält sponge
-      Package("jq"),
-      Package("man-db"),
-      Package("man-pages"),
-      Package("tealdeer"),
-      Package("unrar"),
-      Package("zip"),
-      Package("unzip"),
-      Package("7zip"),
-      Package("yazi"),
-      Package("zoxide"),
-
-      # Arch + Pacman Utilities
       Package("pacman-contrib"),
       Package("pacutils"),
       Package("lostfiles"),
-
-      # Monitoring + Analyse
-      Package("btop"),
-      Package("htop"),
-      Package("iotop"),
-      Package("ncdu"),
-      Package("bandwhich"),
-      Package("nload"),
-
-      # Development und Libraries
-      Package("git"),
-      Package("git-lfs"),
-      Package("tig"),
-
-      # Networking
-      Package("bind"),
-      Package("openbsd-netcat"),
-      Package("traceroute"),
-      Package("wireguard-tools"),
-      Package("wget"),
-      Package("ethtool"),
-      Package("tcpdump"),
-
-      # Hardware Utilities
-      Package("cpupower"),
-      Package("fwupd"),
-
-      # Dateisysteme
-      Package("gparted"),
-      Package("ntfs-3g"),
-      Package("dosfstools"),
-      Package("cryptsetup"),
-      Package("samba"),
-
-      # Alternatives
-      Package("zlib-ng"),
-      Package("zlib-ng-compat"),
-
-      File("/etc/environment.d/editor.conf", content = cleandoc(f'''
-        EDITOR=nano
-      ''')),
-
-      File("/etc/vconsole.conf", content = cleandoc('''
-        KEYMAP=de-latin1
-        FONT=ter-124b
-      ''')),
-
       File("/etc/pacman.d/hooks/paccache.hook", requires = Package("pacman-contrib"), content = cleandoc('''
         [Trigger]
         Operation = Upgrade
@@ -241,24 +166,27 @@ def base() -> ConfigDict:
         Operation = Remove
         Type = Package
         Target = *
-  
+    
         [Action]
         When = PostTransaction
         Description = Cleaning package cache...
         Exec = /bin/sh -c "/usr/bin/paccache -qrk2; /usr/bin/paccache -qruk0"
       ''')),
+    ),
 
-      File("/home/manuel/.gitconfig", owner = "manuel", content = cleandoc('''
-        [user]
-        email = mbleichner@gmail.com
-        name = Manuel Bleichner
-        [pull]
-        rebase = true
-      ''')),
+    Section("basic system packages and configs"): (
+      Package("base"),
+      Package("base-devel"),
+      Package("efibootmgr"),
+      Package("terminus-font"),
+      Package("ca-certificates"),
+      Package("ca-certificates-mozilla"),
+      Package("cachyos-settings"),
+      Package("fwupd"),
 
-      File("/home/manuel/.config/tealdeer/config.toml", owner = "manuel", content = cleandoc('''
-        [updates]
-        auto_update = true
+      File("/etc/vconsole.conf", content = cleandoc('''
+        KEYMAP=de-latin1
+        FONT=ter-124b
       ''')),
 
       File("/boot/loader/loader.conf", permissions = 0o755, content = cleandoc(f'''
@@ -290,6 +218,70 @@ def base() -> ConfigDict:
       SystemdUnit("systemd-boot-update.service"),
       SystemdUnit("systemd-timesyncd.service"),
       PostHook("regenerate-locales", execute = lambda: shell("locale-gen"), trigger = File("/etc/locale.gen")),
+    ),
+
+    Section("command line tools"): (
+      Package("nano"),
+      Package("less"),
+      Package("bat"),
+      Package("moreutils"),  # enthält sponge
+      Package("jq"),
+      Package("man-db"),
+      Package("man-pages"),
+      Package("tealdeer"),
+      Package("unrar"),
+      Package("zip"),
+      Package("unzip"),
+      Package("7zip"),
+      Package("yazi"),
+      Package("zoxide"),
+      Package("btop"),
+      Package("htop"),
+      Package("iotop"),
+      Package("ncdu"),
+
+      File("/etc/environment.d/editor.conf", content = cleandoc(f'''
+        EDITOR=nano
+      ''')),
+
+      File("/home/manuel/.config/tealdeer/config.toml", owner = "manuel", content = cleandoc('''
+        [updates]
+        auto_update = true
+      ''')),
+    ),
+
+    Section("software dev tools"): (
+      Package("git"),
+      Package("git-lfs"),
+      Package("tig"),
+
+      File("/home/manuel/.gitconfig", owner = "manuel", content = cleandoc('''
+        [user]
+        email = mbleichner@gmail.com
+        name = Manuel Bleichner
+        [pull]
+        rebase = true
+      ''')),
+    ),
+
+    Section("networking tools"): (
+      Package("bind"),
+      Package("openbsd-netcat"),
+      Package("traceroute"),
+      Package("wireguard-tools"),
+      Package("wget"),
+      Package("ethtool"),
+      Package("tcpdump"),
+      Package("bandwhich"),
+      Package("nload"),
+    ),
+
+    Section("filesystem tools"): (
+      Package("gparted"),
+      Package("ntfs-3g"),
+      Package("dosfstools"),
+      Package("cryptsetup"),
+      Package("samba"),
     ),
 
     Section("koti runtime dependencies"): (
