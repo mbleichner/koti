@@ -181,7 +181,6 @@ def base() -> ConfigDict:
       Package("terminus-font"),
       Package("ca-certificates"),
       Package("ca-certificates-mozilla"),
-      Package("cachyos-settings"),
       Package("fwupd"),
 
       File("/etc/vconsole.conf", content = cleandoc('''
@@ -336,22 +335,6 @@ def base() -> ConfigDict:
         Subsystem sftp /usr/lib/ssh/sftp-server
       ''')),
       SystemdUnit("sshd.service"),
-    ),
-
-    Section("ananicy-cpp and configuration"): (
-      *PostHookScope(
-        Package("ananicy-cpp"),
-        Package("cachyos-ananicy-rules"),  # (also a dependency of cachyos-settings)
-        File("/etc/ananicy.d/compilers.rules", content = cleandoc('''
-          {"name": "cc",    "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-          {"name": "gcc",   "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-          {"name": "make",  "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-          {"name": "clang", "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-          {"name": "rustc", "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-        ''')),
-        SystemdUnit("ananicy-cpp.service"),
-        PostHook("restart-ananicy-cpp", execute = lambda: shell("systemctl restart ananicy-cpp.service"))
-      ),
     ),
 
     Section("flatpak and flathub"): (
