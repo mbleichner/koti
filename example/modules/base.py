@@ -20,9 +20,9 @@ def base() -> ConfigDict:
         Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"
         Defaults passwd_tries=3, passwd_timeout=180
         
-        # Fix credential caching when switching to root and back to manuel in koti
-        # https://unix.stackexchange.com/questions/148325/sudo-and-fish-no-credential-caching
-        Defaults !tty_tickets
+        # Workaround for repeated sudo prompts caused by paru internally spawning
+        # a new pty, causing sudo to "forget" about its current session
+        Defaults timestamp_type=global
   
         # Notwendig für paru SudoLoop ohne initiale Passworteingabe  
         Defaults verifypw = any
