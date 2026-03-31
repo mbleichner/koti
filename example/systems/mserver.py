@@ -56,69 +56,25 @@ def mserver() -> ConfigDict:
       ''')),
     ),
 
-    Section("docker"): (
+    Section("docker and services"): (
       User("manuel"),
       SystemdUnit("docker.service"),
+      Directory("/opt/services", source = "files/services"),
       File("/usr/local/bin/update-docker", permissions = "rwxr-xr-x", content = cleandoc('''
         #!/bin/bash -e
-        for DIR in homeassistant nextcloud pihole pyanodon-mapshot nginx pacoloco teamspeak traefik; do
-          cd /opt/$DIR && docker compose pull && docker compose up -d
-        done
+        docker compose --project-directory /opt/services pull
+        docker compose --project-directory /opt/services up -d
       ''')),
-    ),
-
-    Section("traefik"): (
-      *DockerComposeService(
-        File("/opt/traefik/docker-compose.yml", source = "files/traefik/docker-compose.yml"),
-      ),
-    ),
-
-    Section("nextcloud"): (
-      *DockerComposeService(
-        File("/opt/nextcloud/docker-compose.yml", source = "files/nextcloud/docker-compose.yml"),
-      ),
-    ),
-
-    Section("homeassistant"): (
-      *DockerComposeService(
-        File("/opt/homeassistant/docker-compose.yml", source = "files/homeassistant/docker-compose.yml"),
-      ),
-    ),
-
-    Section("pihole"): (
-      *DockerComposeService(
-        File("/opt/pihole/docker-compose.yml", source = "files/pihole/docker-compose.yml"),
-      ),
-    ),
-
-    Section("pyanodon-mapshot"): (
-      *DockerComposeService(
-        File("/opt/pyanodon-mapshot/docker-compose.yml", source = "files/pyanodon-mapshot/docker-compose.yml"),
-      ),
-    ),
-
-    Section("nginx"): (
-      *DockerComposeService(
-        File("/opt/nginx/docker-compose.yml", source = "files/nginx/docker-compose.yml"),
-      ),
-    ),
-
-    Section("teamspeak"): (
-      *DockerComposeService(
-        File("/opt/teamspeak/docker-compose.yml", source = "files/teamspeak/docker-compose.yml"),
-      ),
-    ),
-
-    Section("pacoloco"): (
-      *DockerComposeService(
-        File("/opt/pacoloco/docker-compose.yml", source = "files/pacoloco/docker-compose.yml"),
-        File("/opt/pacoloco/pacoloco.yaml", source = "files/pacoloco/pacoloco.yaml"),
+      PostHook(
+        name = f"docker compose up",
+        trigger = Directory("/opt/services"),
+        execute = lambda: shell(f"docker compose --project-directory /opt/services up -d --remove-orphans")
       ),
       PostHook(
         'download pacoloco .db files',
         # Pacoloco prefetch only works if .db files have been added to the cache, which will not happen if we use
         # the CacheServer setting. As a workaround, we trigger a download of the .db files manually.
-        trigger = PostHook(f"docker compose /opt/pacoloco/docker-compose.yml"),
+        trigger = Directory("/opt/services"),
         execute = lambda: shell('''
           curl http://pacoloco.fritz.box/repo/archlinux/core/os/x86_64/core.db > /dev/null
           curl http://pacoloco.fritz.box/repo/archlinux/extra/os/x86_64/extra.db > /dev/null
@@ -131,14 +87,3 @@ def mserver() -> ConfigDict:
       ),
     ),
   }
-
-
-def DockerComposeService(composefile: File, *other: ConfigItem) -> Sequence[ConfigItem]:
-  return PostHookScope(
-    composefile,
-    *other,
-    PostHook(
-      name = f"docker compose {composefile.filename}",
-      execute = lambda: shell(f"docker compose -f {composefile.filename} up -d --force-recreate --remove-orphans")
-    ),
-  )

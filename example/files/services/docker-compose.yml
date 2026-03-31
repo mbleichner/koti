@@ -1,0 +1,192 @@
+services:
+  traefik:
+    image: traefik:3
+    restart: always
+    container_name: traefik
+    network_mode: host
+    command:
+    - "--api=true"
+    - "--api.dashboard=true"
+    - "--providers.docker=true"
+    - "--providers.docker.exposedbydefault=false"
+    - "--entrypoints.websecure.address=:443"
+    - "--entrypoints.web.address=:80"
+    - "--certificatesresolvers.letsencryptresolver.acme.tlschallenge=true"
+    - "--certificatesresolvers.letsencryptresolver.acme.email=mbleichner@gmail.com"
+    - "--certificatesresolvers.letsencryptresolver.acme.storage=/letsencrypt/acme.json"
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - /var/opt/services/traefik/certificates:/letsencrypt
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+    - "traefik.http.routers.api.rule=Host(`traefik.fritz.box`) && PathPrefix(`/api`)"
+    - "traefik.http.routers.api.entrypoints=web"
+    - "traefik.http.routers.api.service=api@internal"
+    - "traefik.http.routers.api.middlewares=local-only"
+    - "traefik.http.routers.dashboard.rule=Host(`traefik.fritz.box`)"
+    - "traefik.http.routers.dashboard.entrypoints=web"
+    - "traefik.http.routers.dashboard.service=dashboard@internal"
+    - "traefik.http.routers.dashboard.middlewares=local-only"
+    - "traefik.http.routers.redirect-https.rule=HostRegexp(`^.+\\.duckdns\\.org$`)"
+    - "traefik.http.routers.redirect-https.entrypoints=web"
+    - "traefik.http.routers.redirect-https.service=noop@internal"
+    - "traefik.http.routers.redirect-https.middlewares=redirect-https"
+    - "traefik.http.middlewares.redirect-https.redirectscheme.scheme=https"
+    - "traefik.http.middlewares.local-only.ipwhitelist.sourcerange=192.168.1.1/24,127.0.0.1/24"
+
+  pihole:
+    restart: always
+    container_name: pihole
+    image: pihole/pihole
+    environment:
+      TZ: 'Europe/Berlin'
+      WEBPASSWORD: "moepmoep"
+    # noinspection ComposeMissingKeys
+    healthcheck:
+      disable: true
+    ports:
+    # IPv6 macht des öfteren Probleme, deshalb reiner IPv4-Bind
+    - "0.0.0.0:53:53/tcp"
+    - "0.0.0.0:53:53/udp"
+    volumes:
+    - /var/opt/services/pihole/data:/etc/pihole
+    - /var/opt/services/pihole/dnsmasq:/etc/dnsmasq.d
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.services.pihole.loadbalancer.server.port=80"
+    - "traefik.http.routers.pihole.rule=Host(`pihole.fritz.box`)"
+    - "traefik.http.routers.pihole.entrypoints=web"
+    - "traefik.http.routers.pihole.middlewares=local-only,pihole-redirect"
+    - "traefik.http.middlewares.pihole-redirect.redirectregex.regex=^http://pihole.fritz.box/?$"
+    - "traefik.http.middlewares.pihole-redirect.redirectregex.replacement=http://pihole.fritz.box/admin/"
+
+  homeassistant:
+    image: homeassistant/home-assistant:stable
+    container_name: homeassistant
+    restart: always
+    volumes:
+    - /var/opt/services/homeassistant/config:/config
+    - /etc/localtime:/etc/localtime:ro
+    - /run/dbus:/run/dbus:ro
+    cap_add:
+    - NET_ADMIN
+    - NET_RAW
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
+    - "traefik.http.routers.homeassistant-local.rule=Host(`homeassistant.fritz.box`) || Host(`homeassistant.local`)"
+    - "traefik.http.routers.homeassistant-local.entrypoints=web"
+    - "traefik.http.routers.homeassistant-local.middlewares=local-only"
+
+  pacoloco:
+    image: ghcr.io/anatol/pacoloco
+    container_name: pacoloco
+    restart: always
+    volumes:
+    - /etc/pacman.d:/etc/pacman.d:ro
+    - ./pacoloco.yaml:/etc/pacoloco.yaml:ro
+    - /var/opt/services/pacoloco/cache:/var/cache/pacoloco:rw
+    environment:
+    - TZ=Europe/Berlin
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.services.pacoloco.loadbalancer.server.port=8000"
+    - "traefik.http.routers.pacoloco.rule=Host(`pacoloco.fritz.box`)"
+    - "traefik.http.routers.pacoloco.entrypoints=web"
+    - "traefik.http.routers.pacoloco.middlewares=local-only"
+
+  nextcloud-web:
+    image: nextcloud:33 # cron-Image ebenfalls anpassen!
+    container_name: nextcloud-web
+    restart: always
+    depends_on:
+    - nextcloud-postgres
+    environment:
+    - POSTGRES_DB=nextcloud
+    - POSTGRES_USER=nextcloud
+    - POSTGRES_PASSWORD=nextcloud
+    - POSTGRES_HOST=nextcloud-postgres
+    - PHP_MEMORY_LIMIT=8G
+    - PHP_UPLOAD_LIMIT=16G
+    - APACHE_BODY_LIMIT=0
+    volumes:
+    - /var/opt/services/nextcloud/data:/var/www/html
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
+    - "traefik.http.routers.nextcloud-remote.rule=Host(`nextcloud.mbleichner.duckdns.org`)"
+    - "traefik.http.routers.nextcloud-remote.entrypoints=websecure"
+    - "traefik.http.routers.nextcloud-remote.tls.certresolver=letsencryptresolver"
+    - "traefik.http.routers.nextcloud-local.rule=Host(`nextcloud.fritz.box`)"
+    - "traefik.http.routers.nextcloud-local.entrypoints=web"
+    - "traefik.http.routers.nextcloud-local.middlewares=local-only"
+
+  nextcloud-cron:
+    image: nextcloud:33
+    container_name: nextcloud-cron
+    entrypoint: /cron.sh
+    restart: always
+    depends_on:
+    - nextcloud-postgres
+    environment:
+    - POSTGRES_DB=nextcloud
+    - POSTGRES_USER=nextcloud
+    - POSTGRES_PASSWORD=nextcloud
+    - POSTGRES_HOST=nextcloud-postgres
+    volumes:
+    - /var/opt/services/nextcloud/data:/var/www/html
+
+  nextcloud-postgres:
+    image: postgres:16
+    container_name: nextcloud-postgres
+    restart: always
+    environment:
+    - POSTGRES_USER=nextcloud
+    - POSTGRES_PASSWORD=nextcloud
+    volumes:
+    - /var/opt/services/nextcloud/postgres:/var/lib/postgresql/data
+
+  pyanodon-mapshot:
+    image: nginx
+    container_name: pyanodon-mapshot
+    restart: always
+    volumes:
+    - /var/opt/services/pyanodon-mapshot/data:/usr/share/nginx/html:ro
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.services.pyanodon.loadbalancer.server.port=80"
+    - "traefik.http.routers.pyanodon.entrypoints=websecure"
+    - "traefik.http.routers.pyanodon.rule=Host(`pyanodon.mbleichner.duckdns.org`)"
+    - "traefik.http.routers.pyanodon.tls.certresolver=letsencryptresolver"
+
+  nginx:
+    image: nginx
+    container_name: nginx
+    restart: always
+    volumes:
+    - /var/opt/services/nginx/data:/usr/share/nginx/html:ro
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.services.nginx.loadbalancer.server.port=80"
+    - "traefik.http.routers.nginx.entrypoints=websecure"
+    - "traefik.http.routers.nginx.rule=Host(`nginx.mbleichner.duckdns.org`)"
+    - "traefik.http.routers.nginx.tls.certresolver=letsencryptresolver"
+
+  teamspeak:
+    image: teamspeaksystems/teamspeak6-server
+    container_name: teamspeak
+    restart: always
+    ports:
+    - "0.0.0.0:9987:9987/udp"            # Audio/Video
+    - "0.0.0.0:30033:30033"              # File Transfer
+    - "127.0.0.1:10022:10022"            # ServerQuery (SSH)
+    - "127.0.0.1:10080:10080"            # WebQuery
+    environment:
+    - TSSERVER_LICENSE_ACCEPTED=accept
+    - TSSERVER_QUERY_SSH_ENABLED=true
+    - TSSERVER_QUERY_HTTP_ENABLED=true
+    env_file:
+    - /etc/opt/services/teamspeak.env  # should contain TSSERVER_QUERY_ADMIN_PASSWORD
+    volumes:
+    - /var/opt/services/teamspeak/data:/var/tsserver

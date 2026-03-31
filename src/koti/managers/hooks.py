@@ -75,7 +75,7 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
       if trigger_state is not None:
         trigger_hashes[str(trigger_ref)] = trigger_state.sha256()
       else:
-        del trigger_hashes[str(trigger_ref)]
+        trigger_hashes.pop(str(trigger_ref), None)  # error tolerant "del"
     return PostHookState(trigger_hashes)
 
   @classmethod
