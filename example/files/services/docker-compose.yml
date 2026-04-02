@@ -190,3 +190,5 @@ services:
     - /etc/opt/services/teamspeak.env  # should contain TSSERVER_QUERY_ADMIN_PASSWORD
     volumes:
     - /var/opt/services/teamspeak/data:/var/tsserver
+    deploy:
+      replicas: 0 # Derzeit außer Betrieb
