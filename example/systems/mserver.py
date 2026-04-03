@@ -66,15 +66,15 @@ def mserver() -> ConfigDict:
         docker compose --project-directory /opt/services up -d
       ''')),
       PostHook(
-        name = f"docker compose up",
+        name = "docker compose up",
         trigger = Directory("/opt/services"),
         execute = lambda: shell(f"docker compose --project-directory /opt/services up -d --remove-orphans")
       ),
       PostHook(
-        'download pacoloco .db files',
+        name = "download pacoloco .db files",
         # Pacoloco prefetch only works if .db files have been added to the cache, which will not happen if we use
         # the CacheServer setting. As a workaround, we trigger a download of the .db files manually.
-        trigger = Directory("/opt/services"),
+        trigger = File("/opt/services/pacoloco.yaml"),
         execute = lambda: shell('''
           curl http://pacoloco.fritz.box/repo/archlinux/core/os/x86_64/core.db > /dev/null
           curl http://pacoloco.fritz.box/repo/archlinux/extra/os/x86_64/extra.db > /dev/null

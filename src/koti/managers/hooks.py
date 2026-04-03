@@ -62,7 +62,7 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
     trigger_hashes: dict[str, str]
     if not during_cleanup:
       # during installation phase, there might be leftover triggers that aren't registered to the PostHook anymore, but we have
-      # to assume they stimm exist on the system. Therefore we keep any leftover trigger checksums from earlier runs here.
+      # to assume they still exist on the system. Therefore we keep any leftover trigger checksums from earlier runs here.
       trigger_hashes = {**self.trigger_hash_store.get(hook.name, {})}
     else:
       # during the cleanup phase, all leftover triggers should have been removed by other managers, so we can assume that
