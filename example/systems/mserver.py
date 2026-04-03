@@ -67,7 +67,7 @@ def mserver() -> ConfigDict:
       ''')),
       PostHook(
         name = "docker compose up",
-        trigger = Directory("/opt/services"),
+        trigger = File("/opt/services/docker-compose.yml"),
         execute = lambda: shell(f"docker compose --project-directory /opt/services up -d --remove-orphans")
       ),
       PostHook(
