@@ -4,7 +4,7 @@ from koti import *
 from koti.utils.shell import shell
 
 
-def base() -> ConfigDict:
+def base(aurcache: bool) -> ConfigDict:
   return {
     Section("bootstrap sudo, pacman and paru"): (
 
@@ -56,6 +56,10 @@ def base() -> ConfigDict:
         DownloadUser = alpm
         SigLevel = Required DatabaseOptional
         LocalFileSigLevel = Optional
+        
+        {"""[aurcache]
+        SigLevel = Optional TrustAll
+        Server = http://aurcache.fritz.box/$arch""" if aurcache else ""}
     
         [cachyos-v3]
         CacheServer = http://pacoloco.fritz.box/repo/cachyos-v3/$arch_v3/$repo

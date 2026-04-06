@@ -21,7 +21,7 @@ git pull --rebase; sudo PYTHONPATH=/home/arch/koti/src ./koti-apply
 
 def quickemu() -> ConfigDict:
   return {
-    **base(),
+    **base(aurcache = True),
     **fish(),
     **desktop(nvidia = False, autologin = True, ms_fonts = False),
     **cpufreq_systray(),

@@ -11,7 +11,7 @@ from modules.kernel import kernel
 # Configuration for my 7700K homelab server
 def mserver() -> ConfigDict:
   return {
-    **base(),
+    **base(aurcache = False),  # avoid self dependency
     **cpufreq_defaults(min_freq = 800, max_freq = 4200, governor = "powersave"),
     **kernel("linux-cachyos-server", sortkey = 1, powersave = True),
     **kernel("linux-cachyos-lts", sortkey = 2, powersave = True),

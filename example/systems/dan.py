@@ -15,7 +15,7 @@ from modules.ryzen import ryzen_undervolting
 # Configuration for my DAN A4-SFX desktop machine (Ryzen 5800X3D, RTX3080)
 def dan() -> ConfigDict:
   return {
-    **base(),
+    **base(aurcache = True),
     **fish(),
     **desktop(nvidia = True, autologin = True, ms_fonts = True),
     **cpufreq_defaults(min_freq = 2000, max_freq = 4000, governor = "performance"),

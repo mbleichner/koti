@@ -15,6 +15,7 @@ def gaming() -> ConfigDict:
       Package("gamescope"),
       Package("gpu-screen-recorder-ui"),
       Package("r2modman-bin"),
+      Package("vortex"),
       Package("mangohud"),
       UserGroupAssignment("manuel", "games"),
 

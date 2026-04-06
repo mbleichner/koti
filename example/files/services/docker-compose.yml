@@ -192,3 +192,47 @@ services:
     - /var/opt/services/teamspeak/data:/var/tsserver
     deploy:
       replicas: 0 # Derzeit außer Betrieb
+
+  aurcache:
+    # set up a custom repo name (once after initial start)
+    # - cd /var/opt/services/aurcache/repo/x86_64
+    # - sudo ln -s repo.db aurcache.db
+    # - sudo ln -s repo.files aurcache.files
+    image: ghcr.io/lukas-heiligenbrunner/aurcache
+    container_name: aurcache
+    restart: always
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    - /var/opt/services/aurcache/repo:/app/repo
+    - /var/opt/services/aurcache/builds:/app/builds
+    environment:
+    - DB_TYPE=POSTGRESQL # sqlite is pretty unstable and prone to random errors
+    - DB_USER=aurcache
+    - DB_PWD=aurcache
+    - DB_HOST=aurcache-postgres
+    - MAX_CONCURRENT_BUILDS=3
+    - BUILD_ARTIFACT_DIR=/var/opt/services/aurcache/builds  # refers to host path
+    - MIRRORLIST_PATH_X86_64=/etc/pacman.d                  # refers to host path
+    - MIRROR_RANK_SCHEDULE=
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.services.aurcache-frontend.loadbalancer.server.port=8080"
+    - "traefik.http.routers.aurcache-frontend.service=aurcache-frontend"
+    - "traefik.http.routers.aurcache-frontend.rule=Host(`aurcache.fritz.box`)"
+    - "traefik.http.routers.aurcache-frontend.entrypoints=web"
+    - "traefik.http.routers.aurcache-frontend.middlewares=local-only"
+    - "traefik.http.services.aurcache-repo.loadbalancer.server.port=8081"
+    - "traefik.http.routers.aurcache-repo.service=aurcache-repo"
+    - "traefik.http.routers.aurcache-repo.rule=Host(`aurcache.fritz.box`) && PathPrefix(`/x86_64/`)"
+    - "traefik.http.routers.aurcache-repo.entrypoints=web"
+    - "traefik.http.routers.aurcache-repo.middlewares=local-only"
+
+  aurcache-postgres:
+    image: postgres:18
+    container_name: aurcache-postgres
+    restart: always
+    volumes:
+    - /var/opt/services/aurcache/postgres:/var/lib/postgresql
+    environment:
+    - POSTGRES_PASSWORD=aurcache
+    - POSTGRES_USER=aurcache

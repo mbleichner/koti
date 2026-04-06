@@ -13,7 +13,7 @@ from modules.kernel import kernel
 # Configuration for my Lenovo X13 laptop
 def lenovo() -> ConfigDict:
   return {
-    **base(),
+    **base(aurcache = True),
     **fish(),
     **desktop(nvidia = False, autologin = True, ms_fonts = True),
     **cpufreq_defaults(min_freq = 1500, max_freq = 4000, governor = "powersave"),

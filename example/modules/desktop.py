@@ -73,7 +73,7 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
     ),
 
     Section("fonts"): (
-      Package("ttf-ms-win10-auto") if ms_fonts else None,  # Das win11 Package war zuletzt broken
+      Package("ttf-ms-win11-auto") if ms_fonts else None,
       Package("noto-fonts"),
       Package("noto-fonts-emoji"),
     ),
