@@ -63,7 +63,7 @@ services:
     - "traefik.http.middlewares.pihole-redirect.redirectregex.replacement=http://pihole.fritz.box/admin/"
 
   homeassistant:
-    image: homeassistant/home-assistant:stable
+    image: homeassistant/home-assistant
     container_name: homeassistant
     restart: always
     volumes:
@@ -99,7 +99,7 @@ services:
     - "traefik.http.routers.pacoloco.middlewares=local-only"
 
   nextcloud-web:
-    image: nextcloud:33 # cron-Image ebenfalls anpassen!
+    image: nextcloud # mit cron-Image synchron halten
     container_name: nextcloud-web
     restart: always
     depends_on:
@@ -125,7 +125,7 @@ services:
     - "traefik.http.routers.nextcloud-local.middlewares=local-only"
 
   nextcloud-cron:
-    image: nextcloud:33
+    image: nextcloud
     container_name: nextcloud-cron
     entrypoint: /cron.sh
     restart: always
