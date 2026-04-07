@@ -1,4 +1,5 @@
 services:
+
   traefik:
     image: traefik:3
     restart: always
@@ -40,7 +41,7 @@ services:
     container_name: pihole
     image: pihole/pihole
     environment:
-      TZ: 'Europe/Berlin'
+      TZ: "Europe/Berlin"
       WEBPASSWORD: "moepmoep"
     # noinspection ComposeMissingKeys
     healthcheck:
@@ -86,9 +87,10 @@ services:
     volumes:
     - /etc/pacman.d:/etc/pacman.d:ro
     - ./pacoloco.yaml:/etc/pacoloco.yaml:ro
+    - /etc/localtime:/etc/localtime:ro
     - /var/opt/services/pacoloco/cache:/var/cache/pacoloco:rw
     environment:
-    - TZ=Europe/Berlin
+      TZ: "Europe/Berlin"
     labels:
     - "traefik.enable=true"
     - "traefik.http.services.pacoloco.loadbalancer.server.port=8000"
@@ -103,13 +105,13 @@ services:
     depends_on:
     - nextcloud-postgres
     environment:
-    - POSTGRES_DB=nextcloud
-    - POSTGRES_USER=nextcloud
-    - POSTGRES_PASSWORD=nextcloud
-    - POSTGRES_HOST=nextcloud-postgres
-    - PHP_MEMORY_LIMIT=8G
-    - PHP_UPLOAD_LIMIT=16G
-    - APACHE_BODY_LIMIT=0
+      POSTGRES_DB: "nextcloud"
+      POSTGRES_USER: "nextcloud"
+      POSTGRES_PASSWORD: "nextcloud"
+      POSTGRES_HOST: "nextcloud-postgres"
+      PHP_MEMORY_LIMIT: "8G"
+      PHP_UPLOAD_LIMIT: "16G"
+      APACHE_BODY_LIMIT: "0"
     volumes:
     - /var/opt/services/nextcloud/data:/var/www/html
     labels:
@@ -130,10 +132,10 @@ services:
     depends_on:
     - nextcloud-postgres
     environment:
-    - POSTGRES_DB=nextcloud
-    - POSTGRES_USER=nextcloud
-    - POSTGRES_PASSWORD=nextcloud
-    - POSTGRES_HOST=nextcloud-postgres
+      POSTGRES_DB: "nextcloud"
+      POSTGRES_USER: "nextcloud"
+      POSTGRES_PASSWORD: "nextcloud"
+      POSTGRES_HOST: "nextcloud-postgres"
     volumes:
     - /var/opt/services/nextcloud/data:/var/www/html
 
@@ -142,8 +144,8 @@ services:
     container_name: nextcloud-postgres
     restart: always
     environment:
-    - POSTGRES_USER=nextcloud
-    - POSTGRES_PASSWORD=nextcloud
+      POSTGRES_USER: "nextcloud"
+      POSTGRES_PASSWORD: "nextcloud"
     volumes:
     - /var/opt/services/nextcloud/postgres:/var/lib/postgresql/data
 
@@ -183,9 +185,9 @@ services:
     - "127.0.0.1:10022:10022"            # ServerQuery (SSH)
     - "127.0.0.1:10080:10080"            # WebQuery
     environment:
-    - TSSERVER_LICENSE_ACCEPTED=accept
-    - TSSERVER_QUERY_SSH_ENABLED=true
-    - TSSERVER_QUERY_HTTP_ENABLED=true
+      TSSERVER_LICENSE_ACCEPTED: "accept"
+      TSSERVER_QUERY_SSH_ENABLED: "true"
+      TSSERVER_QUERY_HTTP_ENABLED: "true"
     env_file:
     - /etc/opt/services/teamspeak.env  # should contain TSSERVER_QUERY_ADMIN_PASSWORD
     volumes:
@@ -202,18 +204,21 @@ services:
     container_name: aurcache
     restart: always
     volumes:
+    - /etc/localtime:/etc/localtime:ro
     - /var/run/docker.sock:/var/run/docker.sock
     - /var/opt/services/aurcache/repo:/app/repo
     - /var/opt/services/aurcache/builds:/app/builds
     environment:
-    - DB_TYPE=POSTGRESQL # sqlite is pretty unstable and prone to random errors
-    - DB_USER=aurcache
-    - DB_PWD=aurcache
-    - DB_HOST=aurcache-postgres
-    - MAX_CONCURRENT_BUILDS=3
-    - BUILD_ARTIFACT_DIR=/var/opt/services/aurcache/builds  # refers to host path
-    - MIRRORLIST_PATH_X86_64=/etc/pacman.d                  # refers to host path
-    - MIRROR_RANK_SCHEDULE=
+      TZ: "Europe/Berlin"
+      DB_TYPE: "POSTGRESQL" # sqlite is pretty unstable and prone to random errors
+      DB_USER: "aurcache"
+      DB_PWD: "aurcache"
+      DB_HOST: "aurcache-postgres"
+      MAX_CONCURRENT_BUILDS: "3"
+      BUILD_ARTIFACT_DIR: "/var/opt/services/aurcache/builds"  # refers to host path
+      MIRRORLIST_PATH_X86_64: "/etc/pacman.d"                  # refers to host path
+      MIRROR_RANK_SCHEDULE: null
+      AUTO_UPDATE_SCHEDULE: "0 30 3,7,18 * * * *"              # same as pacoloco
     labels:
     - "traefik.enable=true"
     - "traefik.http.services.aurcache-frontend.loadbalancer.server.port=8080"
