@@ -9,6 +9,7 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
     Section("plasma desktop"): (
       Package("plasma-meta"),
       Package("archlinux-wallpaper"),
+      Package("plasma-workspace-wallpapers"),
       Directory("/opt/gamma-icc-profiles", source = "files/gamma-icc-profiles.zip", mask = "r--"),
       Option("/etc/pacman.conf/NoExtract", "etc/xdg/autostart/org.kde.discover.notifier.desktop"),  # prevent startup of discover (KDE package manager)
     ),
