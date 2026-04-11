@@ -16,6 +16,7 @@ def gaming() -> ConfigDict:
       Package("gpu-screen-recorder-ui"),
       Package("r2modman-bin"),
       # *Packages("vortex", "dotnet-runtime-9.0"), # derzeit zu verbuggt
+      Package("amethyst-mod-manager"),
       Package("mangohud"),
       UserGroupAssignment("manuel", "games"),
 
