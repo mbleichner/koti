@@ -59,6 +59,12 @@ def gaming() -> ConfigDict:
         PROTON_USE_WAYLAND=1
         PROTON_ENABLE_WAYLAND=1
       ''')),
+
+      File("/etc/environment.d/proton-descriptor-heap.conf", content = cleandoc(f'''
+        # Use CachyOS preview build of VKD3D descriptor heap
+        PROTON_VKD3D_HEAP=1
+        VKD3D_CONFIG=descriptor_heap
+      ''')),
     ),
 
     Section("gaming optimizations"): (
