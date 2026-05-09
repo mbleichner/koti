@@ -21,9 +21,8 @@ def dan() -> ConfigDict:
     **cpufreq_defaults(min_freq = 2000, max_freq = 4000, governor = "performance"),
     **cpufreq_auto_adjust(base_freq = 2000),
     **cpufreq_systray(),
-    **kernel("linux-cachyos-bore-lto", sortkey = 1),
-    **kernel("linux-cachyos", sortkey = 2),
-    **kernel("linux-cachyos-lts", sortkey = 3),
+    **kernel("linux-cachyos", sortkey = 1),
+    **kernel("linux-cachyos-lts", sortkey = 2),
     **nvidia_systray(),
     **nvidia_undervolting(),
     **ryzen_undervolting(),
@@ -56,7 +55,7 @@ def dan() -> ConfigDict:
         Target=nvidia-open
         Target=nvidia-open-lts
         Target=linux-cachyos-nvidia-open
-        Target=linux-cachyos-bore-lto-nvidia-open
+        Target=linux-cachyos-lts-nvidia-open
     
         [Action]
         Description=Updating NVIDIA module in initcpio
@@ -73,7 +72,6 @@ def dan() -> ConfigDict:
         CUDA_DISABLE_PERF_BOOST=1
       ''')),
 
-      Package("linux-cachyos-bore-lto-nvidia-open"),
       Package("linux-cachyos-nvidia-open"),
       Package("linux-cachyos-lts-nvidia-open"),
       Package("nvidia-settings"),
