@@ -179,6 +179,7 @@ services:
     image: teamspeaksystems/teamspeak6-server
     container_name: teamspeak
     restart: always
+    scale: 0
     ports:
     - "0.0.0.0:9987:9987/udp"            # Audio/Video
     - "0.0.0.0:30033:30033"              # File Transfer
@@ -192,8 +193,6 @@ services:
     - /etc/opt/services/teamspeak.env  # should contain TSSERVER_QUERY_ADMIN_PASSWORD
     volumes:
     - /var/opt/services/teamspeak/data:/var/tsserver
-    deploy:
-      replicas: 0 # Derzeit außer Betrieb
 
   aurcache:
     # set up a custom repo name (once after initial start)
@@ -241,3 +240,43 @@ services:
     environment:
     - POSTGRES_PASSWORD=aurcache
     - POSTGRES_USER=aurcache
+
+  abiotic:
+    build: { context: ./abiotic }
+    container_name: abiotic
+    restart: always
+    scale: 0
+    ports:
+    - "0.0.0.0:7777:7777/tcp"
+    - "0.0.0.0:7777:7777/udp"
+    - "0.0.0.0:27015:27015/udp"
+    env_file:
+    - /etc/opt/services/abiotic.env  # should contain ServerPassword and AdminPassword
+    volumes:
+    - "/var/opt/services/abiotic/userhome:/home/ubuntu" # initial setup: sudo chown -R 1000:1000 /var/opt/services/abiotic/userhome
+
+  satisfactory:
+    build: { context: ./satisfactory }
+    container_name: satisfactory
+    restart: always
+    scale: 0
+    ports:
+    - "0.0.0.0:7777:7777/tcp"
+    - "0.0.0.0:7777:7777/udp"
+    - "0.0.0.0:8888:8888/tcp"
+    volumes:
+    - "/var/opt/services/satisfactory/userhome:/home/ubuntu" # initial setup: sudo chown -R 1000:1000 /var/opt/services/satisfactory/userhome
+
+  valheim:
+    build: { context: ./valheim }
+    container_name: valheim
+    restart: always
+    scale: 0
+    ports:
+    - "0.0.0.0:2456:2456/udp"
+    - "0.0.0.0:2457:2457/udp"
+    - "0.0.0.0:2458:2458/udp"
+    env_file:
+    - /etc/opt/services/valheim.env  # should contain ServerPassword
+    volumes:
+    - "/var/opt/services/valheim/userhome:/home/ubuntu" # initial setup: sudo chown -R 1000:1000 /var/opt/services/valheim/userhome

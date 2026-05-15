@@ -61,13 +61,14 @@ def mserver() -> ConfigDict:
       Directory("/opt/services", source = "files/services"),
       File("/usr/local/bin/update-docker", permissions = "rwxr-xr-x", content = cleandoc('''
         #!/bin/bash -e
+        docker compose --project-directory /opt/services build
         docker compose --project-directory /opt/services pull
-        docker compose --project-directory /opt/services up -d
+        docker compose --project-directory /opt/services up -d --remove-orphans
       ''')),
       PostHook(
-        name = "docker compose up",
-        trigger = File("/opt/services/docker-compose.yml"),
-        execute = lambda: shell(f"docker compose --project-directory /opt/services up -d --remove-orphans")
+        name = "update docker services",
+        trigger = Directory("/opt/services"),
+        execute = lambda: shell("/usr/local/bin/update-docker")
       ),
       PostHook(
         name = "download pacoloco .db files",

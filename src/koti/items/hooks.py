@@ -18,7 +18,7 @@ class PostHook(ManagedConfigItem):
     self,
     name: str,
     execute: Callable | None = None,
-    trigger: PostHookTriggerType | Sequence[PostHookTriggerType] | None = None,
+    trigger: PostHookTriggerType | Sequence[PostHookTriggerType]| None = None,
     add_trigger_as_dependency = True,
     **kwargs: Unpack[ManagedConfigItemBaseArgs],
   ):
