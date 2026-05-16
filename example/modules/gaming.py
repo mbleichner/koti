@@ -9,6 +9,7 @@ def gaming() -> ConfigDict:
     Section("game launchers and utilities"): (
       Package("eden-bin"),
       Package("steam"),
+      Package("steamcmd"),
       Package("heroic-games-launcher-bin"),
       Package("lutris"),
       Package("discord"),
