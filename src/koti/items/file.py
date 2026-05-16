@@ -12,11 +12,10 @@ from koti.model import ConfigItem, ConfigModel, ManagedConfigItem, ManagedConfig
 
 
 class File(ManagedConfigItem):
-  content: Callable[[ConfigModel], bytes] | None
-  permissions: int
-  owner: str = "root"
-  # FIXME: group?
   filename: str
+  content: Callable[[ConfigModel], bytes] | None
+  permissions: int | None
+  owner: str | None
 
   def __init__(
     self,
@@ -24,12 +23,14 @@ class File(ManagedConfigItem):
     content: str | bytes | Callable[[ConfigModel], str | bytes] | None = None,
     source: str | None = None,
     permissions: int | str | None = None,
-    owner: str = "root",
+    owner: str | None = None,
     add_owner_as_dependency = True,
     **kwargs: Unpack[ManagedConfigItemBaseArgs],
   ):
     super().__init__(**kwargs)
     self.filename = filename
+    self.owner = owner
+
     if callable(content):
       self.content = lambda model: self.bytes(content(model))
     elif isinstance(content, str):
@@ -39,18 +40,18 @@ class File(ManagedConfigItem):
         self.content = lambda model: self.bytes(self.download(source))
       else:
         self.content = lambda model: Path(source).read_bytes()
-        self.permissions = os.stat(source).st_mode & 0o777
+        self.permissions = os.stat(source).st_mode & 0o777  # default unless overwritten explicitly
     else:
       self.content = None
+
     if isinstance(permissions, str):
       self.permissions = File.parse_permissions(permissions)
     elif isinstance(permissions, int):
       self.permissions = permissions
-    elif permissions is None:
-      self.permissions = 0o644  # rw-r--r--
-    self.owner = owner
+    elif not hasattr(self, "permissions"):
+      self.permissions = None
 
-    if add_owner_as_dependency:
+    if add_owner_as_dependency and owner is not None:
       self.after = [*self.after, User(owner)]
 
   def __eq__(self, other: Any) -> bool:

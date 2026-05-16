@@ -47,6 +47,8 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
   managed_files_store: JsonCollection[str]
   managed_dirs_store: JsonCollection[str]
   cleanup_order = 10
+  default_permissions = 0o644
+  default_owner  = "root"
 
   def __init__(self):
     super().__init__()
@@ -204,7 +206,8 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     pwnam = getpwnam(target.owner)
     mode = target.mode
     content = target.content
-    self.mkdirs(os.path.dirname(item.filename), item.owner)
+    owner = item.owner or self.default_owner
+    self.mkdirs(os.path.dirname(item.filename), owner)
     with open(item.filename, 'wb+') as fh:
       fh.write(content)  # type: ignore
     os.chown(item.filename, uid = pwnam.pw_uid, gid = pwnam.pw_gid)
@@ -241,10 +244,12 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
 
   def file_state_target(self, item: File, model: ConfigModel) -> FileState:
     assert item.content is not None
+    owner = item.owner or self.default_owner
+    permissions = item.permissions or self.default_permissions
     return FileState(
       content = item.content(model),
-      owner = item.owner,
-      mode = item.permissions & 0o777,
+      owner = owner,
+      mode = permissions & 0o777,
     )
 
   def dir_state_current(self, item: Directory, system_state: SystemState) -> DirectoryState | None:
