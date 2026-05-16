@@ -60,7 +60,7 @@ def format_processes_extra_entries(model: ConfigModel) -> str:
   return "\n".join(f'"{name}": {freq}' for name, freq in entries)
 
 
-def cpufreq_systray(freq_options: list[int] = (1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500)) -> ConfigDict:
+def cpufreq_systray(freq_options: Sequence[int] = (1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500)) -> ConfigDict:
   return {
     Section("systray: CPU items"): (
       Package("yq"),  # needed to adjust target freq in /etc/cpufreq/state.yaml

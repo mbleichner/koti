@@ -10,4 +10,12 @@ license = "GPL-3.0-or-later"
 authors = [{ name = "Manuel Bleichner" }]
 requires-python = ">=3.12"
 
-
+[tool.mypy]
+check_untyped_defs = true
+exclude = "example/files"
+explicit_package_bases = true
+files = [ "example" ]
+mypy_path = [
+    "$MYPY_CONFIG_FILE_DIR/example",
+    "$MYPY_CONFIG_FILE_DIR/src",
+]
