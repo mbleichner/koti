@@ -36,7 +36,7 @@ class FlatpakPackageManager(ConfigManager[FlatpakPackage, FlatpakRepoState | Fla
     super().__init__()
     self.perform_update = perform_update
 
-  def get_state(self, item: FlatpakPackage) -> FlatpakPackageState | None:
+  def get_state(self, item: FlatpakPackage, system_state: SystemState) -> FlatpakPackageState | None:
     flatpak_available = shell_success("flatpak --version")
     if not flatpak_available:
       return None
@@ -50,7 +50,7 @@ class FlatpakPackageManager(ConfigManager[FlatpakPackage, FlatpakRepoState | Fla
     if items_to_check:
       items_to_install: list[FlatpakPackage] = []
       for item in items_to_check:
-        current = system_state.get_state(item, FlatpakPackageState)
+        current = system_state.get_state(item, system_state, FlatpakPackageState)
         target = FlatpakPackageState()
         if current == target:
           continue
@@ -102,7 +102,7 @@ class FlatpakRepoManager(ConfigManager[FlatpakRepo, FlatpakRepoState]):
       assert item.spec_url is not None, "missing spec_url"
       assert item.repo_url is not None, "missing repo_url"
 
-  def get_state(self, item: FlatpakRepo) -> FlatpakRepoState | None:
+  def get_state(self, item: FlatpakRepo, system_state: SystemState) -> FlatpakRepoState | None:
     flatpak_available = shell_success("flatpak --version")
     if not flatpak_available:
       return None
@@ -117,7 +117,7 @@ class FlatpakRepoManager(ConfigManager[FlatpakRepo, FlatpakRepoState]):
       installed_remotes = shell_output("flatpak --system remotes --columns name").splitlines() if flatpak_available else []
       for item in items_to_check:
         assert item.repo_url is not None
-        current = system_state.get_state(item, FlatpakRepoState)
+        current = system_state.get_state(item, system_state, FlatpakRepoState)
         target = FlatpakRepoState(repo_url = item.repo_url)
         if current == target:
           continue

@@ -68,11 +68,11 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     dirnames = self.managed_dirs_store.elements()
     return [Directory(dirname) for dirname in dirnames]
 
-  def get_state(self, item: File | Directory) -> FileState | DirectoryState | None:
+  def get_state(self, item: File | Directory, system_state: SystemState) -> FileState | DirectoryState | None:
     if isinstance(item, File):
       return self.file_state_current(item)
     else:
-      return self.dir_state_current(item)
+      return self.dir_state_current(item, system_state)
 
   def get_install_actions(self, items_to_check: Sequence[File | Directory], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     yield from self.plan_file_install([item for item in items_to_check if isinstance(item, File)], model, system_state, register_file = True)
@@ -84,7 +84,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
 
   def plan_file_install(self, items_to_check: Sequence[File], model: ConfigModel, system_state: SystemState, register_file: bool) -> Generator[Action]:
     for item in items_to_check:
-      current = system_state.get_state(item, FileState)
+      current = system_state.get_state(item, system_state, FileState)
       target = self.file_state_target(item, model)
       if current == target:
         continue
@@ -127,7 +127,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
 
   def plan_dir_install(self, items_to_check: Sequence[Directory], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     for item in items_to_check:
-      current = system_state.get_state(item, DirectoryState)
+      current = system_state.get_state(item, system_state, DirectoryState)
       target = self.dir_state_target(item, model)
       if current == target:
         continue
@@ -147,7 +147,6 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
         orphan_file = File(filename)
         yield Action(
           removes = [orphan_file],
-          updates = {item: target},
           description = f"remove orphan file {filename}",
           additional_info = "leftover empty directories will also be removed",
           execute = lambda: self.remove_orphaned_file_and_clean_leftover_dirs(orphan_file, item),
@@ -171,7 +170,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
   def plan_file_cleanup(self, items_to_keep: Sequence[File], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     installed_files = self.installed_files()
     for item in installed_files:
-      if item in items_to_keep or self.get_state(item) is None:
+      if item in items_to_keep or self.get_state(item, system_state) is None:
         continue
       yield Action(
         removes = [item],
@@ -190,7 +189,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       if item in items_to_keep:
         continue
       yield Action(
-        removes = [item],
+        removes = [item], # FIXME: also remove all files inside
         description = f"delete directory: {item.dirname}",
         execute = lambda: self.delete_dir(item),
       )
@@ -248,13 +247,13 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       mode = item.permissions & 0o777,
     )
 
-  def dir_state_current(self, item: Directory) -> DirectoryState | None:
+  def dir_state_current(self, item: Directory, system_state: SystemState) -> DirectoryState | None:
     if not os.path.isdir(item.dirname):
       return None
     file_states: dict[str, FileState] = {}
     files_current = [f"{base}/{subfile}" for base, subdirs, subfiles in os.walk(item.dirname) for subfile in subfiles]
     for filename in files_current:
-      file_state = self.file_state_current(File(filename))
+      file_state = system_state.get_state(File(filename), system_state, FileState)
       if file_state is not None:
         file_states[filename] = file_state
     return DirectoryState(file_states)

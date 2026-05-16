@@ -54,7 +54,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
   def assert_installable(self, item: Package, model: ConfigModel):
     pass
 
-  def get_state(self, item: Package) -> PackageState | None:
+  def get_state(self, item: Package, system_state: SystemState) -> PackageState | None:
     installed: bool = item.name in self.explicit_packages_on_system
     return PackageState() if installed else None
 
@@ -76,7 +76,7 @@ class PacmanPackageManager(ConfigManager[Package, PackageState]):
 
     count = 0
     for item in items_to_check:
-      current = system_state.get_state(item, PackageState)
+      current = system_state.get_state(item, system_state, PackageState)
       target = PackageState()
       if current == target:
         continue

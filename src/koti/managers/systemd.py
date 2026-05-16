@@ -43,7 +43,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
       result += [SystemdUnit(name, username) for name in units_store.elements()]
     return result
 
-  def get_state(self, item: SystemdUnit) -> SystemdUnitState | None:
+  def get_state(self, item: SystemdUnit, system_state: SystemState) -> SystemdUnitState | None:
     enabled: bool = shell_success(f"{self.systemctl_for_user(item.user)} is-enabled {item.name}")
     return SystemdUnitState() if enabled else None
 
@@ -53,7 +53,7 @@ class SystemdUnitManager(ConfigManager[SystemdUnit, SystemdUnitState]):
       items_to_activate_for_user: list[SystemdUnit] = []
       for item in items_to_check:
         if item.user == username:
-          current = system_state.get_state(item, SystemdUnitState)
+          current = system_state.get_state(item, system_state, SystemdUnitState)
           target = SystemdUnitState()
           if current != target:
             items_to_activate_for_user.append(item)

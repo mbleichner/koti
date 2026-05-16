@@ -51,7 +51,7 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
         result += 1
     return None
 
-  def get_state(self, hook: PostHook) -> PostHookState | None:
+  def get_state(self, hook: PostHook, system_state: SystemState) -> PostHookState | None:
     stored_value = self.trigger_hash_store.get(hook.name, None)
     if stored_value is None or not isinstance(stored_value, dict):
       return None
@@ -71,7 +71,7 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
 
     # iterate over all triggers and get their current state on the system
     for trigger_ref in self.get_trigger_items(hook, model):
-      trigger_state = system_state.get_state_untyped(trigger_ref)
+      trigger_state = system_state.get_state_untyped(trigger_ref, system_state)
       if trigger_state is not None:
         trigger_hashes[str(trigger_ref)] = trigger_state.sha256()
       else:
@@ -90,7 +90,7 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
 
   def get_install_actions(self, items_to_check: Sequence[PostHook], model: ConfigModel, system_state: SystemState, during_cleanup: bool = False) -> Generator[Action]:
     for hook in items_to_check:
-      current = system_state.get_state(hook, PostHookState)
+      current = system_state.get_state(hook, system_state, PostHookState)
       target = self.get_target_state(hook, model, system_state, during_cleanup)
       if current == target:
         continue

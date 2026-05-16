@@ -136,11 +136,11 @@ class ConfigItemState(metaclass = ABCMeta):
 class SystemState(metaclass = ABCMeta):
   """Represents the state of the system at a specific point in time."""
 
-  def get_state[S:ConfigItemState](self, reference: ManagedConfigItem, state_type: Type[S]) -> S | None:
-    return cast(S | None, self.get_state_untyped(reference))
+  def get_state[S:ConfigItemState](self, reference: ManagedConfigItem, system_state: SystemState, state_type: Type[S]) -> S | None:
+    return cast(S | None, self.get_state_untyped(reference, system_state))
 
   @abstractmethod
-  def get_state_untyped(self, reference: ManagedConfigItem) -> ConfigItemState | None:
+  def get_state_untyped(self, reference: ManagedConfigItem, system_state: SystemState) -> ConfigItemState | None:
     pass
 
 
@@ -152,10 +152,10 @@ class DryRunSystemState(SystemState):
     self.actual = ActualSystemState(managers)
     self.temp_states = {}
 
-  def get_state_untyped(self, reference: ManagedConfigItem) -> ConfigItemState | None:
+  def get_state_untyped(self, reference: ManagedConfigItem, system_state: SystemState) -> ConfigItemState | None:
     if reference in self.temp_states.keys():
       return self.temp_states[reference]
-    return self.actual.get_state_untyped(reference)
+    return self.actual.get_state_untyped(reference, system_state)
 
   def put_state(self, reference: ManagedConfigItem, state: ConfigItemState | None):
     self.temp_states[reference] = state
@@ -167,10 +167,10 @@ class ActualSystemState(SystemState):
   def __init__(self, managers: Sequence[ConfigManager]):
     self.managers = managers
 
-  def get_state_untyped(self, reference: ManagedConfigItem) -> ConfigItemState | None:
+  def get_state_untyped(self, reference: ManagedConfigItem, system_state: SystemState) -> ConfigItemState | None:
     for manager in self.managers:
       if reference.__class__ in manager.managed_classes:
-        return manager.get_state(reference)
+        return manager.get_state(reference, system_state)
     raise AssertionError(f"manager not found for {reference}")
 
 
@@ -187,8 +187,9 @@ class ConfigManager[T: ManagedConfigItem, S: ConfigItemState](metaclass = ABCMet
     pass
 
   @abstractmethod
-  def get_state(self, item: T) -> S | None:
-    """Returns an object representing the state of a currently installed item on the system."""
+  def get_state(self, item: T, system_state: SystemState) -> S | None:
+    """Returns an object representing the state of a currently installed item on the system. This method depends on
+    SystemState, to support items such as Directory, which are composed of other items (Files)."""
     pass
 
   @abstractmethod

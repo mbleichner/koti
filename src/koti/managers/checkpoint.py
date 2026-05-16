@@ -20,7 +20,7 @@ class CheckpointManager(ConfigManager[Checkpoint, CheckpointState]):
   def assert_installable(self, item: Checkpoint, model: ConfigModel):
     pass
 
-  def get_state(self, item: Checkpoint) -> CheckpointState | None:
+  def get_state(self, item: Checkpoint, system_state: SystemState) -> CheckpointState | None:
     return CheckpointState()
 
   def get_install_actions(self, items_to_check: Sequence[Checkpoint], model: ConfigModel, system_state: SystemState) -> Generator[Action]:

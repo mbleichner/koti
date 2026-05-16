@@ -17,13 +17,13 @@ class PacmanKeyManager(ConfigManager[PacmanKey, PacmanKeyState]):
   def assert_installable(self, item: PacmanKey, model: ConfigModel):
     pass
 
-  def get_state(self, item: PacmanKey) -> PacmanKeyState | None:
+  def get_state(self, item: PacmanKey, system_state: SystemState) -> PacmanKeyState | None:
     installed: bool = shell_success(f"pacman-key --list-keys | grep {item.key_id}")
     return PacmanKeyState() if installed else None
 
   def get_install_actions(self, items_to_check: Sequence[PacmanKey], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     for item in items_to_check:
-      current = system_state.get_state(item, PacmanKeyState)
+      current = system_state.get_state(item, system_state, PacmanKeyState)
       target = PacmanKeyState()
       if current == target:
         continue
