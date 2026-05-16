@@ -304,10 +304,11 @@ def base(aurcache: bool) -> ConfigDict:
 
     Section("docker and containers"): (
       Package("docker"),
+      Package("docker-buildx"),
       Package("docker-compose"),
       Package("containerd"),
       UserGroupAssignment("manuel", "docker", requires = User("manuel")),
-      SystemdUnit("docker.socket"),
+      SystemdUnit("docker.socket"),  # activate the socket, but not the service by default
     ),
 
     Section("rate-mirrors"): (

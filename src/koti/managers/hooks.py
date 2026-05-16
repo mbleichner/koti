@@ -52,6 +52,8 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
     return None
 
   def get_state(self, hook: PostHook, system_state: SystemState) -> PostHookState | None:
+    if len(hook.trigger) == 0:
+      return None
     stored_value = self.trigger_hash_store.get(hook.name, None)
     if stored_value is None or not isinstance(stored_value, dict):
       return None
@@ -59,6 +61,9 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
     return PostHookState(trigger_hashes)
 
   def get_target_state(self, hook: PostHook, model: ConfigModel, system_state: SystemState, during_cleanup: bool) -> PostHookState:
+    if len(hook.trigger) == 0:
+      return PostHookState({})
+
     trigger_hashes: dict[str, str]
     if not during_cleanup:
       # during installation phase, there might be leftover triggers that aren't registered to the PostHook anymore, but we have
@@ -90,6 +95,9 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
 
   def get_install_actions(self, items_to_check: Sequence[PostHook], model: ConfigModel, system_state: SystemState, during_cleanup: bool = False) -> Generator[Action]:
     for hook in items_to_check:
+      if len(hook.trigger) == 0 and during_cleanup:
+        continue  # hooks without triggers do not track any state, so ignore them during cleanup phase
+
       current = system_state.get_state(hook, system_state, PostHookState)
       target = self.get_target_state(hook, model, system_state, during_cleanup)
       if current == target:
@@ -97,8 +105,8 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
       assert target is not None
       if current is None:
         yield Action(
-          installs = {hook: target},
-          description = f"execute hook '{hook.name}' for the first time",
+          installs = {hook: target} if len(hook.trigger) > 0 else {},
+          description = f"execute hook '{hook.name}'",
           execute = lambda: self.execute_hook(hook, target),
         )
       else:
@@ -124,7 +132,10 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
   def execute_hook(self, hook: PostHook, target: PostHookState):
     assert hook.execute is not None
     hook.execute()
-    self.trigger_hash_store.put(hook.name, target.trigger_hashes)
+    if len(hook.trigger) > 0:
+      self.trigger_hash_store.put(hook.name, target.trigger_hashes)
+    else:
+      self.trigger_hash_store.remove(hook.name)
 
   def unregister_hook(self, hook: PostHook):
     self.trigger_hash_store.remove(hook.name),

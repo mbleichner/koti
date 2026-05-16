@@ -55,20 +55,20 @@ def mserver() -> ConfigDict:
       ''')),
     ),
 
-    Section("docker and services"): (
-      User("manuel"),
-      SystemdUnit("docker.service"),
+    Section("docker services"): (
+      *Packages("docker", "docker-buildx", "docker-compose"),
+      SystemdUnit("docker.service"),  # always enable the docker daemon
       Directory("/opt/services", source = "files/services"),
       File("/usr/local/bin/update-docker", permissions = "rwxr-xr-x", content = cleandoc('''
         #!/bin/bash -e
         docker compose --project-directory /opt/services build
         docker compose --project-directory /opt/services pull
         docker compose --project-directory /opt/services up -d --remove-orphans
+        docker system prune -f
       ''')),
       PostHook(
-        name = "update docker services",
-        trigger = Directory("/opt/services"),
-        execute = lambda: shell("/usr/local/bin/update-docker")
+        name = "update docker images and services",
+        execute = lambda: shell("/usr/local/bin/update-docker"),
       ),
       PostHook(
         name = "download pacoloco .db files",
@@ -76,13 +76,13 @@ def mserver() -> ConfigDict:
         # the CacheServer setting. As a workaround, we trigger a download of the .db files manually.
         trigger = File("/opt/services/pacoloco.yaml"),
         execute = lambda: shell('''
-          curl http://pacoloco.fritz.box/repo/archlinux/core/os/x86_64/core.db > /dev/null
-          curl http://pacoloco.fritz.box/repo/archlinux/extra/os/x86_64/extra.db > /dev/null
-          curl http://pacoloco.fritz.box/repo/archlinux/multilib/os/x86_64/multilib.db > /dev/null
-          curl http://pacoloco.fritz.box/repo/cachyos-extra-v3/x86_64_v3/cachyos-extra-v3/cachyos-v3.db > /dev/null
-          curl http://pacoloco.fritz.box/repo/cachyos-core-v3/x86_64_v3/cachyos-core-v3/cachyos-v3.db > /dev/null
-          curl http://pacoloco.fritz.box/repo/cachyos-v3/x86_64_v3/cachyos-v3/cachyos-v3.db > /dev/null
-          curl http://pacoloco.fritz.box/repo/cachyos/x86_64/cachyos/cachyos.db > /dev/null
+          curl -s http://pacoloco.fritz.box/repo/archlinux/core/os/x86_64/core.db > /dev/null
+          curl -s http://pacoloco.fritz.box/repo/archlinux/extra/os/x86_64/extra.db > /dev/null
+          curl -s http://pacoloco.fritz.box/repo/archlinux/multilib/os/x86_64/multilib.db > /dev/null
+          curl -s http://pacoloco.fritz.box/repo/cachyos-extra-v3/x86_64_v3/cachyos-extra-v3/cachyos-v3.db > /dev/null
+          curl -s http://pacoloco.fritz.box/repo/cachyos-core-v3/x86_64_v3/cachyos-core-v3/cachyos-v3.db > /dev/null
+          curl -s http://pacoloco.fritz.box/repo/cachyos-v3/x86_64_v3/cachyos-v3/cachyos-v3.db > /dev/null
+          curl -s http://pacoloco.fritz.box/repo/cachyos/x86_64/cachyos/cachyos.db > /dev/null
         '''),
       ),
     ),
