@@ -1,7 +1,5 @@
 #!/bin/bash
 
-renice +19
-
 MODE=$(yq -r .mode /etc/cpufreq/state.yaml)
 TARGET=$(yq -r .freq /etc/cpufreq/state.yaml)
 if [[ "$MODE" == "auto" ]]; then

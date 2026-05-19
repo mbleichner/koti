@@ -79,7 +79,7 @@ def cpufreq_systray(freq_options: Sequence[int] = (1000, 1500, 2000, 2500, 3000,
       systray_dialog("/opt/systray/cpu/dialog", "/opt/systray/cpu/actions"),
 
       File("/etc/systemd/system/cpufreq-adjuster.service"),  # dependency for the following items
-      *(systray_cpufreq_target(f"/opt/systray/cpu/actions/max-freq-{freq}mhz", freq) for freq in freq_options),
+      *(systray_cpufreq_target(f"/opt/systray/cpu/actions/cpu-freq-{freq}mhz", freq) for freq in freq_options),
       systray_cpufreq_mode("/opt/systray/cpu/actions/mode-auto", "auto"),
       systray_cpufreq_mode("/opt/systray/cpu/actions/mode-manual", "manual"),
 
