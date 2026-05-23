@@ -14,19 +14,6 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
       Option("/etc/pacman.conf/NoExtract", "etc/xdg/autostart/org.kde.discover.notifier.desktop"),  # prevent startup of discover (KDE package manager)
     ),
 
-    Section("optimizations for responsiveness"): (
-      Package("ananicy-cpp"),
-      Package("cachyos-ananicy-rules"),
-      File("/etc/ananicy.d/compilers.rules", content = cleandoc('''
-        {"name": "cc",    "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-        {"name": "gcc",   "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-        {"name": "make",  "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-        {"name": "clang", "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-        {"name": "rustc", "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-      ''')),
-      SystemdUnit("ananicy-cpp.service"),
-    ),
-
     Section("applications"): (
       Package("code"),  # vscode
       Package("coolercontrol"),
