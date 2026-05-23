@@ -247,9 +247,10 @@ services:
     restart: always
     scale: 0
     ports:
-    - "0.0.0.0:7777:7777/tcp"
-    - "0.0.0.0:7777:7777/udp"
-    - "0.0.0.0:27015:27015/udp"
+    - "0.0.0.0:7777:7777/tcp"   # Game Port
+    - "0.0.0.0:7777:7777/udp"   # Game Port
+    - "0.0.0.0:27015:27015/tcp" # Query Port
+    - "0.0.0.0:27015:27015/udp" # Query Port
     env_file:
     - /etc/opt/services/abiotic.env  # should contain ServerPassword and AdminPassword
     volumes:

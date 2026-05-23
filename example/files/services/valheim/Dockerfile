@@ -14,7 +14,7 @@ ENV PATH="$PATH:/usr/games"
 
 # install startup script
 USER 1000
-COPY ./entrypoint.sh /entrypoint.sh
+COPY ./*.sh /
 CMD ["/entrypoint.sh"]
 
 # server wants SIGINT to shut down properly

@@ -14,5 +14,11 @@ ENV PATH="$PATH:/usr/games"
 
 # install startup script
 USER 1000
-COPY ./entrypoint.sh /entrypoint.sh
+COPY ./*.sh /
 CMD ["/entrypoint.sh"]
+
+# abuse healthcheck to create regular save backups (game autosaves every 5min, don't use a multiple of that)
+HEALTHCHECK --interval=21m CMD /backup.sh
+
+# server wants SIGINT to shut down properly
+STOPSIGNAL SIGINT
