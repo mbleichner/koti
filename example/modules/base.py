@@ -77,14 +77,6 @@ def base(aurcache: bool) -> ConfigDict:
         CacheServer = http://pacoloco.fritz.box/repo/cachyos-v3/$arch_v3/$repo
         Include = /etc/pacman.d/cachyos-v3-mirrorlist
         
-        [cachyos-core-v3]
-        CacheServer = http://pacoloco.fritz.box/repo/cachyos-core-v3/$arch_v3/$repo
-        Include = /etc/pacman.d/cachyos-v3-mirrorlist
-        
-        [cachyos-extra-v3]
-        CacheServer = http://pacoloco.fritz.box/repo/cachyos-extra-v3/$arch_v3/$repo
-        Include = /etc/pacman.d/cachyos-v3-mirrorlist
-        
         [cachyos]
         CacheServer = http://pacoloco.fritz.box/repo/cachyos/$arch/$repo
         Include = /etc/pacman.d/cachyos-mirrorlist
