@@ -61,22 +61,6 @@ def base(aurcache: bool) -> ConfigDict:
         SigLevel = Optional TrustAll
         Server = http://aurcache.fritz.box/$arch""" if aurcache else ""}
     
-        [cachyos-v3]
-        CacheServer = http://pacoloco.fritz.box/repo/cachyos-v3/$arch_v3/$repo
-        Include = /etc/pacman.d/cachyos-v3-mirrorlist
-        
-        [cachyos-core-v3]
-        CacheServer = http://pacoloco.fritz.box/repo/cachyos-core-v3/$arch_v3/$repo
-        Include = /etc/pacman.d/cachyos-v3-mirrorlist
-        
-        [cachyos-extra-v3]
-        CacheServer = http://pacoloco.fritz.box/repo/cachyos-extra-v3/$arch_v3/$repo
-        Include = /etc/pacman.d/cachyos-v3-mirrorlist
-    
-        [cachyos]
-        CacheServer = http://pacoloco.fritz.box/repo/cachyos/$arch/$repo
-        Include = /etc/pacman.d/cachyos-mirrorlist
-    
         [core]
         CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
         Include = /etc/pacman.d/mirrorlist
@@ -88,6 +72,22 @@ def base(aurcache: bool) -> ConfigDict:
         [multilib]
         CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
         Include = /etc/pacman.d/mirrorlist
+    
+        [cachyos-v3]
+        CacheServer = http://pacoloco.fritz.box/repo/cachyos-v3/$arch_v3/$repo
+        Include = /etc/pacman.d/cachyos-v3-mirrorlist
+        
+        [cachyos-core-v3]
+        CacheServer = http://pacoloco.fritz.box/repo/cachyos-core-v3/$arch_v3/$repo
+        Include = /etc/pacman.d/cachyos-v3-mirrorlist
+        
+        [cachyos-extra-v3]
+        CacheServer = http://pacoloco.fritz.box/repo/cachyos-extra-v3/$arch_v3/$repo
+        Include = /etc/pacman.d/cachyos-v3-mirrorlist
+        
+        [cachyos]
+        CacheServer = http://pacoloco.fritz.box/repo/cachyos/$arch/$repo
+        Include = /etc/pacman.d/cachyos-mirrorlist
       ''')),
       PostHook(
         name = "update pacman databases after config change",

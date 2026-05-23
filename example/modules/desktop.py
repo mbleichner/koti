@@ -15,9 +15,8 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
     ),
 
     Section("optimizations for responsiveness"): (
-      Package("cachyos-settings"),
-      Package("cachyos-ananicy-rules"),  # (also a dependency of cachyos-settings)
       Package("ananicy-cpp"),
+      Package("cachyos-ananicy-rules"),
       File("/etc/ananicy.d/compilers.rules", content = cleandoc('''
         {"name": "cc",    "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
         {"name": "gcc",   "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}

@@ -19,14 +19,14 @@ def kernel(packagename: str, sortkey: int, powersave = False) -> ConfigDict:
       Package(packagename),
       Package(packagename + "-headers"),
       File(f"/boot/loader/entries/{packagename}.conf", permissions = "rwxr-xr-x", content = cleandoc(f'''
-        title    Arch/CachyOS ({packagename})
+        title    Arch Linux ({packagename})
         linux    /vmlinuz-{packagename}
         initrd   /initramfs-{packagename}.img
         options  root=UUID={root_uuid} rw {" ".join(param for param in kernel_params if param is not None)}
         sort-key {sortkey}
       ''')),
       File(f"/boot/loader/entries/{packagename}-fallback.conf", permissions = "rwxr-xr-x", content = cleandoc(f'''
-        title    Arch/CachyOS ({packagename}, Fallback)
+        title    Arch Linux ({packagename}, Fallback)
         linux    /vmlinuz-{packagename}
         initrd   /initramfs-{packagename}.img
         options  root=UUID={root_uuid} rw
