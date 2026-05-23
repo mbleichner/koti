@@ -208,6 +208,12 @@ def base(aurcache: bool) -> ConfigDict:
         # without this linebreak, the last locale will be ignored
       ''')),
 
+      File("/etc/systemd/timesyncd.conf", content = cleandoc('''
+        [Time]
+        NTP=time.cloudflare.com
+        FallbackNTP=time.google.com 0.arch.pool.ntp.org 1.arch.pool.ntp.org 2.arch.pool.ntp.org 3.arch.pool.ntp.org
+      ''')),
+
       SystemdUnit("fstrim.timer"),
       SystemdUnit("fwupd.service"),
       SystemdUnit("systemd-boot-update.service"),

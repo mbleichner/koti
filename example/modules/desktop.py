@@ -41,14 +41,23 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
       SystemdUnit("coolercontrold.service"),
     ),
 
+    Section("desktop optimizations"): (
+      File(
+        "/etc/sysctl.d/70-cachyos-settings.conf",
+        source = "https://raw.githubusercontent.com/CachyOS/CachyOS-Settings/refs/heads/master/usr/lib/sysctl.d/70-cachyos-settings.conf",
+      ),
+    ),
+
     Section("network-manager and wifi"): (
       Package("networkmanager"),
+
+      # Disable connectivity checks, so networks stay connected even without internet access
       File("/etc/NetworkManager/NetworkManager.conf", content = cleandoc(f'''
-        # Disable connectivity checks, so networks stay connected even without internet access
         [connectivity]
         uri=
         interval=0
       ''')),
+
       SystemdUnit("NetworkManager.service"),
       SystemdUnit("wpa_supplicant.service"),
     ),
