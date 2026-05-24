@@ -26,6 +26,20 @@ def mserver() -> ConfigDict:
       ''')),
     ),
 
+    Section("glances monitoring"): (
+      Package("glances"),
+      # optional dependencies (missing ones will get listed in /home/manuel/.local/share/glances/glances.log)
+      *Packages("uvicorn", "python-fastapi", "python-docker", "python-netifaces2", "python-dateutil", "python-pylxd"),
+      File("/etc/glances/glances.conf", content = cleandoc('''
+        [global]
+        refresh=5
+        check_update=False
+        [network]
+        show=enp0s31f6,wlp2s0
+      ''')),
+      SystemdUnit("glances-web.service"),
+    ),
+
     Section("firmware for mserver"): (
       Package("linux-firmware-other"),
       Package("linux-firmware-intel"),
