@@ -51,8 +51,7 @@ services:
     # noinspection ComposeMissingKeys
     healthcheck:
       disable: true
-    ports:
-    # IPv6 macht des öfteren Probleme, deshalb reiner IPv4-Bind
+    ports: # IPv6 macht des öfteren Probleme, deshalb reiner IPv4-Bind
     - "0.0.0.0:53:53/tcp"
     - "0.0.0.0:53:53/udp"
     volumes:
@@ -270,6 +269,7 @@ services:
     - "0.0.0.0:7777:7777/tcp"
     - "0.0.0.0:7777:7777/udp"
     - "0.0.0.0:8888:8888/tcp"
+    - "0.0.0.0:8888:8888/udp"
     volumes:
     - "/var/opt/services/satisfactory/userhome:/home/ubuntu" # initial setup: sudo chown -R 1000:1000 /var/opt/services/satisfactory/userhome
 

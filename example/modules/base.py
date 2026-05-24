@@ -349,6 +349,10 @@ def base(aurcache: bool) -> ConfigDict:
         PermitRootLogin yes
         AuthorizedKeysFile .ssh/authorized_keys
         Subsystem sftp /usr/lib/ssh/sftp-server
+        PasswordAuthentication no
+        ChallengeResponseAuthentication no
+        Match Address 192.168.0.0/16
+          PasswordAuthentication yes
       ''')),
       SystemdUnit("sshd.service"),
     ),
