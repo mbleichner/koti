@@ -123,11 +123,11 @@ def mserver() -> ConfigDict:
       SystemdUnit("docker.service"),  # always enable the docker daemon
       Directory("/opt/services", source = "files/services"),
       File("/usr/local/bin/update-docker", permissions = "rwxr-xr-x", content = cleandoc('''
-        #!/bin/bash -e
-        docker compose --project-directory /opt/services build
-        docker compose --project-directory /opt/services pull
-        docker compose --project-directory /opt/services up -d --remove-orphans
-        docker system prune -f
+        #!/bin/bash -ex
+        docker compose --project-directory /opt/services build --quiet
+        docker compose --project-directory /opt/services pull --quiet
+        docker compose --project-directory /opt/services up --quiet-build --quiet-pull --remove-orphans --detach
+        docker system prune -f > /dev/null
       ''')),
       PostHook(
         name = "update docker images and services",
