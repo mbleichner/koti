@@ -73,7 +73,7 @@ def mserver() -> ConfigDict:
       ),
     ),
 
-    Section("glances monitoring"): (
+    Section("glances monitoring", disabled = True): PostHookScope(
       Package("glances"),
       # optional dependencies (missing ones will get listed in /home/manuel/.local/share/glances/glances.log)
       *Packages("uvicorn", "python-fastapi", "python-docker", "python-netifaces2", "python-dateutil", "python-pylxd"),
@@ -85,6 +85,7 @@ def mserver() -> ConfigDict:
         show=enp0s31f6,wlp2s0
       ''')),
       SystemdUnit("glances-web.service"),
+      PostHook("restart-glances", execute = lambda: shell("systemctl daemon-reload && systemctl restart glances-web.service")),
     ),
 
     Section("firmware for mserver"): (
