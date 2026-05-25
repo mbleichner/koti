@@ -3,8 +3,7 @@ from inspect import cleandoc
 from koti import *
 from koti.utils.shell import shell
 from modules.base import base
-from modules.cpu import cpufreq_defaults
-from modules.fish import fish
+from modules.cpufreq import cpufreq_defaults
 from modules.kernel import kernel
 
 
@@ -15,7 +14,6 @@ def mserver() -> ConfigDict:
     **cpufreq_defaults(min_freq = 800, max_freq = 4200, governor = "powersave"),
     **kernel("linux-cachyos-server", sortkey = 1, powersave = True),
     **kernel("linux-cachyos-lts", sortkey = 2, powersave = True),
-    **fish(),
 
     Section("swapfile (8GB) and fstab"): (
       Swapfile("/swapfile", 8 * 1024 ** 3),

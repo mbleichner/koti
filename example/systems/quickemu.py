@@ -1,9 +1,8 @@
 from koti import *
 from modules.base import base
-from modules.cpu import cpufreq_systray
 from modules.desktop import desktop
-from modules.fish import fish
 from modules.gaming import gaming
+from modules.systray import cpufreq_systray
 
 """
 wget https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-basic.qcow2
@@ -22,10 +21,10 @@ git pull --rebase; sudo PYTHONPATH=/home/arch/koti/src ./koti-apply
 def quickemu() -> ConfigDict:
   return {
     **base(aurcache = True),
-    **fish(),
     **desktop(nvidia = False, autologin = True, ms_fonts = False),
     **cpufreq_systray(),
     **gaming(),
+
     Section("firmware, drivers and filesystems for quickemu"): (
       Package("linux-firmware-other"),
       Package("linux-firmware-intel"),

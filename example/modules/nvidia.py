@@ -1,30 +1,6 @@
 from inspect import cleandoc
 
 from koti import *
-from modules.cpu import systray_dialog
-
-
-def nvidia_systray() -> ConfigDict:
-  return {
-    Section("systray: GPU items"): (
-      Package("kdialog"),
-      Package("python-nvidia-ml-py"),
-      Option[str]("/etc/sudoers/ExtraLines", value = "manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/nvidia-smi *"),
-      File("/opt/systray/gpu/summary", permissions = "rwxr-xr-x", source = "files/gpu-summary"),
-      systray_dialog("/opt/systray/gpu/dialog", "/opt/systray/gpu/actions"),
-      systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-160w", 160),
-      systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-180w", 180),
-      systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-200w", 200),
-      systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-220w", 220),
-    ),
-  }
-
-
-def systray_gpu_power_limit(filename: str, watt: int) -> File:
-  return File(filename, permissions = "rwxr-xr-x", content = cleandoc(f'''
-    #!/bin/bash
-    sudo nvidia-smi -i 0 -pl {watt}
-  '''))
 
 
 def nvidia_undervolting() -> ConfigDict:

@@ -2,22 +2,21 @@ from inspect import cleandoc
 
 from koti import *
 from modules.base import base
-from modules.cpu import cpufreq_auto_adjust, cpufreq_defaults, cpufreq_systray
+from modules.cpufreq import cpufreq_auto_adjust, cpufreq_defaults
 from modules.desktop import desktop
-from modules.development import development
-from modules.fish import fish
 from modules.gaming import gaming
 from modules.kernel import kernel
-from modules.nvidia import nvidia_systray, nvidia_undervolting
+from modules.nvidia import nvidia_undervolting
 from modules.ryzen import ryzen_undervolting
+from modules.systray import cpufreq_systray, nvidia_systray
 
 
 # Configuration for my DAN A4-SFX desktop machine (Ryzen 5800X3D, RTX3080)
 def dan() -> ConfigDict:
   return {
     **base(aurcache = True),
-    **fish(),
     **desktop(nvidia = True, autologin = True, ms_fonts = True),
+    **gaming(),
     **cpufreq_defaults(min_freq = 2000, max_freq = 4000, governor = "performance"),
     **cpufreq_auto_adjust(base_freq = 2000),
     **cpufreq_systray(),
@@ -26,8 +25,6 @@ def dan() -> ConfigDict:
     **nvidia_systray(),
     **nvidia_undervolting(),
     **ryzen_undervolting(),
-    **gaming(),
-    **development(),
 
     Section("swapfile (12GB) and fstab"): (
       Swapfile("/swapfile", 12 * (1024 ** 3)),

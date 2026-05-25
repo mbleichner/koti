@@ -3,61 +3,20 @@ from inspect import cleandoc
 from koti import *
 
 
-def cpufreq_defaults(min_freq: int, max_freq: int, governor: str) -> ConfigDict:
+def nvidia_systray() -> ConfigDict:
   return {
-    Section("set default cpu frequency range and governor"): (
-      Package("cpupower"),
-      File("/etc/default/cpupower-service.conf", content = cleandoc(f'''
-        GOVERNOR={governor}
-        MAX_FREQ={max_freq}MHz
-        MIN_FREQ={min_freq}MHz
-      ''')),
-      SystemdUnit("cpupower.service"),
-    )
+    Section("systray: GPU items"): (
+      Package("kdialog"),
+      Package("python-nvidia-ml-py"),
+      Option[str]("/etc/sudoers/ExtraLines", value = "manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/nvidia-smi *"),
+      File("/opt/systray/gpu/summary", permissions = "rwxr-xr-x", source = "files/gpu-summary"),
+      systray_dialog("/opt/systray/gpu/dialog", "/opt/systray/gpu/actions"),
+      systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-160w", 160),
+      systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-180w", 180),
+      systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-200w", 200),
+      systray_gpu_power_limit("/opt/systray/gpu/actions/power-limit-220w", 220),
+    ),
   }
-
-
-def cpufreq_auto_adjust(base_freq: int) -> ConfigDict:
-  return {
-    Section(f"automatic cpu frequency switching"): (
-      Package("python-yaml"),
-      Package("ryzen_smu-dkms-git"),
-      Option[tuple[str, int]]("/etc/cpufreq/rules.yaml/ExtraEntries"),
-
-      File("/etc/cpufreq/rules.yaml", permissions = "r--r--r--", content = lambda model: cleandoc(f'''
-        "koti": 3500
-        "/usr/bin/pacman": 3500
-        "/usr/bin/makepkg": 3500
-      ''') + "\n\n" + format_processes_extra_entries(model)),
-
-      File("/opt/cpufreq-adjuster/cpufreq-adjuster.py", source = "files/cpufreq-adjuster.py", permissions = "r-x"),
-      File("/etc/systemd/system/cpufreq-adjuster.service", content = cleandoc(f'''
-        [Unit]
-        Description=Auto adjust CPU frequency
-  
-        [Service]
-        Type=simple
-        ExecStart=/opt/cpufreq-adjuster/cpufreq-adjuster.py auto {base_freq}
-        RemainAfterExit=true
-      ''')),
-      File("/etc/systemd/system/cpufreq-adjuster.timer", content = cleandoc(f'''
-        [Unit]
-        Description=Start cpufreq-adjuster a few seconds after boot
-        
-        [Timer]
-        OnBootSec=15sec
-        
-        [Install]
-        WantedBy=graphical.target
-      ''')),
-      SystemdUnit("cpufreq-adjuster.timer"),
-    )
-  }
-
-
-def format_processes_extra_entries(model: ConfigModel) -> str:
-  entries = model.item(Option[tuple[str, int]]("/etc/cpufreq/rules.yaml/ExtraEntries")).distinct()
-  return "\n".join(f'"{name}": {freq}' for name, freq in entries)
 
 
 def cpufreq_systray(freq_options: Sequence[int] = (1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500)) -> ConfigDict:
@@ -132,4 +91,11 @@ def systray_hyperthreading(filename: str, state: str) -> File:
   return File(filename, permissions = "rwxr-xr-x", content = cleandoc(f'''
     #!/bin/bash
     echo {state} | sudo tee /sys/devices/system/cpu/smt/control
+  '''))
+
+
+def systray_gpu_power_limit(filename: str, watt: int) -> File:
+  return File(filename, permissions = "rwxr-xr-x", content = cleandoc(f'''
+    #!/bin/bash
+    sudo nvidia-smi -i 0 -pl {watt}
   '''))

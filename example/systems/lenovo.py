@@ -2,27 +2,24 @@ from inspect import cleandoc
 
 from koti import *
 from modules.base import base
-from modules.cpu import cpufreq_auto_adjust, cpufreq_defaults, cpufreq_systray
+from modules.cpufreq import cpufreq_auto_adjust, cpufreq_defaults
 from modules.desktop import desktop
-from modules.development import development
-from modules.fish import fish
 from modules.gaming import gaming
 from modules.kernel import kernel
+from modules.systray import cpufreq_systray
 
 
 # Configuration for my Lenovo X13 laptop
 def lenovo() -> ConfigDict:
   return {
     **base(aurcache = True),
-    **fish(),
     **desktop(nvidia = False, autologin = True, ms_fonts = True),
+    **gaming(),
     **cpufreq_defaults(min_freq = 1500, max_freq = 4000, governor = "powersave"),
     **cpufreq_auto_adjust(base_freq = 1500),
     **cpufreq_systray(),
     **kernel("linux-cachyos", sortkey = 1, powersave = True),
     **kernel("linux-cachyos-lts", sortkey = 2, powersave = True),
-    **gaming(),
-    **development(),
 
     Section("swapfile (4GB) and fstab"): (
       Swapfile("/swapfile", 4 * (1024 ** 3)),

@@ -124,6 +124,19 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
       ''')),
       PostHook("restart wireplumber", execute = lambda: shell("systemctl --user -M manuel@ restart wireplumber"))
     ),
+
+    Section("graphical development utils"): (
+      Package("gitkraken"),
+      Package("pycharm"),
+    ),
+
+    Section("misc python dev tools/libraries"): (
+      Package("mypy"),
+      Package("tk"),
+      Package("python-uv"),
+      Package("pyenv"),
+      Package("kdiff3"),
+    ),
   }
 
 
