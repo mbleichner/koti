@@ -300,7 +300,7 @@ def base(aurcache: bool) -> ConfigDict:
       ''')),
     ),
 
-    Section("ananicy-cpp and configuration"): (
+    Section("ananicy-cpp and configuration"): PostHookScope(
       Package("ananicy-cpp"),
 
       File("/etc/ananicy.d/ananicy.conf", content = cleandoc('''
@@ -349,6 +349,11 @@ def base(aurcache: bool) -> ConfigDict:
       ''')),
 
       SystemdUnit("ananicy-cpp.service"),
+
+      PostHook(
+        name = "restart-ananicy-cpp",
+        execute = lambda: shell("systemctl daemon-reload && systemctl restart ananicy-cpp.service"),
+      ),
     ),
 
     Section("docker and containers"): (
@@ -360,24 +365,22 @@ def base(aurcache: bool) -> ConfigDict:
       SystemdUnit("docker.socket"),  # activate the socket, but not the service by default
     ),
 
-    Section("rate-mirrors"): (
+    Section("rate-mirrors"): PostHookScope(
       Package("rate-mirrors"),
-      *PostHookScope(
-        File("/usr/local/bin/update-mirrors", permissions = "r-x", content = cleandoc(r'''
-          #!/bin/sh
-          RATE_MIRRORS_ARGS=()
-          RATE_MIRRORS_ARGS+=("--protocol=https")
-          RATE_MIRRORS_ARGS+=("--concurrency=8")
-          RATE_MIRRORS_ARGS+=("--max-jumps=2")
-          RATE_MIRRORS_ARGS+=("--entry-country=DE")
-          RATE_MIRRORS_ARGS+=("--exclude-countries RU,BY")
-          RATE_MIRRORS_ARGS+=("--max-mirrors-to-output=10")
-          sudo -u nobody rate-mirrors ${RATE_MIRRORS_ARGS[@]} arch    | sudo tee /etc/pacman.d/mirrorlist
-          sudo -u nobody rate-mirrors ${RATE_MIRRORS_ARGS[@]} cachyos | sudo tee /etc/pacman.d/cachyos-mirrorlist
-          sed 's|$arch|$arch_v3|g' /etc/pacman.d/cachyos-mirrorlist   | sudo tee /etc/pacman.d/cachyos-v3-mirrorlist
-        ''')),
-        PostHook("update mirrorlist", execute = lambda: shell("/usr/local/bin/update-mirrors")),
-      ),
+      File("/usr/local/bin/update-mirrors", permissions = "r-x", content = cleandoc(r'''
+        #!/bin/sh
+        RATE_MIRRORS_ARGS=()
+        RATE_MIRRORS_ARGS+=("--protocol=https")
+        RATE_MIRRORS_ARGS+=("--concurrency=8")
+        RATE_MIRRORS_ARGS+=("--max-jumps=2")
+        RATE_MIRRORS_ARGS+=("--entry-country=DE")
+        RATE_MIRRORS_ARGS+=("--exclude-countries RU,BY")
+        RATE_MIRRORS_ARGS+=("--max-mirrors-to-output=10")
+        sudo -u nobody rate-mirrors ${RATE_MIRRORS_ARGS[@]} arch    | sudo tee /etc/pacman.d/mirrorlist
+        sudo -u nobody rate-mirrors ${RATE_MIRRORS_ARGS[@]} cachyos | sudo tee /etc/pacman.d/cachyos-mirrorlist
+        sed 's|$arch|$arch_v3|g' /etc/pacman.d/cachyos-mirrorlist   | sudo tee /etc/pacman.d/cachyos-v3-mirrorlist
+      ''')),
+      PostHook("update mirrorlist", execute = lambda: shell("/usr/local/bin/update-mirrors")),
     ),
 
     Section("ssh daemon"): (
