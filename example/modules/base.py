@@ -300,9 +300,34 @@ def base(aurcache: bool) -> ConfigDict:
       ''')),
     ),
 
-    Section("ananicy-cpp + configs"): (
+    Section("ananicy-cpp and configuration"): (
       Package("ananicy-cpp"),
-      Package("cachyos-ananicy-rules"),
+
+      File("/etc/ananicy.d/ananicy.conf", content = cleandoc('''
+        check_freq = 20
+        loglevel = info
+        cgroup_realtime_workaround = true
+        rule_load = true
+        type_load = true
+        log_applied_rule = false
+        apply_latnice = false
+        apply_oom_score_adj = true
+        apply_ionice = true
+        cgroup_load = true
+        apply_sched = true
+        apply_nice = true
+      ''')),
+
+      File("/etc/ananicy.d/audio-system.rules", content = cleandoc('''
+        {"name": "pipewire",       "nice": -10, "latency_nice": -10}
+        {"name": "wireplumber",    "nice": -10, "latency_nice": -10}
+        {"name": "pipewire-pulse", "nice": -10, "latency_nice": -10}
+      ''')),
+
+      File("/etc/ananicy.d/kwin.rules", content = cleandoc('''
+        {"name": "kwin_wayland", "nice": -10, "latency_nice": -10}
+      ''')),
+
       File("/etc/ananicy.d/compilers.rules", content = cleandoc('''
         {"name": "cc",    "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
         {"name": "gcc",   "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
@@ -310,6 +335,19 @@ def base(aurcache: bool) -> ConfigDict:
         {"name": "clang", "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
         {"name": "rustc", "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
       ''')),
+
+      File("/etc/ananicy.d/games.rules", content = cleandoc('''
+        {"name": "steam",   "nice": -5, "latency_nice": -5}
+        {"name": "ryujinx", "nice": -5, "latency_nice": -5}
+        {"name": "eden",    "nice": -5, "latency_nice": -5}
+        {"name": "lutris",  "nice": -5, "latency_nice": -5}
+        {"name": "heroic",  "nice": -5, "latency_nice": -5}
+      ''')),
+
+      File("/etc/ananicy.d/nextcloud.rules", content = cleandoc('''
+        {"name": "nextcloud", "nice": 10}
+      ''')),
+
       SystemdUnit("ananicy-cpp.service"),
     ),
 
