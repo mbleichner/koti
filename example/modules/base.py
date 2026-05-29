@@ -341,11 +341,12 @@ def base(aurcache: bool) -> ConfigDict:
       ''')),
 
       File("/etc/ananicy.d/compilers.rules", content = cleandoc('''
-        {"name": "cc",    "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-        {"name": "gcc",   "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-        {"name": "make",  "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-        {"name": "clang", "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-        {"name": "rustc", "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
+        {"name": "cc",               "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
+        {"name": "gcc",              "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
+        {"name": "make",             "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
+        {"name": "clang",            "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
+        {"name": "rustc",            "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
+        {"name": "fossilize_replay", "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
       ''')),
 
       File("/etc/ananicy.d/games.rules", content = cleandoc('''
