@@ -43,24 +43,8 @@ def dan() -> ConfigDict:
     ),
 
     Section("nvidia drivers for dan"): (
-      File("/etc/pacman.d/hooks/nvidia.hook", content = cleandoc('''
-        [Trigger]
-        Operation=Install
-        Operation=Upgrade
-        Operation=Remove
-        Type=Package
-        Target=nvidia-open
-        Target=nvidia-open-lts
-        Target=linux-cachyos-nvidia-open
-        Target=linux-cachyos-lts-nvidia-open
-    
-        [Action]
-        Description=Updating NVIDIA module in initcpio
-        Depends=mkinitcpio
-        When=PostTransaction
-        NeedsTargets
-        Exec=/usr/bin/mkinitcpio -P
-      ''')),
+      Package("nvidia-open-dkms"),
+      Package("nvidia-settings"),
 
       # nvidia 580.105.08:
       # Added a new environment variable, CUDA_DISABLE_PERF_BOOST, to allow for disabling the default behavior of boosting the GPU to a higher
@@ -68,10 +52,6 @@ def dan() -> ConfigDict:
       File("/etc/environment.d/cuda-boost.conf", content = cleandoc(f'''
         CUDA_DISABLE_PERF_BOOST=1
       ''')),
-
-      Package("linux-cachyos-nvidia-open"),
-      Package("linux-cachyos-lts-nvidia-open"),
-      Package("nvidia-settings"),
     ),
 
     Section("NVMe thermal throttling (Kingston KC3000)"): (

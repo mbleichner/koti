@@ -80,6 +80,18 @@ def base(aurcache: bool) -> ConfigDict:
         [cachyos]
         CacheServer = http://pacoloco.fritz.box/repo/cachyos/$arch/$repo
         Include = /etc/pacman.d/cachyos-mirrorlist
+        
+        [core-testing]
+        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+        Include = /etc/pacman.d/mirrorlist
+    
+        [extra-testing]
+        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+        Include = /etc/pacman.d/mirrorlist
+    
+        [multilib-testing]
+        CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
+        Include = /etc/pacman.d/mirrorlist
       ''')),
       PostHook(
         name = "update pacman databases after config change",
