@@ -59,9 +59,8 @@ def gaming() -> ConfigDict:
         PROTON_ENABLE_WAYLAND=1
       ''')),
 
-      # Opt in to preview build of VKD3D descriptor heap
+      # Enable vkd3d-proton descriptor heap feature
       File("/etc/environment.d/proton-descriptor-heap.conf", content = cleandoc(f'''
-        PROTON_VKD3D_HEAP=1
         VKD3D_CONFIG=descriptor_heap
       ''')),
 
