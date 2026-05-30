@@ -59,10 +59,12 @@ def gaming() -> ConfigDict:
         PROTON_ENABLE_WAYLAND=1
       ''')),
 
-      # Enable vkd3d-proton descriptor heap feature
-      File("/etc/environment.d/proton-descriptor-heap.conf", content = cleandoc(f'''
-        VKD3D_CONFIG=descriptor_heap
-      ''')),
+      # vkd3d-proton descriptor heap feature seems completely broken with nvidia 610.43
+      # - random crashes in games
+      # - reproducible crash loading into Wukong benchmark
+      # File("/etc/environment.d/proton-descriptor-heap.conf", content = cleandoc(f'''
+      #   VKD3D_CONFIG=descriptor_heap
+      # ''')),
 
       # Increase shader cache size on disk to avoid recompilation due to eviction (1st NVIDIA; 2nd AMD)
       File("/etc/environment.d/shader-cache-size.conf", content = cleandoc(f'''
