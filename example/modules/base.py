@@ -316,50 +316,42 @@ def base(aurcache: bool) -> ConfigDict:
       Package("ananicy-cpp"),
 
       File("/etc/ananicy.d/ananicy.conf", content = cleandoc('''
-        check_freq = 20
+        check_freq = 30
         loglevel = info
-        cgroup_realtime_workaround = true
         rule_load = true
         type_load = true
-        log_applied_rule = false
-        apply_latnice = false
-        apply_oom_score_adj = true
-        apply_ionice = true
-        cgroup_load = true
-        apply_sched = true
+        cgroup_load = false
         apply_nice = true
+        apply_latnice = true
+        apply_ionice = true
+        apply_sched = true
+        log_applied_rule = true
       ''')),
 
-      File("/etc/ananicy.d/audio-system.rules", content = cleandoc('''
-        {"name": "pipewire",       "nice": -10, "latency_nice": -10}
-        {"name": "wireplumber",    "nice": -10, "latency_nice": -10}
-        {"name": "pipewire-pulse", "nice": -10, "latency_nice": -10}
-      ''')),
+      AnanicyConfigFile("/etc/ananicy.d/audio-system.rules",
+        options = {"nice": -10, "latency_nice": -10},
+        processes = ["pipewire", "wireplumber", "pipewire-pulse"],
+      ),
 
-      File("/etc/ananicy.d/kwin.rules", content = cleandoc('''
-        {"name": "kwin_wayland", "nice": -10, "latency_nice": -10}
-      ''')),
+      AnanicyConfigFile("/etc/ananicy.d/kwin.rules",
+        options = {"nice": -5, "latency_nice": -5},
+        processes = ["kwin_wayland"],
+      ),
 
-      File("/etc/ananicy.d/compilers.rules", content = cleandoc('''
-        {"name": "cc",               "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-        {"name": "gcc",              "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-        {"name": "make",             "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-        {"name": "clang",            "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-        {"name": "rustc",            "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-        {"name": "fossilize_replay", "nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"}
-      ''')),
+      AnanicyConfigFile("/etc/ananicy.d/games.rules",
+        options = {"nice": -5, "latency_nice": -5},
+        processes = ["steam", "ryujinx", "eden", "lutris", "heroic"],
+      ),
 
-      File("/etc/ananicy.d/games.rules", content = cleandoc('''
-        {"name": "steam",   "nice": -5, "latency_nice": -5}
-        {"name": "ryujinx", "nice": -5, "latency_nice": -5}
-        {"name": "eden",    "nice": -5, "latency_nice": -5}
-        {"name": "lutris",  "nice": -5, "latency_nice": -5}
-        {"name": "heroic",  "nice": -5, "latency_nice": -5}
-      ''')),
+      AnanicyConfigFile("/etc/ananicy.d/compilers.rules",
+        options = {"nice": 19, "latency_nice": 19, "sched": "batch", "ioclass": "idle"},
+        processes = ["cc", "gcc", "make", "clang", "rustc", "fossilize_replay"],
+      ),
 
-      File("/etc/ananicy.d/nextcloud.rules", content = cleandoc('''
-        {"name": "nextcloud", "nice": 10}
-      ''')),
+      AnanicyConfigFile("/etc/ananicy.d/nextcloud.rules",
+        options = {"nice": 10, "latency_nice": 10, "sched": "batch", "ioclass": "idle"},
+        processes = ["nextcloud"],
+      ),
 
       SystemdUnit("ananicy-cpp.service"),
 
@@ -503,3 +495,10 @@ def base(aurcache: bool) -> ConfigDict:
       ''')),
     )
   }
+
+
+def AnanicyConfigFile(filename: str, options: dict[str, str | int], processes: Sequence[str]) -> File:
+  return File(
+    filename = filename,
+    content = "\n".join(str({"name": proc, **options}).replace("'", '"') for proc in processes),
+  )
