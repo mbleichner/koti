@@ -78,9 +78,11 @@ def gaming() -> ConfigDict:
       ''')),
     ),
 
-    Section("lossless scaling + frame generation", disabled = True): (
+    Section("lossless scaling + frame generation"): (
       Package("lsfg-vk"),
 
+      # WARNING: only proton versions by Valve seem to be working correctly with lsfg-vk!
+      #
       # See the docs at: https://github.com/PancakeTAS/lsfg-vk/wiki/
       # Since games get identified by their process name instead of their actual exe filename, we sometimes have to
       # override the process name, in order to be able to distinguish them properly:
@@ -92,14 +94,18 @@ def gaming() -> ConfigDict:
         version = 1
         
         [[game]]
-        exe = "helldivers2" 
+        exe = "sailwind"
         multiplier = 2
-        performance_mode = true
+        performance_mode = false
+        
+        # [[game]]
+        # exe = "helldivers2"
+        # multiplier = 2
+        # performance_mode = true
         
         [[game]]
-        exe = "vkcube"
         multiplier = 2
-        performance_mode = true
+        exe = "vkcube"
       ''')),
     )
   }
