@@ -38,6 +38,7 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
       Package("konsole"),
       Package("ark"),
       Package("wine"),
+      Package("telegram-desktop"),
       SystemdUnit("coolercontrold.service"),
     ),
 
