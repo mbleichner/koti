@@ -197,7 +197,7 @@ def base(aurcache: bool) -> ConfigDict:
       ''')),
 
       File("/boot/loader/loader.conf", permissions = 0o755, content = cleandoc(f'''
-        timeout 3
+        timeout 2
         console-mode 2
       ''')),
 
