@@ -1,7 +1,10 @@
+from socket import gethostname
 from inspect import cleandoc
 
 from koti import *
 from koti.utils.shell import shell
+
+hostname = gethostname()
 
 
 def base(aurcache: bool) -> ConfigDict:
@@ -289,12 +292,73 @@ def base(aurcache: bool) -> ConfigDict:
       Package("nload"),
     ),
 
+    Section("borg backup server", enabled = hostname == "mserver"): PostHookScope(
+      User("manuel"),
+      Package("borg"),
+      PostHook(  # create single shared repo for more efficient deduplication
+        name = "create-repo",
+        execute = lambda: shell("borg init --encryption=none /home/manuel/borg || true")
+      )
+    ),
+
+    Section("borg backup client"): (
+      User("manuel"),
+      Package("borgmatic"),
+      File("/home/manuel/.config/borgmatic/config.yaml", owner = "manuel", content = cleandoc(f'''
+        verbosity: 1
+        progress: true
+        lock_wait: 3600
+        
+        source_directories:
+        - /home/manuel
+        
+        repositories:
+        - path: {"/home/manuel/borg" if hostname == "mserver" else "ssh://192.168.1.100/home/manuel/borg"}
+          label: mserver
+          
+        exclude_patterns:
+        - /home/manuel/borg
+        - /home/manuel/.local/share/Trash
+        - /home/manuel/.local/share/Steam/steamapps/common
+        - /home/manuel/.local/share/Steam/steamapps/shadercache
+        - /home/manuel/.cache
+        - /home/manuel/.cargo
+        - /home/manuel/.dotnet
+        - /home/manuel/.npm
+        - /home/manuel/.nuget
+        - /home/manuel/.pyenv
+        - /home/manuel/.yarn
+        - sh:**/.venv
+        
+        checks:
+        - name: repository
+          frequency: 1 month
+        
+        keep_daily: 7
+        keep_weekly: 4
+        keep_monthly: 12
+        keep_within: 2d
+      ''')),
+    ),
+
     Section("filesystem tools"): (
       Package("gparted"),
       Package("ntfs-3g"),
       Package("dosfstools"),
       Package("cryptsetup"),
       Package("samba"),
+    ),
+
+    Section("syncthing"): PostHookScope(
+      Package("syncthing"),
+      File("/usr/local/bin/update-syncthing-config", permissions = "r-x", content = cleandoc("""
+        syncthing cli config options natenabled set false;
+        syncthing cli config options relays-enabled set false;
+        syncthing cli config gui insecure-skip-host-check set true;
+      """)),
+      SystemdUnit("syncthing@manuel.service", requires = User("manuel")),
+      PostHook("update-syncthing-config", execute = lambda: shell("update-syncthing-config", user = "manuel")),
+      PostHook("restart-syncthing", execute = lambda: shell("systemctl daemon-reload && systemctl restart syncthing@manuel.service")),
     ),
 
     Section("koti executable and runtime dependencies"): (

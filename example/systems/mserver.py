@@ -31,19 +31,22 @@ def mserver() -> ConfigDict:
         iptables -F INPUT       && iptables -I INPUT       -i enp0s31f6 -j FIREWALL  # link FIREWALL chain into INPUT chain
         iptables -F DOCKER-USER && iptables -I DOCKER-USER -i enp0s31f6 -j FIREWALL  # link FIREWALL chain into DOCKER-USER chain
         
-        iptables -A FIREWALL -s 192.168.0.0/16   -j RETURN -m comment --comment "local traffic"
-        iptables -A FIREWALL -p tcp --dport 22   -j RETURN -m comment --comment "ssh server"
-        iptables -A FIREWALL -p tcp --dport 80   -j RETURN -m comment --comment "traefik http"
-        iptables -A FIREWALL -p tcp --dport 443  -j RETURN -m comment --comment "traefik https"
-        iptables -A FIREWALL -p udp --dport 2456 -j RETURN -m comment --comment "valheim"
-        iptables -A FIREWALL -p udp --dport 2457 -j RETURN -m comment --comment "valheim"
-        iptables -A FIREWALL -p udp --dport 2458 -j RETURN -m comment --comment "valheim"
-        iptables -A FIREWALL -p tcp --dport 7777 -j RETURN -m comment --comment "abiotic"
-        iptables -A FIREWALL -p udp --dport 7777 -j RETURN -m comment --comment "abiotic"
-        iptables -A FIREWALL -p tcp --dport 7777 -j RETURN -m comment --comment "satisfactory"
-        iptables -A FIREWALL -p udp --dport 7777 -j RETURN -m comment --comment "satisfactory"
-        iptables -A FIREWALL -p tcp --dport 8888 -j RETURN -m comment --comment "satisfactory"
-        iptables -A FIREWALL -p udp --dport 8888 -j RETURN -m comment --comment "satisfactory"
+        iptables -A FIREWALL -s 192.168.0.0/16    -j RETURN -m comment --comment "local traffic"
+        iptables -A FIREWALL -p tcp --dport 22    -j RETURN -m comment --comment "ssh server"
+        iptables -A FIREWALL -p tcp --dport 80    -j RETURN -m comment --comment "traefik http"
+        iptables -A FIREWALL -p tcp --dport 443   -j RETURN -m comment --comment "traefik https"
+        iptables -A FIREWALL -p udp --dport 2456  -j RETURN -m comment --comment "valheim"
+        iptables -A FIREWALL -p udp --dport 2457  -j RETURN -m comment --comment "valheim"
+        iptables -A FIREWALL -p udp --dport 2458  -j RETURN -m comment --comment "valheim"
+        iptables -A FIREWALL -p tcp --dport 7777  -j RETURN -m comment --comment "abiotic"
+        iptables -A FIREWALL -p udp --dport 7777  -j RETURN -m comment --comment "abiotic"
+        iptables -A FIREWALL -p tcp --dport 7777  -j RETURN -m comment --comment "satisfactory"
+        iptables -A FIREWALL -p udp --dport 7777  -j RETURN -m comment --comment "satisfactory"
+        iptables -A FIREWALL -p tcp --dport 8888  -j RETURN -m comment --comment "satisfactory"
+        iptables -A FIREWALL -p udp --dport 8888  -j RETURN -m comment --comment "satisfactory"
+        iptables -A FIREWALL -p udp --dport 21027 -j RETURN -m comment --comment "syncthing"
+        iptables -A FIREWALL -p tcp --dport 22000 -j RETURN -m comment --comment "syncthing"
+        iptables -A FIREWALL -p udp --dport 22000 -j RETURN -m comment --comment "syncthing"
         
         iptables -A FIREWALL -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN
         iptables -A FIREWALL -j DROP
