@@ -6,7 +6,7 @@ from koti import *
 def ryzen_undervolting() -> ConfigDict:
   return {
     Section("Ryzen 5800X3D undervolting"): (
-      Package("ryzen_smu-dkms-git"),
+      Package("ryzen_smu-dkms-git"), # AUR
 
       File(
         filename = "/opt/undervolting/ryzen-undervolting.py",

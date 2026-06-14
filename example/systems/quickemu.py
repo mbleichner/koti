@@ -25,7 +25,7 @@ def quickemu() -> ConfigDict:
     **cpufreq_systray(),
     **gaming(),
 
-    Section("firmware, drivers and filesystems for quickemu"): (
+    Section("firmware and drivers for quickemu"): (
       Package("linux-firmware-other"),
       Package("linux-firmware-intel"),
       Package("linux-firmware-nvidia"),

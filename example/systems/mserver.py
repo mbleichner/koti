@@ -24,6 +24,12 @@ def mserver() -> ConfigDict:
       ''')),
     ),
 
+    Section("firmware and drivers for mserver"): (
+      Package("linux-firmware-other"),
+      Package("linux-firmware-intel"),
+      Package("linux-firmware-realtek"),
+    ),
+
     Section("firewall rules"): PostHookScope(
       File("/usr/local/bin/update-iptables", permissions = "r-x", content = cleandoc(f'''
         #!/bin/bash -ex
@@ -87,12 +93,6 @@ def mserver() -> ConfigDict:
       ''')),
       SystemdUnit("glances-web.service"),
       PostHook("restart-glances", execute = lambda: shell("systemctl daemon-reload && systemctl restart glances-web.service")),
-    ),
-
-    Section("firmware for mserver"): (
-      Package("linux-firmware-other"),
-      Package("linux-firmware-intel"),
-      Package("linux-firmware-realtek"),
     ),
 
     Section("networking via systemd-networkd"): (

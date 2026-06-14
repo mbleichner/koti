@@ -21,7 +21,7 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
       Package("firefox"),
       Package("gimp"),
       Package("chromium"),
-      Package("google-chrome"),
+      # Package("google-chrome"), AUR
       Package("obsidian"),
       Package("okular"),
       Package("spectacle"),
@@ -128,7 +128,7 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
 
     Section("graphical development utils"): (
       Package("gitkraken"),
-      Package("pycharm"),
+      Package("pycharm"), # AUR
     ),
 
     Section("misc python dev tools/libraries"): (
@@ -137,6 +137,7 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
       Package("python-uv"),
       Package("pyenv"),
       Package("kdiff3"),
+      Package("quickemu"), # koti testing
     ),
   }
 

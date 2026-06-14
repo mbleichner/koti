@@ -36,13 +36,11 @@ def dan() -> ConfigDict:
       ''')),
     ),
 
-    Section("firmware for dan"): (
+    Section("firmware and drivers for dan"): (
       Package("linux-firmware-other"),
       Package("linux-firmware-intel"),
       Package("linux-firmware-nvidia"),
-    ),
-
-    Section("nvidia drivers for dan"): (
+      Package("ryzen_smu-dkms-git"), # AUR
       Package("nvidia-open-dkms"),
       Package("nvidia-settings"),
 
@@ -71,21 +69,15 @@ def dan() -> ConfigDict:
       SystemdUnit("nvme-thermal-throttling.service"),
     ),
 
-    Section("quickemu for koti testing"): (
-      Package("quickemu-git"),
-    ),
-
     Section("dan specific gaming stuff"): (
-      Package("beyondallreason-appimage"),
-      Package("headsetcontrol-git"),
-      Package("teamspeak"),
-      Package("teamspeak3"),
+      # Package("beyondallreason-appimage"), # AUR
+      # Package("headsetcontrol-git"), # AUR
     ),
 
     Section("homeoffice stuff"): (
-      Package("xwaylandvideobridge"),
-      Package("linphone-desktop-appimage"),
-      Package("microsoft-edge-stable-bin"),
+      # Package("xwaylandvideobridge"), # AUR
+      Package("linphone-desktop-appimage"), # AUR
+      # Package("microsoft-edge-stable-bin"), # AUR
       # FlatpakPackage("us.zoom.Zoom"),
     ),
   }

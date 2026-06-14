@@ -25,7 +25,6 @@ def cpufreq_systray(freq_options: Sequence[int] = (1000, 1500, 2000, 2500, 3000,
       Package("yq"),  # needed to adjust target freq in /etc/cpufreq/state.yaml
       Package("moreutils"),  # sponge
       Package("kdialog"),
-      Package("ryzen_smu-dkms-git"),
 
       Option[str]("/etc/sudoers/ExtraLines", value = [
         "manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/cpupower",

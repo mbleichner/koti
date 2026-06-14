@@ -30,13 +30,11 @@ def lenovo() -> ConfigDict:
       '''))
     ),
 
-    Section("firmware for lenovo"): (
+    Section("firmware and drivers for lenovo"): (
       Package("linux-firmware-other"),
       Package("linux-firmware-amdgpu"),
       Package("linux-firmware-realtek"),
-    ),
-
-    Section("graphics drivers for lenovo"): (
+      Package("ryzen_smu-dkms-git"), # AUR
       Package('vulkan-radeon'),
       Package('lib32-vulkan-radeon'),
     ),

@@ -7,21 +7,23 @@ from koti.items import *
 def gaming() -> ConfigDict:
   return {
     Section("game launchers, proton, emulators, mod managers"): (
-      Package("amethyst-mod-manager"),
+      # Package("amethyst-mod-manager"), # AUR
       Package("discord"),
-      Package("eden-bin"),
+      # Package("eden-bin"), # AUR
       Package("gamescope"),
       Package("gpu-screen-recorder-ui"),
-      Package("heroic-games-launcher-bin"),
+      Package("heroic-games-launcher-bin"), # CachyOS
       Package("lutris"),
       Package("mangohud"),
       Package("proton-cachyos-slr"),
-      Package("proton-ge-custom-bin"),
+      # Package("proton-ge-custom-bin"), # AUR
       Package("protonplus"),
       Package("protontricks"),
-      Package("r2modman-bin"),
+      # Package("r2modman-bin"), # AUR
       Package("steam"),
-      Package("steamcmd"),
+      # Package("steamcmd"), AUR
+      Package("teamspeak3"),
+      # Package("teamspeak"), # AUR
       UserGroupAssignment("manuel", "games"),
 
       # increase number of fossilize_replay processes

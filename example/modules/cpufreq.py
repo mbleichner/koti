@@ -21,7 +21,6 @@ def cpufreq_auto_adjust(base_freq: int) -> ConfigDict:
   return {
     Section(f"automatic cpu frequency switching"): (
       Package("python-yaml"),
-      Package("ryzen_smu-dkms-git"),
       Option[tuple[str, int]]("/etc/cpufreq/rules.yaml/ExtraEntries"),
 
       File("/etc/cpufreq/rules.yaml", permissions = "r--r--r--", content = lambda model: cleandoc(f'''
