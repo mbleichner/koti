@@ -21,7 +21,7 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
       Package("firefox"),
       Package("gimp"),
       Package("chromium"),
-      # Package("google-chrome"), AUR
+      Package("google-chrome"), # AUR, needed for guacamole
       Package("obsidian"),
       Package("okular"),
       Package("spectacle"),

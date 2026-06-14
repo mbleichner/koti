@@ -255,6 +255,8 @@ def base(aurcache: bool) -> ConfigDict:
       Package("htop"),
       Package("iotop"),
       Package("ncdu"),
+      Package("perl-image-exiftool"),
+      Package("fdupes"),
 
       File("/etc/environment.d/editor.conf", content = cleandoc(f'''
         EDITOR=nano
