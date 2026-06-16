@@ -294,28 +294,22 @@ def base(aurcache: bool) -> ConfigDict:
       Package("nload"),
     ),
 
-    Section("borg backup server", enabled = hostname == "mserver"): PostHookScope(
-      User("manuel"),
-      Package("borg"),
-      PostHook(  # create single shared repo for more efficient deduplication
-        name = "create-repo",
-        execute = lambda: shell("borg init --encryption=none /home/manuel/borg || true")
-      )
-    ),
-
-    Section("borg backup client"): (
-      User("manuel"),
+    Section("borgmatic"): (
       Package("borgmatic"),
-      File("/home/manuel/.config/borgmatic/config.yaml", owner = "manuel", content = cleandoc(f'''
+
+      File("/etc/borgmatic/config.yaml", requires = User("manuel"), content = cleandoc(f'''
         verbosity: 1
         progress: true
         lock_wait: 3600
+        ssh_command: ssh -i /home/manuel/.ssh/id_ed25519
         
         source_directories:
+        - /etc
         - /home/manuel
+        {"- /var/opt/services" if hostname == "mserver" else ""}
         
         repositories:
-        - path: {"/home/manuel/borg" if hostname == "mserver" else "ssh://192.168.1.100/home/manuel/borg"}
+        - path: ssh://borg@192.168.1.100/home/borg/repo
           label: mserver
           
         exclude_patterns:
@@ -341,6 +335,41 @@ def base(aurcache: bool) -> ConfigDict:
         keep_monthly: 12
         keep_within: 2d
       ''')),
+
+      File("/etc/systemd/system/borgmatic.service", content = cleandoc(f'''
+        [Unit]
+        Description=borgmatic
+        Wants=network-online.target
+        After=network-online.target
+        ConditionACPower=true
+        
+        [Service]
+        Type=oneshot
+        Nice=19
+        CPUSchedulingPolicy=batch
+        IOSchedulingClass=best-effort
+        IOSchedulingPriority=7
+        IOWeight=100
+        Restart=no
+        LogRateLimitIntervalSec=0
+        # ExecStartPre=sleep 5s
+        ExecStart=borgmatic --verbosity -2 --syslog-verbosity 1
+      ''')),
+
+      File("/etc/systemd/system/borgmatic.timer", content = cleandoc(f'''
+        [Unit]
+        Description=borgmatic
+        
+        [Timer]
+        OnCalendar=*-*-* 18:00:00
+        RandomizedDelaySec=30m
+        Persistent=true
+        
+        [Install]
+        WantedBy=timers.target
+      ''')),
+
+      SystemdUnit("borgmatic.timer"),
     ),
 
     Section("filesystem tools"): (
@@ -465,6 +494,11 @@ def base(aurcache: bool) -> ConfigDict:
         ChallengeResponseAuthentication no
         Match Address 192.168.0.0/16
           PasswordAuthentication yes
+      ''')),
+      File("/home/manuel/.ssh/authorized_keys", owner = "manuel", content = cleandoc(f'''
+        ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILHYYC3eJGcl/X9eM8f6BnUtBvekI2ZUzkfLY5ltjPTw manuel@dan
+        ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINL1K4/a2LLS6qrB5cNMIyVk6skyhRAVE++tIj6UTL0s manuel@lenovo
+        ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKa8TBfPVjdfsMkhki/j3PjOLcNJMV5OMb7sDu6ld6ek manuel@mserver
       ''')),
       SystemdUnit("sshd.service"),
     ),

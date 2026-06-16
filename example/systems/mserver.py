@@ -80,6 +80,21 @@ def mserver() -> ConfigDict:
       ),
     ),
 
+    Section("borg server"): PostHookScope(
+      User("borg", password = False),
+      Package("borg"),
+      UserHome(username = "borg", homedir = "/home/borg"),
+      File("/home/borg/.ssh/authorized_keys", owner = "borg", content = cleandoc(f'''
+        ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILHYYC3eJGcl/X9eM8f6BnUtBvekI2ZUzkfLY5ltjPTw manuel@dan
+        ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINL1K4/a2LLS6qrB5cNMIyVk6skyhRAVE++tIj6UTL0s manuel@lenovo
+        ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKa8TBfPVjdfsMkhki/j3PjOLcNJMV5OMb7sDu6ld6ek manuel@mserver
+      ''')),
+      PostHook(  # create single shared repo for more efficient deduplication
+        name = "create-repo",
+        execute = lambda: shell("borg init --encryption=none /home/borg/repo || true", user = "borg")
+      )
+    ),
+
     Section("glances monitoring", disabled = True): PostHookScope(
       Package("glances"),
       # optional dependencies (missing ones will get listed in /home/manuel/.local/share/glances/glances.log)
