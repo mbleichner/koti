@@ -315,8 +315,10 @@ def base(aurcache: bool) -> ConfigDict:
         exclude_patterns:
         - /home/manuel/borg
         - /home/manuel/.local/share/Trash
+        - /home/manuel/.local/share/Steam/steamapps/temp
         - /home/manuel/.local/share/Steam/steamapps/common
         - /home/manuel/.local/share/Steam/steamapps/shadercache
+        - /home/manuel/.local/share/Steam/steamapps/downloading
         - /home/manuel/.cache
         - /home/manuel/.cargo
         - /home/manuel/.dotnet
