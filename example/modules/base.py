@@ -384,6 +384,7 @@ def base(aurcache: bool) -> ConfigDict:
       Package("syncthing"),
       File("/usr/local/bin/update-syncthing-config", permissions = "r-x", content = cleandoc("""
         syncthing cli config options natenabled set false;
+        syncthing cli config options global-ann-enabled set false;
         syncthing cli config options relays-enabled set false;
         syncthing cli config gui insecure-skip-host-check set true;
       """)),
