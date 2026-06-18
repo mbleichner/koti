@@ -343,7 +343,6 @@ def base(aurcache: bool) -> ConfigDict:
         Description=borgmatic
         Wants=network-online.target
         After=network-online.target
-        ConditionACPower=true
         
         [Service]
         Type=oneshot
@@ -354,7 +353,6 @@ def base(aurcache: bool) -> ConfigDict:
         IOWeight=100
         Restart=no
         LogRateLimitIntervalSec=0
-        # ExecStartPre=sleep 5s
         ExecStart=borgmatic --verbosity -2 --syslog-verbosity 1
       ''')),
 
