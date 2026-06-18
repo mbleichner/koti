@@ -19,7 +19,7 @@ def gaming() -> ConfigDict:
       # Package("proton-ge-custom-bin"), # AUR
       Package("protonplus"),
       Package("protontricks"),
-      # Package("r2modman-bin"), # AUR
+      Package("r2modman-bin"), # AUR
       Package("steam"),
       # Package("steamcmd"), AUR
       Package("teamspeak3"),
