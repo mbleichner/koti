@@ -135,19 +135,24 @@ def mserver() -> ConfigDict:
 
     Section("docker services"): (
       *Packages("docker", "docker-buildx", "docker-compose"),
+
       SystemdUnit("docker.service"),  # always enable the docker daemon
+
       Directory("/opt/services", source = "files/services"),
+
       File("/usr/local/bin/update-docker", permissions = "rwxr-xr-x", content = cleandoc('''
         #!/bin/bash -ex
-        docker compose --project-directory /opt/services build --quiet
-        docker compose --project-directory /opt/services pull --quiet
+        docker compose --project-directory /opt/services build
+        docker compose --project-directory /opt/services pull
         docker compose --project-directory /opt/services up --quiet-build --quiet-pull --remove-orphans --detach
         docker system prune -f > /dev/null
       ''')),
+
       PostHook(
         name = "update docker images and services",
         execute = lambda: shell("/usr/local/bin/update-docker"),
       ),
+
       PostHook(
         name = "download pacoloco .db files",
         # Pacoloco prefetch only works if .db files have been added to the cache, which will not happen if we use
@@ -163,5 +168,10 @@ def mserver() -> ConfigDict:
           curl -s http://pacoloco.fritz.box/repo/cachyos/x86_64/cachyos/cachyos.db > /dev/null
         '''),
       ),
+
+      Option[str]("/etc/borgmatic/config.yaml/Patterns", value = [
+        "R /var/opt/services",
+        "! /var/opt/services/pacoloco/cache",
+      ]),
     ),
   }

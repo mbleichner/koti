@@ -297,45 +297,48 @@ def base(aurcache: bool) -> ConfigDict:
     Section("borgmatic"): (
       Package("borgmatic"),
 
-      File("/etc/borgmatic/config.yaml", requires = User("manuel"), content = cleandoc(f'''
+      Option[str]("/etc/borgmatic/config.yaml/Patterns", value = [
+        'R /etc',
+        'R /home/manuel',
+        '! sh:/home/manuel/.local/share/Trash',
+        '! sh:/home/manuel/.local/state/Beyond All Reason',
+        '! sh:/home/manuel/.local/share/Steam/steamrt*',
+        '! sh:/home/manuel/.local/share/Steam/ubuntu*',
+        '! sh:/home/manuel/.local/share/Steam/steamapps/temp',
+        '! sh:/home/manuel/.local/share/Steam/steamapps/common',
+        '! sh:/home/manuel/.local/share/Steam/steamapps/downloading',
+        '! sh:/home/manuel/.local/share/Steam/steamapps/shadercache',
+        '! sh:/home/manuel/.local/share/Steam/steamapps/compatdata/*/pfx/drive_c/windows',
+        '! sh:/home/manuel/.cargo',
+        '! sh:/home/manuel/.dotnet',
+        '! sh:/home/manuel/.npm',
+        '! sh:/home/manuel/.nuget',
+        '! sh:/home/manuel/.pyenv',
+        '! sh:/home/manuel/.yarn',
+        '! sh:/home/manuel/**/*[Cc]ache*',
+        '! sh:**/.venv',
+      ]),
+
+      File("/etc/borgmatic/config.yaml", requires = User("manuel"), content = lambda model: cleandoc(f'''
         verbosity: 1
-        progress: true
         lock_wait: 3600
         ssh_command: ssh -i /home/manuel/.ssh/id_ed25519
-        
-        source_directories:
-        - /etc
-        - /home/manuel
-        {"- /var/opt/services" if hostname == "mserver" else ""}
-        
-        repositories:
-        - path: ssh://borg@192.168.1.100/home/borg/repo
-          label: mserver
-          
-        exclude_patterns:
-        - /home/manuel/borg
-        - /home/manuel/.local/share/Trash
-        - /home/manuel/.local/share/Steam/steamapps/temp
-        - /home/manuel/.local/share/Steam/steamapps/common
-        - /home/manuel/.local/share/Steam/steamapps/shadercache
-        - /home/manuel/.local/share/Steam/steamapps/downloading
-        - /home/manuel/.cache
-        - /home/manuel/.cargo
-        - /home/manuel/.dotnet
-        - /home/manuel/.npm
-        - /home/manuel/.nuget
-        - /home/manuel/.pyenv
-        - /home/manuel/.yarn
-        - sh:**/.venv
-        
-        checks:
-        - name: repository
-          frequency: 1 month
+        list_details: true
         
         keep_daily: 7
         keep_weekly: 4
         keep_monthly: 12
         keep_within: 2d
+        
+        repositories:
+        - path: ssh://borg@192.168.1.100/home/borg/repo
+          label: mserver
+        
+        checks:
+        - name: repository
+          frequency: 1 month
+        
+        patterns: [ {", ".join(f"'{pattern}'" for pattern in model.item(Option[str]("/etc/borgmatic/config.yaml/Patterns")).distinct())} ]
       ''')),
 
       File("/etc/systemd/system/borgmatic.service", content = cleandoc(f'''
