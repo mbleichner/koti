@@ -111,6 +111,7 @@ services:
     image: nextcloud # mit cron-Image synchron halten
     container_name: nextcloud-web
     restart: always
+    scale: 0
     depends_on:
     - nextcloud-postgres
     environment:
@@ -138,6 +139,7 @@ services:
     container_name: nextcloud-cron
     entrypoint: /cron.sh
     restart: always
+    scale: 0
     depends_on:
     - nextcloud-postgres
     environment:
@@ -152,6 +154,7 @@ services:
     image: postgres:16
     container_name: nextcloud-postgres
     restart: always
+    scale: 0
     environment:
       POSTGRES_USER: "nextcloud"
       POSTGRES_PASSWORD: "nextcloud"
