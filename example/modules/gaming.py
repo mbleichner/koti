@@ -98,7 +98,7 @@ def gaming() -> ConfigDict:
         [[game]]
         exe = "sailwind"
         multiplier = 2
-        performance_mode = false
+        performance_mode = true
         
         # [[game]]
         # exe = "helldivers2"
