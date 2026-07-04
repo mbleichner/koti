@@ -32,7 +32,6 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
       Package("kolourpaint"),
       Package("ksnip"),
       Package("libreoffice-fresh"),
-      Package("nextcloud-client"),
       Package("pavucontrol"),
       Package("wiremix"),
       Package("konsole"),

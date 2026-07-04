@@ -447,9 +447,9 @@ def base(aurcache: bool) -> ConfigDict:
         processes = ["cc", "gcc", "make", "clang", "rustc", "fossilize_replay"],
       ),
 
-      AnanicyConfigFile("/etc/ananicy.d/nextcloud.rules",
+      AnanicyConfigFile("/etc/ananicy.d/syncthing.rules",
         options = {"nice": 10, "latency_nice": 10, "sched": "batch", "ioclass": "idle"},
-        processes = ["nextcloud"],
+        processes = ["syncthing"],
       ),
 
       SystemdUnit("ananicy-cpp.service"),
