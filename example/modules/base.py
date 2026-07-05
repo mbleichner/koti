@@ -7,7 +7,7 @@ from koti.utils.shell import shell
 hostname = gethostname()
 
 
-def base(aurcache: bool) -> ConfigDict:
+def base() -> ConfigDict:
   return {
     Section("bootstrap sudo, pacman and paru"): (
 
@@ -38,10 +38,13 @@ def base(aurcache: bool) -> ConfigDict:
       ''') + "\n\n" + "\n".join(model.item(Option[str]("/etc/sudoers/ExtraLines")).distinct())),
 
       # install CachyOS keyrings and mirrorlist, and set up pacman
-      PacmanKey("F3B607488DB35A47"),
+      PacmanKey("F3B607488DB35A47"),  # CachyOS
+      PacmanKey("3056513887B78AEB"),  # Chaotic AUR
       Package("cachyos-keyring", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst", tags = "bootstrap"),
       Package("cachyos-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst", tags = "bootstrap"),
       Package("cachyos-v3-mirrorlist", url = "https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst", tags = "bootstrap"),
+      Package("chaotic-keyring", url = "https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst", tags = "bootstrap"),
+      Package("chaotic-mirrorlist", url = "https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst", tags = "bootstrap"),
       Option[str]("/etc/pacman.conf/NoExtract"),  # Declare options for pacman.conf (so I don't have to null-check later)
       Option[str]("/etc/pacman.conf/NoUpgrade"),  # Declare options for pacman.conf (so I don't have to null-check later)
       Option[str]("/etc/pacman.conf/IgnorePkg"),  # Declare options for pacman.conf (so I don't have to null-check later)
@@ -59,10 +62,6 @@ def base(aurcache: bool) -> ConfigDict:
         DownloadUser = alpm
         SigLevel = Required DatabaseOptional
         LocalFileSigLevel = Optional
-        
-        {"""[aurcache]
-        SigLevel = Optional TrustAll
-        Server = http://aurcache.fritz.box/$arch""" if aurcache else ""}
     
         [core]
         CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch
@@ -83,6 +82,10 @@ def base(aurcache: bool) -> ConfigDict:
         [cachyos]
         CacheServer = http://pacoloco.fritz.box/repo/cachyos/$arch/$repo
         Include = /etc/pacman.d/cachyos-mirrorlist
+    
+        [chaotic-aur]
+        CacheServer = http://pacoloco.fritz.box/repo/chaotic/$repo/$arch
+        Include = /etc/pacman.d/chaotic-mirrorlist
         
         [core-testing]
         CacheServer = http://pacoloco.fritz.box/repo/archlinux/$repo/os/$arch

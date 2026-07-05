@@ -12,7 +12,7 @@ from modules.systray import cpufreq_systray
 # Configuration for my Lenovo X13 laptop
 def lenovo() -> ConfigDict:
   return {
-    **base(aurcache = True),
+    **base(),
     **desktop(nvidia = False, autologin = True, ms_fonts = True),
     **gaming(),
     **cpufreq_defaults(min_freq = 1500, max_freq = 4000, governor = "powersave"),

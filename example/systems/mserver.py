@@ -10,7 +10,7 @@ from modules.kernel import kernel
 # Configuration for my 7700K homelab server
 def mserver() -> ConfigDict:
   return {
-    **base(aurcache = False),  # avoid self dependency
+    **base(),  # avoid self dependency
     **cpufreq_defaults(min_freq = 800, max_freq = 4200, governor = "powersave"),
     **kernel("linux-cachyos-server", sortkey = 1, powersave = True),
     **kernel("linux-cachyos-lts", sortkey = 2, powersave = True),
@@ -162,8 +162,9 @@ def mserver() -> ConfigDict:
           curl -s http://pacoloco.fritz.box/repo/archlinux/core/os/x86_64/core.db > /dev/null
           curl -s http://pacoloco.fritz.box/repo/archlinux/extra/os/x86_64/extra.db > /dev/null
           curl -s http://pacoloco.fritz.box/repo/archlinux/multilib/os/x86_64/multilib.db > /dev/null
-          curl -s http://pacoloco.fritz.box/repo/cachyos-extra-v3/x86_64_v3/cachyos-extra-v3/cachyos-v3.db > /dev/null
-          curl -s http://pacoloco.fritz.box/repo/cachyos-core-v3/x86_64_v3/cachyos-core-v3/cachyos-v3.db > /dev/null
+          curl -s http://pacoloco.fritz.box/repo/chaotic/chaotic-aur/x86_64/chaotic-aur.db > /dev/null
+          curl -s http://pacoloco.fritz.box/repo/cachyos-v3/x86_64_v3/cachyos-extra-v3/cachyos-extra-v3.db > /dev/null
+          curl -s http://pacoloco.fritz.box/repo/cachyos-v3/x86_64_v3/cachyos-core-v3/cachyos-core-v3.db > /dev/null
           curl -s http://pacoloco.fritz.box/repo/cachyos-v3/x86_64_v3/cachyos-v3/cachyos-v3.db > /dev/null
           curl -s http://pacoloco.fritz.box/repo/cachyos/x86_64/cachyos/cachyos.db > /dev/null
         '''),

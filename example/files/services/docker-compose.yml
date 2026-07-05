@@ -214,6 +214,7 @@ services:
     image: ghcr.io/lukas-heiligenbrunner/aurcache
     container_name: aurcache
     restart: always
+    scale: 0
     volumes:
     - /etc/localtime:/etc/localtime:ro
     - /var/run/docker.sock:/var/run/docker.sock
@@ -247,6 +248,7 @@ services:
     image: postgres:18
     container_name: aurcache-postgres
     restart: always
+    scale: 0
     volumes:
     - /var/opt/services/aurcache/postgres:/var/lib/postgresql
     environment:
