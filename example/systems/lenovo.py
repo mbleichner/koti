@@ -24,8 +24,8 @@ def lenovo() -> ConfigDict:
     Section("swapfile (4GB) and fstab"): (
       Swapfile("/swapfile", 4 * (1024 ** 3)),
       File("/etc/fstab", requires = Swapfile("/swapfile"), content = cleandoc('''
-        UUID=79969cb9-9b6e-48e2-a672-4aee50f04c56  /      ext4  rw,noatime 0 1
-        UUID=1CA6-490D                             /boot  vfat  rw,defaults 0 2
+        UUID=79969cb9-9b6e-48e2-a672-4aee50f04c56  /      ext4  rw 0 1
+        UUID=1CA6-490D                             /boot  vfat  rw 0 2
         /swapfile                                  swap   swap  defaults 0 0
       '''))
     ),

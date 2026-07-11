@@ -29,8 +29,8 @@ def dan() -> ConfigDict:
     Section("swapfile (12GB) and fstab"): (
       Swapfile("/swapfile", 12 * (1024 ** 3)),
       File("/etc/fstab", content = cleandoc('''
-        UUID=3409a847-0bd6-43e4-96fd-6e8be4e3c58d  /             ext4  rw,noatime 0 1
-        UUID=AF4E-18BD                             /boot         vfat  rw,defaults 0 2
+        UUID=3409a847-0bd6-43e4-96fd-6e8be4e3c58d  /             ext4  rw 0 1
+        UUID=AF4E-18BD                             /boot         vfat  rw 0 2
         UUID=CCA2A808A2A7F55C                      /mnt/windows  ntfs  rw,x-systemd.automount 0 0
         /swapfile                                  swap          swap  defaults 0 0
       ''')),

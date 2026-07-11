@@ -18,8 +18,8 @@ def mserver() -> ConfigDict:
     Section("swapfile (8GB) and fstab"): (
       Swapfile("/swapfile", 8 * 1024 ** 3),
       File("/etc/fstab", requires = Swapfile("/swapfile"), content = cleandoc('''
-        UUID=77abf8d1-814f-4b0f-b3be-0b5f128f2e34  /      ext4  rw,noatime 0 1
-        UUID=41E5-985A                             /boot  vfat  rw,defaults 0 2
+        UUID=77abf8d1-814f-4b0f-b3be-0b5f128f2e34  /      ext4  rw 0 1
+        UUID=41E5-985A                             /boot  vfat  rw 0 2
         /swapfile                                  swap   swap  defaults 0 0
       ''')),
     ),
