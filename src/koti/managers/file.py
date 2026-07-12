@@ -7,9 +7,11 @@ from hashlib import sha256
 from pwd import getpwnam, getpwuid
 from typing import Generator, Sequence
 
+from koti import ManagedConfigItem
 from koti.model import Action, ConfigItemState, ConfigManager, ConfigModel, SystemState
 from koti.items.file import File
 from koti.items.directory import Directory
+from koti.utils.shell import shell
 from koti.utils.json_store import JsonCollection, JsonStore
 
 
@@ -77,14 +79,24 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       return self.dir_state_current(item, system_state)
 
   def get_install_actions(self, items_to_check: Sequence[File | Directory], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
-    yield from self.plan_file_install([item for item in items_to_check if isinstance(item, File)], model, system_state, register_file = True)
-    yield from self.plan_dir_install([item for item in items_to_check if isinstance(item, Directory)], model, system_state)
+    systemd_daemon_reload = False
+    for action in self.get_file_install_actions([item for item in items_to_check if isinstance(item, File)], model, system_state, register_file = True):
+      systemd_daemon_reload = systemd_daemon_reload or self.affects_systemd(action)
+      yield action
+    for action in self.get_dir_install_actions([item for item in items_to_check if isinstance(item, Directory)], model, system_state):
+      systemd_daemon_reload = systemd_daemon_reload or self.affects_systemd(action)
+      yield action
+    if systemd_daemon_reload:
+      yield Action(
+        description = "systemctl daemon-reload due to changed systemd files",
+        execute = lambda: shell("systemctl daemon-reload"),
+      )
 
   def get_cleanup_actions(self, items_to_keep: Sequence[File | Directory], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     yield from self.plan_file_cleanup([item for item in items_to_keep if isinstance(item, File)], model, system_state)
     yield from self.plan_dir_cleanup([item for item in items_to_keep if isinstance(item, Directory)], model, system_state)
 
-  def plan_file_install(self, items_to_check: Sequence[File], model: ConfigModel, system_state: SystemState, register_file: bool) -> Generator[Action]:
+  def get_file_install_actions(self, items_to_check: Sequence[File], model: ConfigModel, system_state: SystemState, register_file: bool) -> Generator[Action]:
     for item in items_to_check:
       current = system_state.get_state(item, system_state, FileState)
       target = self.file_state_target(item, model)
@@ -127,7 +139,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
       os.chmod(fh.name, mode = target.mode)
     return f"preview content changes: diff '{item.filename}' '{tmpfile}'"
 
-  def plan_dir_install(self, items_to_check: Sequence[Directory], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
+  def get_dir_install_actions(self, items_to_check: Sequence[Directory], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
     for item in items_to_check:
       current = system_state.get_state(item, system_state, DirectoryState)
       target = self.dir_state_target(item, model)
@@ -139,7 +151,7 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
 
       # install all files belonging to the directory
       directory_files = item.files()
-      yield from self.plan_file_install(directory_files, model, system_state, register_file = False)
+      yield from self.get_file_install_actions(directory_files, model, system_state, register_file = False)
 
       # remove files that should no longer be present
       files_current = [f"{base}/{subfile}" for base, subdirs, subfiles in os.walk(item.dirname) for subfile in subfiles]
@@ -279,3 +291,9 @@ class FileManager(ConfigManager[File | Directory, FileState | DirectoryState]):
     if not dryrun:
       self.managed_files_store.replace_all([item.filename for group in model.configs for item in group.provides if isinstance(item, File)])
       self.managed_dirs_store.replace_all([item.dirname for group in model.configs for item in group.provides if isinstance(item, Directory)])
+
+  @classmethod
+  def affects_systemd(cls, action: Action):
+    files: Sequence[ManagedConfigItem] = [*action.installs.keys(), *action.updates.keys(), *action.removes]
+    return any("/systemd/" in file.filename for file in files if isinstance(file, File))
+

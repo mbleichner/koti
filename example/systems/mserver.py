@@ -76,7 +76,7 @@ def mserver() -> ConfigDict:
 
       PostHook(
         name = "update-iptables",
-        execute = lambda: shell("systemctl daemon-reload && systemctl restart firewall.service"),
+        execute = lambda: shell("systemctl restart firewall.service"),
       ),
     ),
 
@@ -107,7 +107,7 @@ def mserver() -> ConfigDict:
         show=enp0s31f6,wlp2s0
       ''')),
       SystemdUnit("glances-web.service"),
-      PostHook("restart-glances", execute = lambda: shell("systemctl daemon-reload && systemctl restart glances-web.service")),
+      PostHook("restart-glances", execute = lambda: shell("systemctl restart glances-web.service")),
     ),
 
     Section("networking via systemd-networkd"): (

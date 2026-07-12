@@ -396,7 +396,7 @@ def base() -> ConfigDict:
       """)),
       SystemdUnit("syncthing@manuel.service", requires = User("manuel")),
       PostHook("update-syncthing-config", execute = lambda: shell("update-syncthing-config", user = "manuel")),
-      PostHook("restart-syncthing", execute = lambda: shell("systemctl daemon-reload && systemctl restart syncthing@manuel.service")),
+      PostHook("restart-syncthing", execute = lambda: shell("systemctl restart syncthing@manuel.service")),
     ),
 
     Section("koti executable and runtime dependencies"): (
@@ -459,7 +459,7 @@ def base() -> ConfigDict:
 
       PostHook(
         name = "restart-ananicy-cpp",
-        execute = lambda: shell("systemctl daemon-reload && systemctl restart ananicy-cpp.service"),
+        execute = lambda: shell("systemctl restart ananicy-cpp.service"),
       ),
     ),
 
