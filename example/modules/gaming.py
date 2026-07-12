@@ -9,11 +9,10 @@ def gaming() -> ConfigDict:
     Section("game launchers, proton, emulators, mod managers"): (
       # Package("amethyst-mod-manager"), # AUR
       Package("discord"),
-      # Package("eden-bin"), # AUR
+      Package("eden-git"), # Chaotic-AUR
       Package("gamescope"),
       Package("gpu-screen-recorder-ui"),
-      Package("heroic-games-launcher-bin"), # CachyOS
-      Package("lutris"),
+      Package("faugus-launcher"), # CachyOS
       Package("mangohud"),
       Package("proton-cachyos-slr"),
       # Package("proton-ge-custom-bin"), # AUR
@@ -21,7 +20,6 @@ def gaming() -> ConfigDict:
       Package("protontricks"),
       Package("r2modman-bin"), # AUR
       Package("steam"),
-      # Package("steamcmd"), AUR
       Package("teamspeak3"),
       # Package("teamspeak"), # AUR
       UserGroupAssignment("manuel", "games"),
