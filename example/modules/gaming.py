@@ -9,7 +9,7 @@ def gaming() -> ConfigDict:
     Section("game launchers, proton, emulators, mod managers"): (
       # Package("amethyst-mod-manager"), # AUR
       Package("discord"),
-      Package("eden-git"), # Chaotic-AUR
+      # Package("eden-git"), # Chaotic-AUR # macht aktuell Probleme wegen unerfüllbaren Dependencies
       Package("gamescope"),
       Package("gpu-screen-recorder-ui"),
       Package("faugus-launcher"), # CachyOS
