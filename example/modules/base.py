@@ -232,6 +232,12 @@ def base() -> ConfigDict:
         FallbackNTP=time.google.com 0.arch.pool.ntp.org 1.arch.pool.ntp.org 2.arch.pool.ntp.org 3.arch.pool.ntp.org
       ''')),
 
+      File("/etc/systemd/system.conf", content = cleandoc('''
+        [Manager]
+        DefaultTimeoutStopSec=10s
+        DefaultTimeoutAbortSec=10s
+      ''')),
+
       SystemdUnit("fstrim.timer"),
       SystemdUnit("fwupd.service"),
       SystemdUnit("systemd-boot-update.service"),
