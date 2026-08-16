@@ -325,6 +325,8 @@ def base() -> ConfigDict:
         '! sh:/home/manuel/.pyenv',
         '! sh:/home/manuel/.yarn',
         '! sh:/home/manuel/**/*[Cc]ache*',
+        '! sh:**/*.safetensors',
+        '! sh:**/*.gguf',
         '! sh:**/.venv',
       ]),
 
