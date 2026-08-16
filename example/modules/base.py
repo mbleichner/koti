@@ -232,10 +232,15 @@ def base() -> ConfigDict:
         FallbackNTP=time.google.com 0.arch.pool.ntp.org 1.arch.pool.ntp.org 2.arch.pool.ntp.org 3.arch.pool.ntp.org
       ''')),
 
+      File("/usr/lib/systemd/system/user@.service.d/20-stop-timeout.conf", content = cleandoc('''
+        [Service]
+        TimeoutStopSec=30s
+      ''')),
+
       File("/etc/systemd/system.conf", content = cleandoc('''
         [Manager]
-        DefaultTimeoutStopSec=10s
-        DefaultTimeoutAbortSec=10s
+        DefaultTimeoutStopSec=30s
+        DefaultTimeoutAbortSec=30s
       ''')),
 
       SystemdUnit("fstrim.timer"),
