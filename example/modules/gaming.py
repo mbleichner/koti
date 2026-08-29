@@ -15,7 +15,7 @@ def gaming() -> ConfigDict:
       Package("faugus-launcher"), # CachyOS
       Package("mangohud"),
       Package("proton-cachyos-slr"),
-      # Package("proton-ge-custom-bin"), # AUR
+      Package("proton-ge-custom-bin"), # AUR
       Package("protonplus"),
       Package("protontricks"),
       Package("r2modman-bin"), # AUR
