@@ -25,6 +25,7 @@ def mserver() -> ConfigDict:
     ),
 
     Section("firmware and drivers for mserver"): (
+      Package("intel-ucode"),
       Package("linux-firmware-other"),
       Package("linux-firmware-intel"),
       Package("linux-firmware-realtek"),

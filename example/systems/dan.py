@@ -37,6 +37,7 @@ def dan() -> ConfigDict:
     ),
 
     Section("firmware and drivers for dan"): (
+      Package("amd-ucode"),
       Package("linux-firmware-other"),
       Package("linux-firmware-intel"),
       Package("linux-firmware-nvidia"),

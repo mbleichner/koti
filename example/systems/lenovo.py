@@ -31,6 +31,7 @@ def lenovo() -> ConfigDict:
     ),
 
     Section("firmware and drivers for lenovo"): (
+      Package("amd-ucode"),
       Package("linux-firmware-other"),
       Package("linux-firmware-amdgpu"),
       Package("linux-firmware-realtek"),
