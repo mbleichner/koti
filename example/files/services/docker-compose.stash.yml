@@ -140,3 +140,18 @@ services:
     - /etc/opt/services/valheim.env  # should contain ServerPassword
     volumes:
     - "/var/opt/services/valheim/userhome:/home/ubuntu" # initial setup: sudo chown -R 1000:1000 /var/opt/services/valheim/userhome
+
+  abiotic:
+    build: { context: ./abiotic }
+    container_name: abiotic
+    restart: always
+    scale: 0
+    ports:
+    - "0.0.0.0:7777:7777/tcp"   # Game Port
+    - "0.0.0.0:7777:7777/udp"   # Game Port
+    - "0.0.0.0:27015:27015/tcp" # Query Port
+    - "0.0.0.0:27015:27015/udp" # Query Port
+    env_file:
+    - /etc/opt/services/abiotic.env  # should contain ServerPassword and AdminPassword
+    volumes:
+    - "/var/opt/services/abiotic/userhome:/home/ubuntu" # initial setup: sudo chown -R 1000:1000 /var/opt/services/abiotic/userhome
