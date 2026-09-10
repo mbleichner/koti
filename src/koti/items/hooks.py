@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Callable, Sequence, Unpack
 
-from koti.model import ConfigItem, ManagedConfigItem, ManagedConfigItemBaseArgs
+from koti.model import ConfigModel, ConfigItem, ManagedConfigItem, ManagedConfigItemBaseArgs
 
 type PostHookTriggerType = ManagedConfigItem | Callable[[ManagedConfigItem], bool]
 
@@ -17,7 +17,7 @@ class PostHook(ManagedConfigItem):
   def __init__(
     self,
     name: str,
-    execute: Callable | None = None,
+    execute: Callable[[ConfigModel], None] | Callable | None = None,
     trigger: PostHookTriggerType | Sequence[PostHookTriggerType]| None = None,
     add_trigger_as_dependency = True,
     **kwargs: Unpack[ManagedConfigItemBaseArgs],

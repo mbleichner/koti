@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from hashlib import sha256
+from inspect import signature
 from typing import Generator, Sequence
 
 from koti import Action
@@ -107,13 +108,13 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
         yield Action(
           installs = {hook: target} if len(hook.trigger) > 0 else {},
           description = f"execute hook '{hook.name}'",
-          execute = lambda: self.execute_hook(hook, target),
+          execute = lambda: self.execute_hook(hook, target, model),
         )
       else:
         yield Action(
           updates = {hook: target},
           description = f"execute hook '{hook.name}' because of updated dependencies",
-          execute = lambda: self.execute_hook(hook, target),
+          execute = lambda: self.execute_hook(hook, target, model),
         )
 
   def get_cleanup_actions(self, items_to_keep: Sequence[PostHook], model: ConfigModel, system_state: SystemState) -> Generator[Action]:
@@ -129,9 +130,16 @@ class PostHookManager(ConfigManager[PostHook, PostHookState]):
         execute = lambda: self.unregister_hook(hook)
       )
 
-  def execute_hook(self, hook: PostHook, target: PostHookState):
+  def execute_hook(self, hook: PostHook, target: PostHookState, model: ConfigModel):
     assert hook.execute is not None
-    hook.execute()
+
+    # hook.execute method has optional ConfigModel parameter
+    sig = signature(hook.execute)
+    if len(sig.parameters) == 1:
+      hook.execute(model)
+    else:
+      hook.execute()
+
     if len(hook.trigger) > 0:
       self.trigger_hash_store.put(hook.name, target.trigger_hashes)
     else:
