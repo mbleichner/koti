@@ -79,31 +79,23 @@ def gaming() -> ConfigDict:
     Section("lossless scaling + frame generation"): (
       Package("lsfg-vk"),
 
-      # WARNING: only proton versions by Valve seem to be working correctly with lsfg-vk!
-      #
-      # See the docs at: https://github.com/PancakeTAS/lsfg-vk/wiki/
-      # Since games get identified by their process name instead of their actual exe filename, we sometimes have to
-      # override the process name, in order to be able to distinguish them properly:
-      #   LSFG_PROCESS=helldivers2 %command%
-      #
-      # Almost every flag can be hot-reloaded, meaning you can edit the file while the game is running and it will apply instantly.
-      # As long as you have an entry in the configuration at the time of launching the game, it will work just fine.
+      # Docs at https://lsfg-vk.dev/docs/configuration/configuration-options/
+      # NOTE: only proton versions by Valve seem to be working correctly with lsfg-vk
+      # NOTE: at the moment, the "lsfg-vk" branch must be selected in steam for the dll to be available
+      # Apply to process:   LSFGVK_PROFILE=2x %command%
+      # Testing/debugging:  LSFGVK_PROFILE=2x vkcube
       File("/home/manuel/.config/lsfg-vk/conf.toml", permissions = "rw-", owner = "manuel", content = cleandoc(f'''
-        version = 1
+        version = 2
         
-        [[game]]
-        exe = "sailwind"
+        [global]
+        log_level = "info"
+        
+        [[profile]]
+        name = "2x"
         multiplier = 2
+        flow_scale = 1.0
+        pacing_mode = "vsync"
         performance_mode = true
-        
-        # [[game]]
-        # exe = "helldivers2"
-        # multiplier = 2
-        # performance_mode = true
-        
-        [[game]]
-        multiplier = 2
-        exe = "vkcube"
       ''')),
     )
   }
