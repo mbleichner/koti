@@ -39,6 +39,8 @@ def cpufreq_auto_adjust(base_freq: int) -> ConfigDict:
         Type=simple
         ExecStart=/opt/cpufreq-adjuster/cpufreq-adjuster.py auto {base_freq}
         RemainAfterExit=true
+        Nice=19
+        IOSchedulingClass=idle
       ''')),
 
       File("/etc/systemd/system/cpufreq-adjuster.timer", content = cleandoc(f'''
@@ -46,7 +48,7 @@ def cpufreq_auto_adjust(base_freq: int) -> ConfigDict:
         Description=Start cpufreq-adjuster a few seconds after boot
         
         [Timer]
-        OnBootSec=15sec
+        OnBootSec=20sec
         
         [Install]
         WantedBy=graphical.target

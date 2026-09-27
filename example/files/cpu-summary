@@ -1,11 +1,20 @@
 #!/bin/bash
 
-MODE=$(yq -r .mode /etc/cpufreq/state.yaml)
-TARGET=$(yq -r .freq /etc/cpufreq/state.yaml)
-if [[ "$MODE" == "auto" ]]; then
-  MODE_DESC="auto:${TARGET}MHz"
-elif [[ "$MODE" == "manual" ]]; then
-  MODE_DESC="manual"
+STATE=$(systemctl is-active cpufreq-adjuster.service)
+if [[ "$STATE" == "active" ]]; then
+  MODE=$(yq -r .mode /tmp/cpufreq.state.yaml)
+  BASE=$(yq -r .base /tmp/cpufreq.state.yaml)
+  if [[ "$MODE" == "auto" ]]; then
+    MODE_DESC="base:${BASE}MHz"
+  elif [[ "$MODE" == "static" ]]; then
+    MODE_DESC="static:${BASE}MHz"
+  elif [[ "$MODE" == "suspend" ]]; then
+    MODE_DESC="suspended"
+  else
+    MODE_DESC="invalid mode"
+  fi
+else
+  MODE_DESC="inactive"
 fi
 
 CURRENT=$(( $(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq) / 1000 ))

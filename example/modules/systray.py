@@ -37,9 +37,8 @@ def cpufreq_systray(freq_options: Sequence[int] = (1000, 1500, 2000, 2500, 3000,
       systray_dialog("/opt/systray/cpu/dialog", "/opt/systray/cpu/actions"),
 
       File("/etc/systemd/system/cpufreq-adjuster.service"),  # dependency for the following items
-      *(systray_cpufreq_target(f"/opt/systray/cpu/actions/cpu-freq-{freq}mhz", freq) for freq in freq_options),
-      systray_cpufreq_mode("/opt/systray/cpu/actions/mode-auto", "auto"),
-      systray_cpufreq_mode("/opt/systray/cpu/actions/mode-manual", "manual"),
+      *(systray_cpu_base_freq(f"/opt/systray/cpu/actions/base-freq-{freq}mhz", freq) for freq in freq_options),
+      *(systray_cpufreq_mode(f"/opt/systray/cpu/actions/mode-{mode}", mode) for mode in ["auto", "static", "suspend"]),
 
       systray_cpu_governor("/opt/systray/cpu/actions/governor-performance", "performance"),
       systray_cpu_governor("/opt/systray/cpu/actions/governor-powersave", "powersave"),
@@ -63,19 +62,17 @@ def systray_dialog(filename: str, actiondir: str) -> File:
   '''.replace("ACTIONDIR", actiondir)))
 
 
-def systray_cpufreq_mode(filename: str, mode: Literal["manual", "auto"]) -> File:
+def systray_cpufreq_mode(filename: str, mode: str) -> File:
   return File(filename, permissions = "rwxr-xr-x", content = cleandoc(f'''
     #!/bin/bash
-    yq -y '.mode = "{mode}"' /etc/cpufreq/state.yaml | sudo sponge /etc/cpufreq/state.yaml
-    sudo systemctl restart cpufreq-adjuster.service
+    yq -y '.mode = "{mode}"' /tmp/cpufreq.state.yaml | sudo sponge /tmp/cpufreq.state.yaml
   '''))
 
 
-def systray_cpufreq_target(filename: str, freq: int) -> File:
+def systray_cpu_base_freq(filename: str, freq: int) -> File:
   return File(filename, permissions = "rwxr-xr-x", content = cleandoc(f'''
     #!/bin/bash
-    yq -y '.freq = {freq}' /etc/cpufreq/state.yaml | sudo sponge /etc/cpufreq/state.yaml
-    sudo systemctl restart cpufreq-adjuster.service
+    yq -y '.base = {freq}' /tmp/cpufreq.state.yaml | sudo sponge /tmp/cpufreq.state.yaml
   '''))
 
 
