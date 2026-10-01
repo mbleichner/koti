@@ -221,6 +221,7 @@ def base() -> ConfigDict:
       ''')),
 
       File("/etc/locale.gen", content = cleandoc('''
+        C.UTF-8 UTF-8
         en_US.UTF-8 UTF-8
         de_DE.UTF-8 UTF-8
         # without this linebreak, the last locale will be ignored
