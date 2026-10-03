@@ -192,6 +192,7 @@ def base() -> ConfigDict:
       Package("base"),
       Package("base-devel"),
       Package("efibootmgr"),
+      Package("kexec-tools"),
       Package("terminus-font"),
       Package("ca-certificates"),
       Package("ca-certificates-mozilla"),
