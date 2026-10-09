@@ -17,7 +17,7 @@ def dan() -> ConfigDict:
   return {
     **base(),
     **desktop(nvidia = True, autologin = True, ms_fonts = True),
-    **gaming(),
+    **gaming(nvidia = True),
     **cpufreq_defaults(min_freq = 2000, max_freq = 4000, governor = "performance"),
     **cpufreq_auto_adjust(base_freq = 2000),
     **cpufreq_systray(),

@@ -14,7 +14,7 @@ def lenovo() -> ConfigDict:
   return {
     **base(),
     **desktop(nvidia = False, autologin = True, ms_fonts = True),
-    **gaming(),
+    **gaming(nvidia = False),
     **cpufreq_defaults(min_freq = 1500, max_freq = 4000, governor = "powersave"),
     **cpufreq_auto_adjust(base_freq = 1500),
     **cpufreq_systray(),

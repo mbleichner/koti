@@ -23,7 +23,7 @@ def quickemu() -> ConfigDict:
     **base(),
     **desktop(nvidia = False, autologin = True, ms_fonts = False),
     **cpufreq_systray(),
-    **gaming(),
+    **gaming(nvidia = False),
 
     Section("firmware and drivers for quickemu"): (
       Package("linux-firmware-other"),

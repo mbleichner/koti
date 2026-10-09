@@ -4,7 +4,7 @@ from koti import *
 from koti.items import *
 
 
-def gaming() -> ConfigDict:
+def gaming(nvidia: bool) -> ConfigDict:
   return {
     Section("game launchers, proton, emulators, mod managers"): (
       # Package("amethyst-mod-manager"), # AUR
@@ -14,6 +14,7 @@ def gaming() -> ConfigDict:
       Package("gpu-screen-recorder-ui"),
       Package("faugus-launcher"), # CachyOS
       Package("mangohud"),
+      Package("libxnvctrl") if nvidia else None, # optional dependency of mangohud to display GPU sensors
       Package("proton-cachyos-slr"),
       Package("proton-ge-custom-bin"), # AUR
       Package("protonplus"),
