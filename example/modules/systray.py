@@ -29,7 +29,7 @@ def cpufreq_systray(freq_options: Sequence[int] = (1000, 1500, 2000, 2500, 3000,
       Option[str]("/etc/sudoers/ExtraLines", value = [
         "manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/cpupower",
         "manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/tee /sys/devices/system/cpu/*",
-        "manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/sponge /etc/cpufreq/state.yaml",
+        "manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/sponge /tmp/cpufreq.state.yaml",
         "manuel ALL=(ALL:ALL) NOPASSWD: /usr/bin/systemctl restart cpufreq-adjuster.service",
       ]),
 

@@ -51,6 +51,9 @@ def gaming(nvidia: bool) -> ConfigDict:
 
     Section("gaming optimizations"): (
 
+      # High performance malloc implementation for Factorio
+      Package("mimalloc"),
+
       # Load ntsync module on boot
       File("/etc/modules-load.d/ntsync.conf", content = 'ntsync'),
 
