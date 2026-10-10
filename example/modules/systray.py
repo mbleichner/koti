@@ -38,7 +38,7 @@ def cpufreq_systray(freq_options: Sequence[int] = (1000, 1500, 2000, 2500, 3000,
 
       File("/etc/systemd/system/cpufreq-adjuster.service"),  # dependency for the following items
       *(systray_cpu_base_freq(f"/opt/systray/cpu/actions/base-freq-{freq}mhz", freq) for freq in freq_options),
-      *(systray_cpufreq_mode(f"/opt/systray/cpu/actions/mode-{mode}", mode) for mode in ["auto", "static", "suspend"]),
+      *(systray_cpufreq_mode(f"/opt/systray/cpu/actions/mode-{mode}", mode) for mode in ["auto", "fixed", "suspend"]),
 
       systray_cpu_governor("/opt/systray/cpu/actions/governor-performance", "performance"),
       systray_cpu_governor("/opt/systray/cpu/actions/governor-powersave", "powersave"),

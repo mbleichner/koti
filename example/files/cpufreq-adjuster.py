@@ -32,7 +32,7 @@ while True:
 
   if state["mode"] == "suspend":
     continue
-  elif state["mode"] == "static":
+  elif state["mode"] == "fixed":
     new_freq = int(state["base"])
   elif state["mode"] == "auto":
     running_processes = {

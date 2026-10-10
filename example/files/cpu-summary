@@ -6,8 +6,8 @@ if [[ "$STATE" == "active" ]]; then
   BASE=$(yq -r .base /tmp/cpufreq.state.yaml)
   if [[ "$MODE" == "auto" ]]; then
     MODE_DESC="base:${BASE}MHz"
-  elif [[ "$MODE" == "static" ]]; then
-    MODE_DESC="static:${BASE}MHz"
+  elif [[ "$MODE" == "fixed" ]]; then
+    MODE_DESC="fixed:${BASE}MHz"
   elif [[ "$MODE" == "suspend" ]]; then
     MODE_DESC="suspended"
   else
