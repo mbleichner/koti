@@ -1,5 +1,6 @@
 from inspect import cleandoc
 
+from modules.ollama_aichat import ollama_aichat
 from koti import *
 from modules.base import base
 from modules.cpufreq import cpufreq_auto_adjust, cpufreq_defaults

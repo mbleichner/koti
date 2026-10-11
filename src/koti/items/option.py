@@ -16,14 +16,14 @@ class Option[T](UnmanagedConfigItem):
   def __init__(
     self,
     name: str,
-    value: Sequence[T] | T | None = None,
+    value: list[T] | T | None = None, # list instead of sequence to allow handling tuples as single value
     tags: Iterable[str] | str | None = None
   ):
     super().__init__(tags)
     self.name = name
     if isinstance(value, list):
       self._values = [*value]
-    elif isinstance(value, str):
+    elif value is not None:
       self._values = [value]
     else:
       self._values = []
