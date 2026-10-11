@@ -19,6 +19,7 @@ def ollama_aichat(cuda: bool) -> ConfigDict:
           api_base: http://localhost:11434/v1
           api_key: null
       ''')),
+      Option[tuple[str, int]]("/etc/cpufreq/rules.yaml/ExtraEntries", value = ("main.py", 3500)),
       SystemdUnit("ollama.service"),
       PostHook(
         name = f"download {ollama_model}",
