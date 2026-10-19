@@ -245,6 +245,11 @@ def base() -> ConfigDict:
         DefaultTimeoutAbortSec=30s
       ''')),
 
+      File("/etc/systemd/logind.conf", content = cleandoc('''
+        [Login]
+        KillUserProcesses=yes
+      ''')),
+
       SystemdUnit("fstrim.timer"),
       SystemdUnit("fwupd.service"),
       SystemdUnit("systemd-boot-update.service"),
