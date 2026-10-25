@@ -345,7 +345,7 @@ def base() -> ConfigDict:
       File("/etc/borgmatic/config.yaml", requires = User("manuel"), content = lambda model: cleandoc(f'''
         verbosity: 1
         lock_wait: 3600
-        ssh_command: ssh -i /home/manuel/.ssh/id_ed25519
+        ssh_command: ssh -p 22345 -i /home/manuel/.ssh/id_ed25519
         list_details: true
         
         keep_daily: 7
@@ -514,13 +514,16 @@ def base() -> ConfigDict:
       Package("openssh"),
       File("/etc/ssh/sshd_config", owner = "root", content = cleandoc('''
         Include /etc/ssh/sshd_config.d/*.conf
-        PermitRootLogin yes
+        Port 22345
         AuthorizedKeysFile .ssh/authorized_keys
         Subsystem sftp /usr/lib/ssh/sftp-server
+        PermitRootLogin no
         PasswordAuthentication no
         ChallengeResponseAuthentication no
-        Match Address 192.168.0.0/16
-          PasswordAuthentication yes
+      ''')),
+      File("/home/manuel/.ssh/config", owner = "manuel", content = cleandoc(f'''
+        Host 192.168.* dan mserver lenovo
+          Port 22345
       ''')),
       File("/home/manuel/.ssh/authorized_keys", owner = "manuel", content = cleandoc(f'''
         ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILHYYC3eJGcl/X9eM8f6BnUtBvekI2ZUzkfLY5ltjPTw manuel@dan

@@ -72,6 +72,8 @@ def desktop(nvidia: bool, autologin: bool, ms_fonts: bool) -> ConfigDict:
       Package("ttf-ms-win11-auto") if ms_fonts else None,
       Package("noto-fonts"),
       Package("noto-fonts-emoji"),
+      Package("noto-fonts-extra"),
+      Package("noto-fonts-cjk"),
     ),
 
     Section("video players, codecs, hardware decoding"): (
