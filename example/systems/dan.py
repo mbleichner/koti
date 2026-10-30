@@ -7,7 +7,7 @@ from modules.desktop import desktop
 from modules.gaming import gaming
 from modules.kernel import kernel
 from modules.nvidia import nvidia_undervolting
-from modules.ollama_aichat import ollama_aichat
+from modules.ollama_ai import ollama_ai
 from modules.ryzen import ryzen_undervolting
 from modules.systray import cpufreq_systray, nvidia_systray
 
@@ -26,7 +26,7 @@ def dan() -> ConfigDict:
     **nvidia_systray(),
     **nvidia_undervolting(),
     **ryzen_undervolting(),
-    **ollama_aichat(cuda = True),
+    **ollama_ai(cuda = True),
 
     Section("swapfile (12GB) and fstab"): (
       Swapfile("/swapfile", 12 * (1024 ** 3)),
