@@ -87,7 +87,7 @@ def dan() -> ConfigDict:
     Section("brdb tools + dependencies"): (
       Package("python-alembic"),
       Package("python-fastapi"),
-      Package("python-uvicorn"),
+      Package("uvicorn"),
       Package("python-asyncpg"),
       Package("python-pydantic"),
       Package("python-pydantic-settings"),
@@ -96,11 +96,11 @@ def dan() -> ConfigDict:
       Package("python-ecdsa"),
       Package("python-libnacl"),
       Package("python-loguru"),
-      Package("python-mypy"),
       Package("python-pytest"),
       Package("python-pytest-asyncio"),
       Package("python-httpx"),
       Package("python-uvloop"),
       Package("corepack"),
+      Package("postgresql"),
     ),
   }
