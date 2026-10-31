@@ -12,6 +12,9 @@ def ollama_ai(cuda: bool) -> ConfigDict:
   return {
     Section("ollama"): (
       Package(ollama_package),
+      File("/etc/environment.d/ollama.conf", content = cleandoc(f'''
+        OLLAMA_LOAD_TIMEOUT=30m
+      ''')),
       SystemdUnit("ollama.service"),
     ),
 
@@ -60,7 +63,11 @@ def ollama_ai(cuda: bool) -> ConfigDict:
           "policies": [
             { "action": "provider.use", "resource": "*", "effect": "deny" },
             { "action": "provider.use", "resource": "ollama", "effect": "allow" }
-          ]
+          ],
+          "compaction": {
+            "auto": true,
+            "buffer": "10%%",
+          }
         }
       ''' % opencode_context_size)),
       File("/home/manuel/.config/opencode/Modelfile.glm-4.7-flash-code", owner = "manuel", content = cleandoc(f'''
