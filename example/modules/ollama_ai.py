@@ -7,7 +7,7 @@ from koti.utils.shell import shell
 def ollama_ai(cuda: bool) -> ConfigDict:
   ollama_package = "ollama-cuda" if cuda else "ollama"
   aichat_model = "glm-4.7-flash"
-  opencode_context_size = 32768  # 65536
+  opencode_context_size = 49152
 
   return {
     Section("ollama"): (
@@ -36,6 +36,7 @@ def ollama_ai(cuda: bool) -> ConfigDict:
 
     Section("opencode"): (
       Package("opencode"),
+      Option[tuple[str, int]]("/etc/cpufreq/rules.yaml/ExtraEntries", value = ("opencode", 3500)),
       Option[tuple[str, int]]("/etc/cpufreq/rules.yaml/ExtraEntries", value = ("main.py", 3500)),
       File("/home/manuel/.config/opencode/opencode.json", owner = "manuel", content = cleandoc('''
         {
