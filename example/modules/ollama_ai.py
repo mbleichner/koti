@@ -12,8 +12,12 @@ def ollama_ai(cuda: bool) -> ConfigDict:
   return {
     Section("ollama"): (
       Package(ollama_package),
-      File("/etc/environment.d/ollama.conf", content = cleandoc(f'''
-        OLLAMA_LOAD_TIMEOUT=30m
+      File("/etc/systemd/system/ollama.service.d/override.conf", content = cleandoc(f'''
+        [Service]
+        Environment="OLLAMA_KEEP_ALIVE=30m"
+        Environment="OLLAMA_FLASH_ATTENTION=1"
+        Environment="OLLAMA_KV_CACHE_TYPE=q8_0"
+        Environment="OLLAMA_CONTEXT_LENGTH=65536"
       ''')),
       SystemdUnit("ollama.service"),
     ),
@@ -56,6 +60,12 @@ def ollama_ai(cuda: bool) -> ConfigDict:
                     { "id": "think",   "settings": { "reasoningEffort": "high" } },
                     { "id": "nothink", "settings": { "reasoningEffort": "none" } }
                   ]
+                },
+                "qwen3.8-9b-distill-code:latest": {
+                  "limit": {
+                    "context": 65536,
+                    "output": 8192
+                  }
                 }
               }
             }
@@ -86,10 +96,21 @@ def ollama_ai(cuda: bool) -> ConfigDict:
         <|assistant|>
         """
       ''')),
+      File("/home/manuel/.config/opencode/Modelfile.qwen3.8-9b-distill-code", owner = "manuel", content = cleandoc(f'''
+        FROM tobestyledintro/qwen3.8-9b-distill:latest
+        PARAMETER num_ctx 65536
+        PARAMETER num_predict 8192
+      ''')),
       PostHook(
         name = f"compile glm-4.7-flash-code model",
         trigger = File("/home/manuel/.config/opencode/Modelfile.glm-4.7-flash-code"),
         execute = lambda: shell(f"ollama create glm-4.7-flash-code -f /home/manuel/.config/opencode/Modelfile.glm-4.7-flash-code"),
+        requires = Package(ollama_package),
+      ),
+      PostHook(
+        name = f"compile qwen3.8-9b-distill-code model",
+        trigger = File("/home/manuel/.config/opencode/Modelfile.qwen3.8-9b-distill-code"),
+        execute = lambda: shell(f"ollama create qwen3.8-9b-distill-code -f /home/manuel/.config/opencode/Modelfile.qwen3.8-9b-distill-code"),
         requires = Package(ollama_package),
       ),
     )
