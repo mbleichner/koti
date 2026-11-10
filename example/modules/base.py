@@ -434,6 +434,14 @@ def base() -> ConfigDict:
       ''')),
     ),
 
+    Section("Telekom peering workarounds"): (
+      # Telekom boykottiert Fastly, deshalb über einen chinesischen Mirror downloaden
+      File("/etc/environment.d/pip-mirror.conf", permissions = "r-x", content = cleandoc(r'''
+        PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+        UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+      ''')),
+    ),
+
     Section("ananicy-cpp and configuration"): PostHookScope(
       Package("ananicy-cpp"),
 
